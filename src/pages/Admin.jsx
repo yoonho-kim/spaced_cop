@@ -56,7 +56,7 @@ const Admin = () => {
     const handleAddActivity = () => {
         setModalType('addActivity');
         const today = new Date().toISOString().split('T')[0];
-        setFormData({ title: '', description: '', date: '', deadline: today, maxParticipants: 10, location: '' });
+        setFormData({ title: '', description: '', date: '', deadline: today, maxParticipants: '', location: '' });
         setShowModal(true);
     };
 
@@ -423,8 +423,8 @@ const Admin = () => {
                                 <input
                                     type="number"
                                     min="1"
-                                    value={formData.maxParticipants || 10}
-                                    onChange={(e) => setFormData({ ...formData, maxParticipants: parseInt(e.target.value) })}
+                                    value={formData.maxParticipants}
+                                    onChange={(e) => setFormData({ ...formData, maxParticipants: e.target.value === '' ? '' : parseInt(e.target.value) })}
                                     required
                                 />
                             </div>

@@ -9,10 +9,9 @@ const MeetingRooms = ({ user }) => {
     const [reservations, setReservations] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState(null);
+    const [selectedDate, setSelectedDate] = useState('');
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
     const [formData, setFormData] = useState({
-        date: '',
-        startTime: '09',
-        endTime: '10',
         department: '',
         purpose: '',
     });
@@ -22,6 +21,9 @@ const MeetingRooms = ({ user }) => {
 
     useEffect(() => {
         loadData();
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        setSelectedDate(today);
     }, []);
 
     const loadData = () => {
@@ -29,46 +31,41 @@ const MeetingRooms = ({ user }) => {
         setReservations(getReservations());
     };
 
-    const handleBookRoom = (room) => {
+    const handleTimeSlotClick = (room, hour) => {
+        // Check if this time slot is available
+        const isOccupied = reservations.some(r =>
+            r.roomId === room.id &&
+            r.date === selectedDate &&
+            parseInt(r.startTime) <= hour &&
+            parseInt(r.endTime) > hour
+        );
+
+        if (isOccupied) {
+            alert('이 시간대는 이미 예약되어 있습니다');
+            return;
+        }
+
         setSelectedRoom(room);
+        setSelectedTimeSlot(hour);
         setShowModal(true);
-        // Set default date to today
-        const today = new Date().toISOString().split('T')[0];
-        setFormData({ ...formData, date: today, startTime: '09', endTime: '10', department: '', purpose: '' });
+        setFormData({ department: '', purpose: '' });
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        const start = parseInt(formData.startTime);
-        const end = parseInt(formData.endTime);
-
-        if (end <= start) {
-            alert('종료 시간은 시작 시간보다 늦어야 합니다');
-            return;
-        }
-
-        // 시간 충돌 체크
-        const conflict = reservations.some(r =>
-            r.roomId === selectedRoom.id &&
-            r.date === formData.date &&
-            !(end <= parseInt(r.startTime) || start >= parseInt(r.endTime))
-        );
-
-        if (conflict) {
-            alert('선택한 시간에 이미 예약이 있습니다');
-            return;
-        }
-
         addReservation({
             roomId: selectedRoom.id,
             roomName: selectedRoom.name,
             userName: user.nickname,
+            date: selectedDate,
+            startTime: selectedTimeSlot.toString(),
+            endTime: (selectedTimeSlot + 1).toString(),
             ...formData,
         });
 
         setShowModal(false);
-        setFormData({ date: '', startTime: '09', endTime: '10', department: '', purpose: '' });
+        setFormData({ department: '', purpose: '' });
         loadData();
     };
 
@@ -81,23 +78,13 @@ const MeetingRooms = ({ user }) => {
 
     const myReservations = reservations.filter(r => r.userName === user.nickname);
 
-    // 각 회의실의 오늘 예약 현황 가져오기
-    const getTodayReservations = (roomId) => {
-        const today = new Date().toISOString().split('T')[0];
-        return reservations.filter(r => r.roomId === roomId && r.date === today);
-    };
-
-    // 현재 사용 중인지 확인
-    const isRoomOccupied = (roomId) => {
-        const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        const currentHour = now.getHours();
-
+    // Check if a time slot is occupied for a specific room
+    const isTimeSlotOccupied = (roomId, hour) => {
         return reservations.some(r =>
             r.roomId === roomId &&
-            r.date === today &&
-            parseInt(r.startTime) <= currentHour &&
-            parseInt(r.endTime) > currentHour
+            r.date === selectedDate &&
+            parseInt(r.startTime) <= hour &&
+            parseInt(r.endTime) > hour
         );
     };
 
@@ -108,35 +95,51 @@ const MeetingRooms = ({ user }) => {
                 <p className="text-secondary">회의를 위한 회의실을 예약하세요</p>
             </div>
 
-            <div className="rooms-grid">
-                {rooms.map(room => {
-                    const occupied = isRoomOccupied(room.id);
-                    const todayReservations = getTodayReservations(room.id);
+            {/* Date Selector */}
+            <div className="date-selector">
+                <label>날짜 선택</label>
+                <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="date-input"
+                />
+            </div>
 
-                    return (
-                        <div key={room.id} className="room-card">
-                            <div className="room-icon">🚪</div>
-                            <div className="room-info">
+            {/* Rooms with Time Slots */}
+            <div className="rooms-list">
+                {rooms.map(room => (
+                    <div key={room.id} className="room-section">
+                        <div className="room-header">
+                            <div className="room-title">
+                                <span className="room-icon">🚪</span>
                                 <h3>{room.name}</h3>
-                                <div className="room-details">
-                                    <span className="badge badge-primary">{room.floor}</span>
-                                    <span className="text-secondary">수용인원: {room.capacity}명</span>
-                                </div>
-                                <div className={`room-status ${occupied ? 'occupied' : 'available'}`}>
-                                    {occupied ? '사용중' : '예약가능'}
-                                </div>
-                                {todayReservations.length > 0 && (
-                                    <div className="today-reservations">
-                                        <small className="text-secondary">오늘 예약: {todayReservations.length}건</small>
-                                    </div>
-                                )}
                             </div>
-                            <Button variant="primary" size="sm" onClick={() => handleBookRoom(room)}>
-                                예약
-                            </Button>
+                            <div className="room-meta">
+                                <span className="badge badge-primary">{room.floor}</span>
+                                <span className="text-secondary">수용인원: {room.capacity}명</span>
+                            </div>
                         </div>
-                    );
-                })}
+                        <div className="time-slots-grid">
+                            {timeOptions.map(hour => {
+                                const occupied = isTimeSlotOccupied(room.id, hour);
+                                return (
+                                    <button
+                                        key={hour}
+                                        className={`time-slot ${occupied ? 'occupied' : 'available'}`}
+                                        onClick={() => handleTimeSlotClick(room, hour)}
+                                        disabled={occupied}
+                                    >
+                                        <span className="time-label">{hour}:00</span>
+                                        <span className="status-label">
+                                            {occupied ? '예약됨' : '가능'}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
             </div>
 
             <div className="my-reservations">
@@ -180,40 +183,13 @@ const MeetingRooms = ({ user }) => {
                     </div>
 
                     <div className="form-group">
-                        <label>날짜</label>
+                        <label>예약 일시</label>
                         <input
-                            type="date"
-                            value={formData.date}
-                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                            required
+                            type="text"
+                            value={selectedDate && selectedTimeSlot !== null ?
+                                `${selectedDate} ${selectedTimeSlot}:00 - ${selectedTimeSlot + 1}:00` : ''}
+                            disabled
                         />
-                    </div>
-
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label>시작 시간</label>
-                            <select
-                                value={formData.startTime}
-                                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                                required
-                            >
-                                {timeOptions.map(hour => (
-                                    <option key={hour} value={hour}>{hour}:00</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>종료 시간</label>
-                            <select
-                                value={formData.endTime}
-                                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                                required
-                            >
-                                {timeOptions.filter(h => h > parseInt(formData.startTime)).map(hour => (
-                                    <option key={hour} value={hour}>{hour}:00</option>
-                                ))}
-                            </select>
-                        </div>
                     </div>
 
                     <div className="form-group">

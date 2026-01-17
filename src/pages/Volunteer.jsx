@@ -31,15 +31,24 @@ const Volunteer = ({ user }) => {
             return;
         }
 
+        // Prompt for employee ID
+        const employeeId = prompt('신청자 사번을 입력해주세요:');
+        if (!employeeId || !employeeId.trim()) {
+            alert('사번을 입력해야 등록할 수 있습니다');
+            return;
+        }
+
         // 정원 초과 신청 가능 (관리자가 추첨으로 선정)
 
         addVolunteerRegistration({
             activityId: activity.id,
             activityTitle: activity.title,
             userName: user.nickname,
+            employeeId: employeeId.trim(),
         });
 
         loadData();
+        alert('봉사활동 신청이 완료되었습니다');
     };
 
     const myRegistrations = registrations.filter(r => r.userName === user.nickname);

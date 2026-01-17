@@ -1,139 +1,157 @@
+/* Supplies Container - Feed 기준 통일 */
 .supplies-container {
-    max-width: 600px;
+    max-width: 448px;
     margin: 0 auto;
-    padding: var(--spacing-md);
-    padding-bottom: var(--spacing-xl);
+    padding-bottom: 24px;
 }
 
 .supplies-header {
-    margin-bottom: var(--spacing-lg);
+    padding: 0 16px 12px;
+    margin-bottom: 16px;
 }
 
 .supplies-header h2 {
-    margin-bottom: var(--spacing-xs);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0 0 4px 0;
+}
+
+.supplies-header p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.supplies-container>button {
+    margin: 0 16px 16px;
 }
 
 .requests-section {
-    margin-top: var(--spacing-xl);
+    margin-top: 16px;
+    padding: 0 16px;
 }
 
 .requests-section h3 {
-    margin-bottom: var(--spacing-md);
-    font-size: var(--font-size-lg);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0 0 12px 0;
 }
 
 .requests-list {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 12px;
 }
 
 .request-item {
-    padding: var(--spacing-md);
-    background-color: var(--color-bg-secondary);
+    padding: 16px;
+    background-color: var(--color-surface-light);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    transition: all var(--transition-fast);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
 }
 
 .request-item:hover {
-    background-color: var(--color-bg-hover);
-    border-color: var(--color-border-light);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .request-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
 .request-header h4 {
-    font-size: var(--font-size-lg);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0;
     flex: 1;
 }
 
 .request-details {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: 8px;
 }
 
 .detail-row {
     display: flex;
-    gap: var(--spacing-sm);
-    font-size: var(--font-size-sm);
+    gap: 8px;
+    font-size: 14px;
 }
 
 .detail-label {
     color: var(--color-text-secondary);
     font-weight: 600;
-    min-width: 80px;
+    min-width: 60px;
 }
 
 .admin-note {
-    margin-top: var(--spacing-sm);
-    padding: var(--spacing-sm);
+    margin-top: 8px;
+    padding: 8px;
     background-color: var(--color-admin-light);
     border-left: 3px solid var(--color-admin);
-    border-radius: var(--radius-sm);
+    border-radius: 4px;
 }
 
 .note-label {
     display: block;
-    font-size: var(--font-size-xs);
+    font-size: 12px;
     font-weight: 700;
     color: var(--color-admin);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: 4px;
 }
 
 .admin-note p {
-    font-size: var(--font-size-sm);
-    color: var(--color-text-primary);
+    font-size: 14px;
+    color: var(--color-text-main);
     margin: 0;
 }
 
 .request-form {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 16px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
+    gap: 4px;
 }
 
 .form-group label {
-    font-size: var(--font-size-sm);
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-text-secondary);
 }
 
 .form-actions {
     display: flex;
-    gap: var(--spacing-md);
+    gap: 12px;
     justify-content: flex-end;
-    margin-top: var(--spacing-md);
+    margin-top: 16px;
 }
 
 .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-xl);
     text-align: center;
-    gap: var(--spacing-sm);
+    padding: 48px 24px;
 }
 
 .empty-icon {
-    font-size: 64px;
-    opacity: 0.5;
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.empty-state p {
+    margin: 4px 0;
 }
 
 @media (max-width: 480px) {

@@ -7,6 +7,7 @@ const Login = ({ onLogin }) => {
     const [nickname, setNickname] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordText, setShowPasswordText] = useState(false);
     const [error, setError] = useState('');
 
     const handleNicknameChange = (e) => {
@@ -47,61 +48,80 @@ const Login = ({ onLogin }) => {
 
     return (
         <div className="login-container">
-            <div className="login-card animate-fade-in">
+            {/* Background Decoration */}
+            <div className="login-decoration"></div>
+
+            <div className="login-card">
+                {/* Logo Section */}
                 <div className="login-logo">
-                    <div className="logo-icon">🚀</div>
-                    <h1>Space D</h1>
-                    <p className="text-secondary">사무실 관리 시스템</p>
+                    <div className="logo-icon-wrapper">
+                        <span className="material-symbols-outlined logo-icon">eco</span>
+                    </div>
                 </div>
 
+                {/* Headline */}
+                <h1 className="login-headline">
+                    반가워요!<br />Space D 입니다.
+                </h1>
+
+                {/* Login Form */}
                 <form onSubmit={handleSubmit} className="login-form">
-                    <div className="form-group">
-                        <label htmlFor="nickname">닉네임</label>
+                    {/* Nickname Input */}
+                    <div className="input-wrapper">
                         <input
-                            id="nickname"
                             type="text"
                             value={nickname}
                             onChange={handleNicknameChange}
-                            placeholder="닉네임을 입력하세요"
+                            placeholder="닉네임 (또는 사번)"
+                            className="login-input"
                             autoFocus
                             autoComplete="off"
                         />
                     </div>
 
+                    {/* Password Input */}
                     {showPassword && (
-                        <div className="form-group animate-fade-in">
-                            <label htmlFor="password">관리자 비밀번호</label>
+                        <div className="input-wrapper password-wrapper animate-fade-in">
                             <input
-                                id="password"
-                                type="password"
+                                type={showPasswordText ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="관리자 비밀번호를 입력하세요"
+                                placeholder="비밀번호"
+                                className="login-input"
                                 autoComplete="off"
                             />
+                            <button
+                                type="button"
+                                className="password-toggle"
+                                onClick={() => setShowPasswordText(!showPasswordText)}
+                            >
+                                <span className="material-symbols-outlined">
+                                    {showPasswordText ? 'visibility' : 'visibility_off'}
+                                </span>
+                            </button>
                         </div>
                     )}
 
+                    {/* Error Message */}
                     {error && (
                         <div className="error-message animate-fade-in">
                             {error}
                         </div>
                     )}
 
-                    <Button
-                        type="submit"
-                        variant="primary"
-                        size="lg"
-                        fullWidth
-                    >
-                        {showPassword ? '관리자 로그인' : '입장'}
-                    </Button>
+                    {/* Login Button */}
+                    <button type="submit" className="login-button">
+                        로그인
+                    </button>
                 </form>
 
+                {/* Footer Links */}
                 <div className="login-footer">
-                    <p className="text-tertiary">
-                        SpaceX에서 영감을 받음 · 생산성을 위해 제작됨
-                    </p>
+                    <a href="#" className="footer-link">아이디 찾기</a>
+                    <span className="footer-divider"></span>
+                    <a href="#" className="footer-link">비밀번호 찾기</a>
+                    <span className="footer-divider"></span>
+                    <a href="#" className="footer-link footer-link-signup">회원가입</a>
                 </div>
             </div>
         </div>

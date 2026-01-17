@@ -1,104 +1,116 @@
+/* Volunteer Container - Feed 기준 통일 */
 .volunteer-container {
-    max-width: 600px;
+    max-width: 448px;
     margin: 0 auto;
-    padding: var(--spacing-md);
-    padding-bottom: var(--spacing-xl);
+    padding-bottom: 24px;
 }
 
 .volunteer-header {
-    margin-bottom: var(--spacing-lg);
+    padding: 0 16px 12px;
+    margin-bottom: 16px;
 }
 
 .volunteer-header h2 {
-    margin-bottom: var(--spacing-xs);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0 0 4px 0;
+}
+
+.volunteer-header p {
+    margin: 0;
+    font-size: 14px;
 }
 
 .activities-section,
 .my-registrations-section {
-    margin-bottom: var(--spacing-xl);
+    margin-top: 16px;
+    padding: 0 16px;
 }
 
 .activities-section h3,
 .my-registrations-section h3 {
-    margin-bottom: var(--spacing-md);
-    font-size: var(--font-size-lg);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0 0 12px 0;
 }
 
-.activities-list {
+.activities-list,
+.registrations-list {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 12px;
 }
 
 .activity-card {
-    padding: var(--spacing-md);
-    background-color: var(--color-bg-secondary);
+    padding: 16px;
+    background-color: var(--color-surface-light);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    transition: all var(--transition-fast);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
 }
 
 .activity-card:hover {
-    background-color: var(--color-bg-hover);
-    border-color: var(--color-border-light);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .activity-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-sm);
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .activity-header h4 {
-    font-size: var(--font-size-lg);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0;
     flex: 1;
 }
 
 .activity-description {
-    color: var(--color-text-primary);
-    margin-bottom: var(--spacing-md);
+    color: var(--color-text-main);
+    margin-bottom: 12px;
     line-height: 1.5;
+    font-size: 14px;
 }
 
 .activity-meta {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-md);
-    padding: var(--spacing-sm);
-    background-color: var(--color-bg-tertiary);
-    border-radius: var(--radius-sm);
+    gap: 4px;
+    margin-bottom: 12px;
+    padding: 8px;
+    background-color: var(--color-bg-primary);
+    border-radius: 8px;
 }
 
 .meta-item {
     display: flex;
-    gap: var(--spacing-sm);
-    font-size: var(--font-size-sm);
+    gap: 8px;
+    font-size: 14px;
 }
 
 .meta-label {
     color: var(--color-text-secondary);
     font-weight: 600;
-    min-width: 80px;
-}
-
-.registrations-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
+    min-width: 60px;
 }
 
 .registration-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
-    background-color: var(--color-bg-secondary);
+    gap: 12px;
+    padding: 16px;
+    background-color: var(--color-surface-light);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .registration-info {
@@ -106,23 +118,29 @@
 }
 
 .registration-info h4 {
-    margin-bottom: var(--spacing-xs);
-    font-size: var(--font-size-base);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0 0 4px 0;
+}
+
+.registration-info p {
+    margin: 0;
+    font-size: 14px;
 }
 
 .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-xl);
     text-align: center;
-    gap: var(--spacing-sm);
+    padding: 48px 24px;
 }
 
 .empty-icon {
-    font-size: 64px;
-    opacity: 0.5;
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.empty-state p {
+    margin: 4px 0;
 }
 
 @media (max-width: 480px) {

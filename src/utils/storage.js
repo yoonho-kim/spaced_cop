@@ -90,10 +90,58 @@ export const addPost = (post) => {
     id: generateId(),
     ...post,
     timestamp: new Date().toISOString(),
+    likes: [],
+    comments: [],
   };
   posts.unshift(newPost);
   setItem(STORAGE_KEYS.POSTS, posts);
   return newPost;
+};
+
+// Likes
+export const addLike = (postId, userName) => {
+  const posts = getPosts();
+  const updated = posts.map(post => {
+    if (post.id === postId) {
+      const likes = post.likes || [];
+      if (!likes.includes(userName)) {
+        return { ...post, likes: [...likes, userName] };
+      }
+    }
+    return post;
+  });
+  setItem(STORAGE_KEYS.POSTS, updated);
+};
+
+export const removeLike = (postId, userName) => {
+  const posts = getPosts();
+  const updated = posts.map(post => {
+    if (post.id === postId) {
+      const likes = post.likes || [];
+      return { ...post, likes: likes.filter(name => name !== userName) };
+    }
+    return post;
+  });
+  setItem(STORAGE_KEYS.POSTS, updated);
+};
+
+// Comments
+export const addComment = (postId, userName, content) => {
+  const posts = getPosts();
+  const updated = posts.map(post => {
+    if (post.id === postId) {
+      const comments = post.comments || [];
+      const newComment = {
+        id: generateId(),
+        userName,
+        content,
+        timestamp: new Date().toISOString(),
+      };
+      return { ...post, comments: [...comments, newComment] };
+    }
+    return post;
+  });
+  setItem(STORAGE_KEYS.POSTS, updated);
 };
 
 // Meeting Rooms
