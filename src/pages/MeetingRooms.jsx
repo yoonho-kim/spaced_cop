@@ -134,7 +134,6 @@ const MeetingRooms = ({ user }) => {
                                         key={hour}
                                         className={`time-slot ${occupied ? 'occupied' : 'available'}`}
                                         onClick={() => handleTimeSlotClick(room, hour)}
-                                        disabled={occupied}
                                     >
                                         <span className="time-label">{hour}:00</span>
                                         <span className="status-label">
@@ -152,6 +151,7 @@ const MeetingRooms = ({ user }) => {
                 <h3>내 예약</h3>
                 {myReservations.length === 0 ? (
                     <div className="empty-state">
+                        <div className="empty-icon">📅</div>
                         <p className="text-secondary">아직 예약이 없습니다</p>
                     </div>
                 ) : (
@@ -161,12 +161,12 @@ const MeetingRooms = ({ user }) => {
                                 <div className="reservation-info">
                                     <h4>{reservation.roomName}</h4>
                                     <p className="text-secondary">
-                                        {reservation.date} · {reservation.startTime}:00 - {reservation.endTime}:00
+                                        {new Date(reservation.date).toLocaleDateString('ko-KR')} ·
+                                        {reservation.startTime}:00 - {reservation.endTime}:00
                                     </p>
-                                    <p className="reservation-meta">
-                                        <span className="meta-label">부서:</span> {reservation.department}
+                                    <p className="reservation-purpose">
+                                        {reservation.department} · {reservation.purpose}
                                     </p>
-                                    <p className="reservation-purpose">{reservation.purpose}</p>
                                 </div>
                                 <Button
                                     variant="danger"
@@ -230,6 +230,45 @@ const MeetingRooms = ({ user }) => {
                     </div>
                 </form>
             </Modal>
+
+            {/* Reservation Info Modal */}
+            {showReservationInfo && selectedReservation && (
+                <Modal
+                    isOpen={showReservationInfo}
+                    onClose={() => {
+                        setShowReservationInfo(false);
+                        setSelectedReservation(null);
+                    }}
+                    title="예약 정보"
+                >
+                    <div className="reservation-info-content">
+                        <div className="info-row">
+                            <span className="info-label">회의실</span>
+                            <span className="info-value">{selectedReservation.roomName}</span>
+                        </div>
+                        <div className="info-row">
+                            <span className="info-label">날짜</span>
+                            <span className="info-value">{new Date(selectedReservation.date).toLocaleDateString('ko-KR')}</span>
+                        </div>
+                        <div className="info-row">
+                            <span className="info-label">시간</span>
+                            <span className="info-value">{selectedReservation.startTime}:00 - {selectedReservation.endTime}:00</span>
+                        </div>
+                        <div className="info-row">
+                            <span className="info-label">예약자</span>
+                            <span className="info-value">{selectedReservation.userName}</span>
+                        </div>
+                        <div className="info-row">
+                            <span className="info-label">부서</span>
+                            <span className="info-value">{selectedReservation.department}</span>
+                        </div>
+                        <div className="info-row">
+                            <span className="info-label">목적</span>
+                            <span className="info-value">{selectedReservation.purpose}</span>
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </div>
     );
 };
