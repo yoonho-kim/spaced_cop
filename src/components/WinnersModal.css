@@ -223,75 +223,27 @@
     font-weight: 500;
 }
 
-/* Scratch Overlay (Front) */
-.scratch-overlay {
-    background: linear-gradient(135deg, #a855f7 0%, #c084fc 50%, #e9d5ff 100%);
+/* Scratch Canvas Overlay */
+.scratch-canvas {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     z-index: 10;
+    cursor: grab;
     transition: opacity 0.5s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.scratch-overlay.scratched {
+.scratch-canvas:active {
+    cursor: grabbing;
+}
+
+.scratch-canvas.scratched {
     opacity: 0;
     pointer-events: none;
 }
 
-.scratch-overlay:hover .scratch-icon {
-    transform: scale(1.1);
-}
-
-/* Shimmer Animation */
-.shimmer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(to right,
-            transparent 0%,
-            rgba(255, 255, 255, 0.4) 50%,
-            transparent 100%);
-    transform: skewX(-20deg) translateX(-150%);
-    animation: shimmer 2.5s infinite;
-}
-
-@keyframes shimmer {
-    100% {
-        transform: skewX(-20deg) translateX(150%);
-    }
-}
-
-.scratch-icon {
-    font-size: 40px;
-    color: white;
-    margin-bottom: 8px;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-    transition: transform 0.2s ease;
-}
-
-.scratch-text-main {
-    font-size: 16px;
-    font-weight: 700;
-    color: white;
-    margin: 0;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-}
-
-.scratch-text-sub {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.9);
-    margin: 0;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-}
 
 /* Action Buttons */
 .winners-modal-actions {

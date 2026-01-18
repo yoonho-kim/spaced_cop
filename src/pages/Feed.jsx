@@ -169,21 +169,14 @@ const Feed = ({ user, onNavigateToTab }) => {
                     <div className="volunteer-cards-scroll">
                         {publishedActivities.map(activity => (
                             <div key={activity.id} className="volunteer-card" onClick={() => handleShowWinners(activity)}>
-                                <div className="volunteer-card-image">
-                                    {activity.imageUrl ? (
-                                        <img src={activity.imageUrl} alt={activity.title} className="volunteer-activity-image" />
-                                    ) : (
-                                        <div className="volunteer-image-placeholder">
-                                            <span className="material-symbols-outlined">volunteer_activism</span>
-                                        </div>
-                                    )}
-                                    <div className={`status-badge ${activity.winners.length > 0 ? 'status-approved' : 'status-pending'}`}>
-                                        <div className="status-dot"></div>
-                                        <span>{activity.winners.length > 0 ? '승인됨' : '대기중'}</span>
-                                    </div>
-                                </div>
                                 <div className="volunteer-card-content">
-                                    <h4>{activity.title}</h4>
+                                    <div className="volunteer-card-header">
+                                        <h4>{activity.title}</h4>
+                                        <div className={`status-badge ${activity.winners.length > 0 ? 'status-approved' : 'status-pending'}`}>
+                                            <div className="status-dot"></div>
+                                            <span>{activity.winners.length > 0 ? '승인됨' : '대기중'}</span>
+                                        </div>
+                                    </div>
                                     <div className="volunteer-card-meta">
                                         <span className="material-symbols-outlined">calendar_today</span>
                                         <span>{new Date(activity.date).toLocaleDateString()}</span>
