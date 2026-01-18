@@ -8,6 +8,8 @@ const MeetingRooms = ({ user }) => {
     const [rooms, setRooms] = useState([]);
     const [reservations, setReservations] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showReservationInfo, setShowReservationInfo] = useState(false);
+    const [selectedReservation, setSelectedReservation] = useState(null);
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [selectedDate, setSelectedDate] = useState('');
     const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
@@ -35,15 +37,17 @@ const MeetingRooms = ({ user }) => {
 
     const handleTimeSlotClick = (room, hour) => {
         // Check if this time slot is available
-        const isOccupied = reservations.some(r =>
+        const reservation = reservations.find(r =>
             r.roomId === room.id &&
             r.date === selectedDate &&
             parseInt(r.startTime) <= hour &&
             parseInt(r.endTime) > hour
         );
 
-        if (isOccupied) {
-            alert('이 시간대는 이미 예약되어 있습니다');
+        if (reservation) {
+            // Show reservation info
+            setSelectedReservation(reservation);
+            setShowReservationInfo(true);
             return;
         }
 
