@@ -362,6 +362,48 @@
     padding: 16px 0;
 }
 
+/* Post Type Selector */
+.post-type-selector {
+    margin-bottom: 20px;
+}
+
+.post-type-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin-bottom: 12px;
+}
+
+.post-type-options {
+    display: flex;
+    gap: 8px;
+}
+
+.post-type-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.post-type-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-text-main);
+}
+
+.post-type-btn.active {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
 .modal-composer {
     display: flex;
     gap: 12px;
@@ -411,8 +453,10 @@
 .modal-actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
+    gap: 12px;
     padding-top: 16px;
+    margin-top: 16px;
     border-top: 1px solid var(--color-border);
 }
 

@@ -31,11 +31,15 @@ const Admin = () => {
         loadData();
     }, []);
 
-    const loadData = () => {
-        setRooms(getMeetingRooms());
-        setActivities(getVolunteerActivities());
-        setRegistrations(getVolunteerRegistrations());
-        setSupplyRequests(getSupplyRequests());
+    const loadData = async () => {
+        const roomsData = await getMeetingRooms();
+        const activitiesData = await getVolunteerActivities();
+        const registrationsData = await getVolunteerRegistrations();
+        const supplyRequestsData = await getSupplyRequests();
+        setRooms(roomsData);
+        setActivities(activitiesData);
+        setRegistrations(registrationsData);
+        setSupplyRequests(supplyRequestsData);
     };
 
     // Meeting Rooms Management
@@ -45,9 +49,9 @@ const Admin = () => {
         setShowModal(true);
     };
 
-    const handleDeleteRoom = (roomId) => {
+    const handleDeleteRoom = async (roomId) => {
         if (confirm('이 회의실을 삭제하시겠습니까?')) {
-            deleteMeetingRoom(roomId);
+            await deleteMeetingRoom(roomId);
             loadData();
         }
     };
@@ -56,59 +60,103 @@ const Admin = () => {
     const handleAddActivity = () => {
         setModalType('addActivity');
         const today = new Date().toISOString().split('T')[0];
-        setFormData({ title: '', description: '', date: '', deadline: today, maxParticipants: '', location: '' });
+        setFormData({
+            title: '',
+            description: '',
+            date: '',
+            deadline: today,
+            maxParticipants: '',
+            location: '',
+            imageUrl: '' // AI 생성 이미지 URL을 저장할 필드
+        });
         setShowModal(true);
     };
 
-    const handleDeleteActivity = (activityId) => {
+    const handleDeleteActivity = async (activityId) => {
         if (confirm('이 봉사활동을 삭제하시겠습니까?')) {
-            deleteVolunteerActivity(activityId);
+            await deleteVolunteerActivity(activityId);
             loadData();
         }
     };
 
-    const handleLottery = (activityId) => {
+    const handlePublishActivity = async (activityId) => {
         const activity = activities.find(a => a.id === activityId);
         const activityRegistrations = registrations.filter(r => r.activityId === activityId && r.status === 'pending');
 
         if (activityRegistrations.length === 0) {
-            alert('추첨할 대기 중인 등록이 없습니다');
+            alert('신청자가 없어 게시할 수 없습니다.');
             return;
         }
 
         const maxParticipants = activity.maxParticipants;
-        const shuffled = [...activityRegistrations].sort(() => Math.random() - 0.5);
 
-        shuffled.forEach((reg, index) => {
-            if (index < maxParticipants) {
-                updateVolunteerRegistration(reg.id, { status: 'confirmed' });
-            } else {
-                updateVolunteerRegistration(reg.id, { status: 'rejected' });
+        // 신청인원이 모집인원보다 적으면 전원 당첨
+        if (activityRegistrations.length <= maxParticipants) {
+            for (const reg of activityRegistrations) {
+                await updateVolunteerRegistration(reg.id, { status: 'confirmed' });
             }
+
+            await updateVolunteerActivity(activityId, {
+                status: 'closed',
+                isPublished: true,
+                publishedAt: new Date().toISOString()
+            });
+
+            alert(`전원 당첨! ${activityRegistrations.length}명 모두 확정되었습니다.\n탭1에 24시간 동안 게시됩니다.`);
+            loadData();
+            return;
+        }
+
+        // 신청인원이 모집인원보다 많으면 우선순위 추첨
+        // 1. 각 신청자의 과거 봉사활동 참여 횟수 계산
+        const allRegistrations = await getVolunteerRegistrations();
+        const currentYear = new Date().getFullYear();
+
+        const applicantsWithPriority = activityRegistrations.map(reg => {
+            // 해당 사번의 올해 확정된 봉사활동 횟수 계산
+            const participationCount = allRegistrations.filter(r =>
+                r.employeeId === reg.employeeId &&
+                r.status === 'confirmed' &&
+                new Date(r.registeredAt).getFullYear() === currentYear
+            ).length;
+
+            return {
+                ...reg,
+                participationCount
+            };
         });
 
-        // 추첨 완료 후 자동으로 게시 (24시간)
-        updateVolunteerActivity(activityId, {
+        // 2. 참여 횟수가 적은 순으로 정렬 (같으면 신청 시간 순)
+        applicantsWithPriority.sort((a, b) => {
+            if (a.participationCount !== b.participationCount) {
+                return a.participationCount - b.participationCount; // 적은 순
+            }
+            return new Date(a.registeredAt) - new Date(b.registeredAt); // 빠른 순
+        });
+
+        // 3. 상위 maxParticipants명 당첨, 나머지 불합격
+        for (let i = 0; i < applicantsWithPriority.length; i++) {
+            const reg = applicantsWithPriority[i];
+            if (i < maxParticipants) {
+                await updateVolunteerRegistration(reg.id, { status: 'confirmed' });
+            } else {
+                await updateVolunteerRegistration(reg.id, { status: 'rejected' });
+            }
+        }
+
+        // 4. 활동 상태를 마감으로 변경하고 게시
+        await updateVolunteerActivity(activityId, {
             status: 'closed',
             isPublished: true,
             publishedAt: new Date().toISOString()
         });
 
-        alert(`추첨 완료! ${Math.min(maxParticipants, shuffled.length)}명 확정, ${Math.max(0, shuffled.length - maxParticipants)}명 불헉.\n탭1에 24시간 동안 게시됩니다.`);
+        alert(`추첨 완료!\n당첨: ${maxParticipants}명 (봉사활동 참여 횟수 기준)\n불합격: ${applicantsWithPriority.length - maxParticipants}명\n탭1에 24시간 동안 게시됩니다.`);
         loadData();
     };
 
-    const handlePublishActivity = (activityId) => {
-        updateVolunteerActivity(activityId, {
-            isPublished: true,
-            publishedAt: new Date().toISOString()
-        });
-        alert('탭1에 24시간 동안 게시됩니다.');
-        loadData();
-    };
-
-    const handleUnpublishActivity = (activityId) => {
-        updateVolunteerActivity(activityId, {
+    const handleUnpublishActivity = async (activityId) => {
+        await updateVolunteerActivity(activityId, {
             isPublished: false,
             publishedAt: null
         });
@@ -117,14 +165,14 @@ const Admin = () => {
     };
 
     // Supply Requests Management
-    const handleApproveSupply = (requestId) => {
-        updateSupplyRequest(requestId, { status: 'approved' });
+    const handleApproveSupply = async (requestId) => {
+        await updateSupplyRequest(requestId, { status: 'approved' });
         loadData();
     };
 
-    const handleRejectSupply = (requestId, note) => {
+    const handleRejectSupply = async (requestId, note) => {
         const adminNote = prompt('거부 사유 (선택사항):');
-        updateSupplyRequest(requestId, { status: 'rejected', adminNote });
+        await updateSupplyRequest(requestId, { status: 'rejected', adminNote });
         loadData();
     };
 
@@ -137,13 +185,32 @@ const Admin = () => {
         }
     };
 
-    const handleSubmitForm = (e) => {
+    const handleSubmitForm = async (e) => {
         e.preventDefault();
 
         if (modalType === 'addRoom') {
-            addMeetingRoom(formData);
+            await addMeetingRoom(formData);
         } else if (modalType === 'addActivity') {
-            addVolunteerActivity(formData);
+            // AI 이미지 생성을 위한 프롬프트 생성
+            const imagePrompt = `Volunteer activity: ${formData.title}. ${formData.description}. Realistic photo of people volunteering, helping community, warm and positive atmosphere, high quality photography`;
+
+            // 이미지 생성 API 호출 (Unsplash API 사용)
+            let imageUrl = '';
+            try {
+                // Unsplash에서 관련 이미지 검색
+                const searchQuery = encodeURIComponent(formData.title + ' volunteer activity');
+                const unsplashUrl = `https://source.unsplash.com/800x600/?${searchQuery}`;
+                imageUrl = unsplashUrl;
+            } catch (error) {
+                console.error('Image generation failed:', error);
+                // 기본 이미지 사용
+                imageUrl = '';
+            }
+
+            await addVolunteerActivity({
+                ...formData,
+                imageUrl: imageUrl
+            });
         }
 
         setShowModal(false);
@@ -255,19 +322,18 @@ const Admin = () => {
                                                     {isDeadlinePassed && <span className="badge badge-warning ml-sm">마감됨</span>}
                                                 </p>
                                             )}
+                                            {activity.status === 'closed' && (
+                                                <span className="badge badge-error">모집마감</span>
+                                            )}
                                             {activity.isPublished && (
                                                 <span className="badge badge-success">탭1 게시중</span>
                                             )}
                                         </div>
                                         <div className="item-actions">
-                                            {canRunLottery && (
-                                                <Button variant="success" size="sm" onClick={() => handleLottery(activity.id)}>
-                                                    추첨 실행
-                                                </Button>
-                                            )}
-                                            {(hasWinners || isUnderCapacity) && !activity.isPublished && (
+                                            {/* 게시 버튼: 모집중이고 신청자가 있을 때만 표시 */}
+                                            {activity.status === 'open' && pendingCount > 0 && !activity.isPublished && (
                                                 <Button variant="primary" size="sm" onClick={() => handlePublishActivity(activity.id)}>
-                                                    게시
+                                                    게시 및 추첨
                                                 </Button>
                                             )}
                                             {activity.isPublished && (

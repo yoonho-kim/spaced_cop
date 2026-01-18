@@ -26,9 +26,11 @@ const MeetingRooms = ({ user }) => {
         setSelectedDate(today);
     }, []);
 
-    const loadData = () => {
-        setRooms(getMeetingRooms());
-        setReservations(getReservations());
+    const loadData = async () => {
+        const roomsData = await getMeetingRooms();
+        const reservationsData = await getReservations();
+        setRooms(roomsData);
+        setReservations(reservationsData);
     };
 
     const handleTimeSlotClick = (room, hour) => {
@@ -51,10 +53,10 @@ const MeetingRooms = ({ user }) => {
         setFormData({ department: '', purpose: '' });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        addReservation({
+        await addReservation({
             roomId: selectedRoom.id,
             roomName: selectedRoom.name,
             userName: user.nickname,
@@ -69,9 +71,9 @@ const MeetingRooms = ({ user }) => {
         loadData();
     };
 
-    const handleCancelReservation = (reservationId) => {
+    const handleCancelReservation = async (reservationId) => {
         if (confirm('이 예약을 취소하시겠습니까?')) {
-            deleteReservation(reservationId);
+            await deleteReservation(reservationId);
             loadData();
         }
     };

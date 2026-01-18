@@ -14,6 +14,7 @@ const Feed = ({ user, onNavigateToTab }) => {
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [expandedComments, setExpandedComments] = useState(new Set());
     const [commentInputs, setCommentInputs] = useState({});
+    const [feedCategory, setFeedCategory] = useState('all'); // 'all', 'notice', 'volunteer'
 
     useEffect(() => {
         loadPosts();
@@ -21,14 +22,14 @@ const Feed = ({ user, onNavigateToTab }) => {
         loadTopMeetingRoom();
     }, []);
 
-    const loadPosts = () => {
-        const allPosts = getPosts();
+    const loadPosts = async () => {
+        const allPosts = await getPosts();
         setPosts(allPosts);
     };
 
-    const loadPublishedActivities = () => {
-        const activities = getVolunteerActivities();
-        const registrations = getVolunteerRegistrations();
+    const loadPublishedActivities = async () => {
+        const activities = await getVolunteerActivities();
+        const registrations = await getVolunteerRegistrations();
         const now = new Date().getTime();
 
         // 게시된 활동 중 24시간이 지나지 않은 것만 필터링
@@ -46,9 +47,9 @@ const Feed = ({ user, onNavigateToTab }) => {
         setPublishedActivities(published);
     };
 
-    const loadTopMeetingRoom = () => {
-        const rooms = getMeetingRooms();
-        const reservations = getReservations();
+    const loadTopMeetingRoom = async () => {
+        const rooms = await getMeetingRooms();
+        const reservations = await getReservations();
 
         if (rooms.length === 0) return;
 
@@ -56,6 +57,9 @@ const Feed = ({ user, onNavigateToTab }) => {
         const now = new Date();
         const currentDate = now.toISOString().split('T')[0];
         const currentHour = now.getHours();
+
+        // 업무 시간 체크 (9시~18시)
+        const isBusinessHours = currentHour >= 9 && currentHour < 18;
 
         // 현재 시간에 예약이 있는지 확인
         const currentReservation = reservations.find(r =>
@@ -67,16 +71,18 @@ const Feed = ({ user, onNavigateToTab }) => {
 
         setTopMeetingRoom({
             ...room,
-            isAvailable: !currentReservation,
-            currentReservation
+            isAvailable: isBusinessHours && !currentReservation,
+            isBusinessHours: isBusinessHours,
+            currentReservation,
+            currentHour
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!newPost.trim()) return;
 
-        addPost({
+        await addPost({
             content: newPost,
             author: user.nickname,
             isAdmin: isAdmin(),
@@ -106,14 +112,14 @@ const Feed = ({ user, onNavigateToTab }) => {
         setShowWinnersModal(true);
     };
 
-    const handleLike = (postId) => {
+    const handleLike = async (postId) => {
         const post = posts.find(p => p.id === postId);
         const likes = post?.likes || [];
 
         if (likes.includes(user.nickname)) {
-            removeLike(postId, user.nickname);
+            await removeLike(postId, user.nickname);
         } else {
-            addLike(postId, user.nickname);
+            await addLike(postId, user.nickname);
         }
         loadPosts();
     };
@@ -134,14 +140,22 @@ const Feed = ({ user, onNavigateToTab }) => {
         setCommentInputs(prev => ({ ...prev, [postId]: value }));
     };
 
-    const handleAddComment = (postId) => {
+    const handleAddComment = async (postId) => {
         const content = commentInputs[postId];
         if (!content || !content.trim()) return;
 
-        addComment(postId, user.nickname, content.trim());
+        await addComment(postId, user.nickname, content.trim());
         setCommentInputs(prev => ({ ...prev, [postId]: '' }));
         loadPosts();
     };
+
+    // Filter posts based on selected category
+    const filteredPosts = posts.filter(post => {
+        if (feedCategory === 'all') return true;
+        if (feedCategory === 'notice') return post.postType === 'notice';
+        if (feedCategory === 'volunteer') return post.postType === 'volunteer';
+        return true;
+    });
 
     return (
         <div className="feed-container">
@@ -149,16 +163,20 @@ const Feed = ({ user, onNavigateToTab }) => {
             {publishedActivities.length > 0 && (
                 <section className="volunteer-section">
                     <div className="section-header">
-                        <h3>봉사활동 신청 현황</h3>
+                        <h3>봉사활동 신청 결과</h3>
                         <a href="#" className="view-all-link" onClick={(e) => { e.preventDefault(); onNavigateToTab && onNavigateToTab('volunteer'); }}>전체보기</a>
                     </div>
                     <div className="volunteer-cards-scroll">
                         {publishedActivities.map(activity => (
                             <div key={activity.id} className="volunteer-card" onClick={() => handleShowWinners(activity)}>
                                 <div className="volunteer-card-image">
-                                    <div className="volunteer-image-placeholder">
-                                        <span className="material-symbols-outlined">volunteer_activism</span>
-                                    </div>
+                                    {activity.imageUrl ? (
+                                        <img src={activity.imageUrl} alt={activity.title} className="volunteer-activity-image" />
+                                    ) : (
+                                        <div className="volunteer-image-placeholder">
+                                            <span className="material-symbols-outlined">volunteer_activism</span>
+                                        </div>
+                                    )}
                                     <div className={`status-badge ${activity.winners.length > 0 ? 'status-approved' : 'status-pending'}`}>
                                         <div className="status-dot"></div>
                                         <span>{activity.winners.length > 0 ? '승인됨' : '대기중'}</span>
@@ -186,42 +204,92 @@ const Feed = ({ user, onNavigateToTab }) => {
                         <a href="#" className="view-all-link" onClick={(e) => { e.preventDefault(); onNavigateToTab && onNavigateToTab('meetings'); }}>예약하기</a>
                     </div>
                     <div className="meeting-cards">
-                        <div className="meeting-card" onClick={() => onNavigateToTab && onNavigateToTab('meetings')}>
-                            <div className="meeting-time">
-                                <span className="time-label">시작</span>
-                                <span className="time-value">10:00</span>
-                                <span className="time-period">오전</span>
+                        <div className="meeting-card-new" onClick={() => onNavigateToTab && onNavigateToTab('meetings')}>
+                            <div className="meeting-image-container">
+                                <img src="/meeting-room.png" alt="Meeting Room" className="meeting-room-image" />
+                                <div className="meeting-overlay">
+                                    <div className={`meeting-status-badge ${topMeetingRoom.isBusinessHours && topMeetingRoom.isAvailable ? 'available' : 'in-use'}`}>
+                                        <div className="status-indicator"></div>
+                                        <span>
+                                            {!topMeetingRoom.isBusinessHours
+                                                ? '운영시간 외'
+                                                : topMeetingRoom.isAvailable
+                                                    ? '사용 가능'
+                                                    : '사용 중'}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="meeting-info">
-                                <div className="meeting-details">
+                            <div className="meeting-card-info">
+                                <div className="meeting-header">
                                     <h4>{topMeetingRoom.name}</h4>
-                                    <p className="meeting-location">
-                                        <span className="material-symbols-outlined">location_on</span>
-                                        {topMeetingRoom.floor}
-                                    </p>
+                                    <span className="meeting-floor">{topMeetingRoom.floor}</span>
                                 </div>
-                                <div className="meeting-participants">
-                                    <div className="participant-avatar">J</div>
-                                    <div className="participant-avatar">M</div>
-                                    <div className="participant-count">+2</div>
+                                <div className="meeting-meta">
+                                    <div className="meta-item">
+                                        <span className="material-symbols-outlined">group</span>
+                                        <span>최대 {topMeetingRoom.capacity}명</span>
+                                    </div>
+                                    {topMeetingRoom.currentReservation && topMeetingRoom.isBusinessHours && (
+                                        <div className="meta-item">
+                                            <span className="material-symbols-outlined">schedule</span>
+                                            <span>{topMeetingRoom.currentReservation.startTime}:00 - {topMeetingRoom.currentReservation.endTime}:00</span>
+                                        </div>
+                                    )}
+                                    {!topMeetingRoom.isBusinessHours && (
+                                        <div className="meta-item">
+                                            <span className="material-symbols-outlined">schedule</span>
+                                            <span>운영시간: 09:00 - 18:00</span>
+                                        </div>
+                                    )}
                                 </div>
+                                {topMeetingRoom.currentReservation && topMeetingRoom.isBusinessHours && (
+                                    <div className="current-reservation">
+                                        <p className="reservation-label">현재 예약</p>
+                                        <p className="reservation-detail">{topMeetingRoom.currentReservation.department} · {topMeetingRoom.currentReservation.purpose}</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
                 </section>
             )}
 
+            {/* Feed Category Tabs */}
+            <section className="feed-categories">
+                <div className="category-tabs">
+                    <button
+                        className={`category-tab ${feedCategory === 'all' ? 'active' : ''}`}
+                        onClick={() => setFeedCategory('all')}
+                    >
+                        전체
+                    </button>
+                    <button
+                        className={`category-tab ${feedCategory === 'notice' ? 'active' : ''}`}
+                        onClick={() => setFeedCategory('notice')}
+                    >
+                        공지사항
+                    </button>
+                    <button
+                        className={`category-tab ${feedCategory === 'volunteer' ? 'active' : ''}`}
+                        onClick={() => setFeedCategory('volunteer')}
+                    >
+                        봉사활동
+                    </button>
+                </div>
+            </section>
+
             {/* Posts Feed */}
             <section className="posts-section">
                 <div className="posts-list">
-                    {posts.length === 0 ? (
+                    {filteredPosts.length === 0 ? (
                         <div className="empty-state">
                             <div className="empty-icon">📝</div>
                             <p>아직 게시물이 없습니다</p>
                             <p className="text-secondary">첫 번째로 무언가를 공유해보세요!</p>
                         </div>
                     ) : (
-                        posts.map(post => {
+                        filteredPosts.map(post => {
                             const likes = post.likes || [];
                             const comments = post.comments || [];
                             const isLiked = likes.includes(user.nickname);
@@ -237,6 +305,8 @@ const Feed = ({ user, onNavigateToTab }) => {
                                             <span className="post-author">
                                                 {post.author}
                                                 {post.isAdmin && <span className="badge badge-admin">관리자</span>}
+                                                {post.postType === 'notice' && <span className="badge badge-notice">공지사항</span>}
+                                                {post.postType === 'volunteer' && <span className="badge badge-volunteer">봉사활동</span>}
                                             </span>
                                             <span className="post-time text-secondary">
                                                 {formatTimestamp(post.timestamp)}

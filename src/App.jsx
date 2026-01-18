@@ -10,15 +10,19 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize storage with default data
-    initializeStorage();
+    const init = async () => {
+      // Initialize storage with default data
+      await initializeStorage();
 
-    // Check if user is already logged in
-    const currentUser = getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    }
-    setLoading(false);
+      // Check if user is already logged in
+      const currentUser = getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+      }
+      setLoading(false);
+    };
+
+    init();
   }, []);
 
   const handleLogin = (userData) => {

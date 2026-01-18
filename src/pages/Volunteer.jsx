@@ -15,12 +15,14 @@ const Volunteer = ({ user }) => {
         loadData();
     }, []);
 
-    const loadData = () => {
-        setActivities(getVolunteerActivities());
-        setRegistrations(getVolunteerRegistrations());
+    const loadData = async () => {
+        const activitiesData = await getVolunteerActivities();
+        const registrationsData = await getVolunteerRegistrations();
+        setActivities(activitiesData);
+        setRegistrations(registrationsData);
     };
 
-    const handleRegister = (activity) => {
+    const handleRegister = async (activity) => {
         // Check if already registered
         const alreadyRegistered = registrations.some(
             r => r.activityId === activity.id && r.userName === user.nickname
@@ -40,7 +42,7 @@ const Volunteer = ({ user }) => {
 
         // 정원 초과 신청 가능 (관리자가 추첨으로 선정)
 
-        addVolunteerRegistration({
+        await addVolunteerRegistration({
             activityId: activity.id,
             activityTitle: activity.title,
             userName: user.nickname,
@@ -52,7 +54,7 @@ const Volunteer = ({ user }) => {
     };
 
     const myRegistrations = registrations.filter(r => r.userName === user.nickname);
-    const openActivities = activities.filter(a => a.status === 'open');
+    const openActivities = activities.filter(a => a.status === 'open'); // 모집중인 활동만 표시
 
     const getStatusBadge = (status) => {
         const badges = {
@@ -61,6 +63,15 @@ const Volunteer = ({ user }) => {
             rejected: 'badge-error',
         };
         return badges[status] || 'badge-primary';
+    };
+
+    const getStatusLabel = (status) => {
+        const labels = {
+            pending: '대기중',
+            confirmed: '당첨',
+            rejected: '불합격',
+        };
+        return labels[status] || status;
     };
 
     const formatDate = (dateString) => {
@@ -146,7 +157,7 @@ const Volunteer = ({ user }) => {
                                     </p>
                                 </div>
                                 <span className={`badge ${getStatusBadge(registration.status)}`}>
-                                    {registration.status}
+                                    {getStatusLabel(registration.status)}
                                 </span>
                             </div>
                         ))}

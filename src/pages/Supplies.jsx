@@ -17,14 +17,15 @@ const Supplies = ({ user }) => {
         loadData();
     }, []);
 
-    const loadData = () => {
-        setRequests(getSupplyRequests());
+    const loadData = async () => {
+        const requestsData = await getSupplyRequests();
+        setRequests(requestsData);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        addSupplyRequest({
+        await addSupplyRequest({
             ...formData,
             userName: user.nickname,
         });

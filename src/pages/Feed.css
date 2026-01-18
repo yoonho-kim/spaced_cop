@@ -88,6 +88,12 @@
     font-size: 48px;
 }
 
+.volunteer-activity-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .status-badge {
     position: absolute;
     top: 12px;
@@ -172,7 +178,65 @@
     background-color: var(--color-bg-hover);
 }
 
-/* Meeting Room Section */
+/* Feed Categories */
+.feed-categories {
+    margin-top: 16px;
+    padding: 0 16px;
+}
+
+.category-tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 0;
+}
+
+.category-tab {
+    flex: 1;
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--color-text-secondary);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    bottom: -2px;
+}
+
+.category-tab:hover {
+    color: var(--color-text-main);
+}
+
+.category-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+/* Post Type Badges */
+.badge-notice {
+    background-color: #3b82f6;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+.badge-volunteer {
+    background-color: #10b981;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+/* Meeting Room Section - New Design */
 .meeting-section {
     margin-top: 16px;
     padding: 0 16px;
@@ -184,6 +248,155 @@
     gap: 12px;
 }
 
+.meeting-card-new {
+    background-color: var(--color-surface-light);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.meeting-card-new:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.meeting-image-container {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+}
+
+.meeting-room-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.meeting-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 50%);
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 12px;
+}
+
+.meeting-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.meeting-status-badge.available {
+    background-color: rgba(16, 185, 129, 0.95);
+    color: white;
+}
+
+.meeting-status-badge.in-use {
+    background-color: rgba(239, 68, 68, 0.95);
+    color: white;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: white;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.meeting-card-info {
+    padding: 16px;
+}
+
+.meeting-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.meeting-header h4 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0;
+}
+
+.meeting-floor {
+    padding: 4px 12px;
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.meeting-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+}
+
+.meta-item .material-symbols-outlined {
+    font-size: 18px;
+}
+
+.current-reservation {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}
+
+.reservation-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    margin: 0 0 4px 0;
+}
+
+.reservation-detail {
+    font-size: 14px;
+    color: var(--color-text-main);
+    margin: 0;
+}
+
+/* Old meeting card styles - keeping for backward compatibility */
 .meeting-card {
     display: flex;
     align-items: center;

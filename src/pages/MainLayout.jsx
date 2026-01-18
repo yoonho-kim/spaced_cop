@@ -14,6 +14,7 @@ const MainLayout = ({ user, onLogout }) => {
     const [showMenu, setShowMenu] = useState(false);
     const [showPostModal, setShowPostModal] = useState(false);
     const [newPost, setNewPost] = useState('');
+    const [postType, setPostType] = useState('normal'); // 'normal', 'notice', 'volunteer'
     const userIsAdmin = isAdmin();
 
     const handleLogout = () => {
@@ -21,16 +22,18 @@ const MainLayout = ({ user, onLogout }) => {
         onLogout();
     };
 
-    const handleCreatePost = () => {
+    const handleCreatePost = async () => {
         if (!newPost.trim()) return;
 
-        addPost({
+        await addPost({
             content: newPost,
             author: user.nickname,
             isAdmin: userIsAdmin,
+            postType: postType,
         });
 
         setNewPost('');
+        setPostType('normal');
         setShowPostModal(false);
         setActiveTab('feed'); // Navigate to feed to show the new post
         // Force feed refresh by re-rendering
@@ -165,10 +168,39 @@ const MainLayout = ({ user, onLogout }) => {
                 onClose={() => {
                     setShowPostModal(false);
                     setNewPost('');
+                    setPostType('normal');
                 }}
                 title="새 게시물 작성"
             >
                 <div className="post-modal-content">
+                    {userIsAdmin && (
+                        <div className="post-type-selector">
+                            <label className="post-type-label">게시물 유형</label>
+                            <div className="post-type-options">
+                                <button
+                                    type="button"
+                                    className={`post-type-btn ${postType === 'normal' ? 'active' : ''}`}
+                                    onClick={() => setPostType('normal')}
+                                >
+                                    일반
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`post-type-btn ${postType === 'notice' ? 'active' : ''}`}
+                                    onClick={() => setPostType('notice')}
+                                >
+                                    공지사항
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`post-type-btn ${postType === 'volunteer' ? 'active' : ''}`}
+                                    onClick={() => setPostType('volunteer')}
+                                >
+                                    봉사활동
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     <div className="modal-composer">
                         <div className="composer-avatar">
                             {user.nickname.charAt(0).toUpperCase()}
@@ -185,17 +217,6 @@ const MainLayout = ({ user, onLogout }) => {
                         </div>
                     </div>
                     <div className="modal-actions">
-                        <div className="action-buttons">
-                            <button className="modal-action-btn" type="button">
-                                <span className="material-symbols-outlined">image</span>
-                            </button>
-                            <button className="modal-action-btn" type="button">
-                                <span className="material-symbols-outlined">attach_file</span>
-                            </button>
-                            <button className="modal-action-btn" type="button">
-                                <span className="material-symbols-outlined">sentiment_satisfied</span>
-                            </button>
-                        </div>
                         <button
                             className="modal-publish-button"
                             onClick={handleCreatePost}
