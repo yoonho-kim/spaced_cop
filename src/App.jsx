@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getCurrentUser, isAuthenticated } from './utils/auth';
 import { initializeStorage } from './utils/storage';
 import Login from './pages/Login';
+import LoadingPage from './pages/LoadingPage';
 import MainLayout from './pages/MainLayout';
 import './index.css';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showLoadingPage, setShowLoadingPage] = useState(false);
+  const pendingUserRef = useRef(null);
 
   useEffect(() => {
     const init = async () => {
@@ -26,7 +29,17 @@ function App() {
   }, []);
 
   const handleLogin = (userData) => {
-    setUser(userData);
+    // Store user data in ref
+    pendingUserRef.current = userData;
+    // Show loading page
+    setShowLoadingPage(true);
+  };
+
+  const handleLoadingComplete = () => {
+    // Set user after loading animation completes
+    setUser(pendingUserRef.current);
+    setShowLoadingPage(false);
+    pendingUserRef.current = null;
   };
 
   const handleLogout = () => {
@@ -45,6 +58,11 @@ function App() {
         <div className="loading"></div>
       </div>
     );
+  }
+
+  // Show loading page during transition
+  if (showLoadingPage) {
+    return <LoadingPage onComplete={handleLoadingComplete} />;
   }
 
   return (
