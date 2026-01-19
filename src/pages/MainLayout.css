@@ -185,6 +185,8 @@
     overflow-y: auto;
     overflow-x: hidden;
     background-color: var(--color-bg-primary);
+    -webkit-overflow-scrolling: touch;
+    /* Enable momentum scrolling on iOS */
 }
 
 /* Bottom Navigation */
