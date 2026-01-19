@@ -54,14 +54,12 @@ const Login = ({ onLogin }) => {
             <div className="login-card">
                 {/* Logo Section */}
                 <div className="login-logo">
-                    <div className="logo-icon-wrapper">
-                        <span className="material-symbols-outlined logo-icon">eco</span>
-                    </div>
+                    <img src="/space-d-logo.png" alt="Space D" className="logo-image" />
                 </div>
 
                 {/* Headline */}
                 <h1 className="login-headline">
-                    반가워요!<br />Space D 입니다.
+                    반가워요!
                 </h1>
 
                 {/* Login Form */}
@@ -115,14 +113,7 @@ const Login = ({ onLogin }) => {
                     </button>
                 </form>
 
-                {/* Footer Links */}
-                <div className="login-footer">
-                    <a href="#" className="footer-link">아이디 찾기</a>
-                    <span className="footer-divider"></span>
-                    <a href="#" className="footer-link">비밀번호 찾기</a>
-                    <span className="footer-divider"></span>
-                    <a href="#" className="footer-link footer-link-signup">회원가입</a>
-                </div>
+
             </div>
         </div>
     );
