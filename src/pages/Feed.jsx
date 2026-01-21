@@ -279,7 +279,6 @@ const Feed = ({ user, onNavigateToTab }) => {
                 </div>
             </section>
 
-            {/* Post Creation Form */}
             <section className="post-creation-section">
                 <div className="post-form-card">
                     <div className="post-form-avatar">
