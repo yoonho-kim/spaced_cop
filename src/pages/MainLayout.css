@@ -1,6 +1,7 @@
 /* Kurly Main Layout Design */
 .main-layout {
     height: 100vh;
+    height: -webkit-fill-available;
     display: flex;
     flex-direction: column;
     background-color: var(--color-bg-primary);
