@@ -125,6 +125,17 @@ export const addPost = async (post) => {
   };
 };
 
+export const deletePost = async (postId) => {
+  const { error } = await supabase
+    .from('posts')
+    .delete()
+    .match({ id: postId });
+
+  if (error) {
+    console.error('Error deleting post:', error);
+  }
+};
+
 // ============================================
 // LIKES
 // ============================================

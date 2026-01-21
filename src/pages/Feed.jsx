@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getPosts, addPost, addLike, removeLike, addComment, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations } from '../utils/storage';
+import { getPosts, addPost, addLike, removeLike, addComment, deletePost, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import Button from '../components/Button';
 import WinnersModal from '../components/WinnersModal';
@@ -149,6 +149,13 @@ const Feed = ({ user, onNavigateToTab }) => {
         loadPosts();
     };
 
+    const handleDeletePost = async (postId) => {
+        if (window.confirm('정말로 이 게시물을 삭제하시겠습니까?')) {
+            await deletePost(postId);
+            loadPosts();
+        }
+    };
+
     // Filter posts based on selected category
     const filteredPosts = posts.filter(post => {
         if (feedCategory === 'all') return true;
@@ -272,6 +279,29 @@ const Feed = ({ user, onNavigateToTab }) => {
                 </div>
             </section>
 
+            {/* Post Creation Form */}
+            <section className="post-creation-section">
+                <div className="post-form-card">
+                    <div className="post-form-avatar">
+                        {user.nickname.charAt(0).toUpperCase()}
+                    </div>
+                    <form onSubmit={handleSubmit} className="post-form">
+                        <textarea
+                            className="post-input"
+                            value={newPost}
+                            onChange={(e) => setNewPost(e.target.value)}
+                            placeholder={`${user.nickname}님, 무슨 일이 있었나요?`}
+                            rows={3}
+                        />
+                        <div className="post-form-actions">
+                            <Button type="submit" disabled={!newPost.trim()}>
+                                게시하기
+                            </Button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
             {/* Posts Feed */}
             <section className="posts-section">
                 <div className="posts-list">
@@ -325,6 +355,14 @@ const Feed = ({ user, onNavigateToTab }) => {
                                                 <span className="material-symbols-outlined">chat_bubble</span>
                                                 <span>{comments.length > 0 ? comments.length : ''}</span>
                                             </button>
+                                            {isAdmin() && (
+                                                <button
+                                                    className="action-btn action-btn-delete"
+                                                    onClick={() => handleDeletePost(post.id)}
+                                                >
+                                                    <span className="material-symbols-outlined">delete</span>
+                                                </button>
+                                            )}
                                         </div>
 
                                         {/* Comments Section */}
