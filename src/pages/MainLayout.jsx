@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { logout, isAdmin } from '../utils/auth';
 import { addPost } from '../utils/storage';
 import Feed from './Feed';
@@ -16,6 +16,40 @@ const MainLayout = ({ user, onLogout }) => {
     const [newPost, setNewPost] = useState('');
     const [postType, setPostType] = useState('normal'); // 'normal', 'notice', 'volunteer'
     const userIsAdmin = isAdmin();
+
+    const [isNavVisible, setIsNavVisible] = useState(true);
+    const lastScrollY = useRef(0);
+    const mainContentRef = useRef(null);
+
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (mainContentRef.current) {
+                const currentScrollY = mainContentRef.current.scrollTop;
+                // A small threshold to prevent hiding on minor scrolls or bounces
+                if (Math.abs(currentScrollY - lastScrollY.current) > 10) {
+                    if (currentScrollY > lastScrollY.current && currentScrollY > 56) { // 56 is header height approx
+                        setIsNavVisible(false);
+                    } else {
+                        setIsNavVisible(true);
+                    }
+                }
+                lastScrollY.current = currentScrollY;
+            }
+        };
+
+        const mainContentElement = mainContentRef.current;
+        if (mainContentElement) {
+            mainContentElement.addEventListener('scroll', handleScroll);
+        }
+
+        return () => {
+            if (mainContentElement) {
+                mainContentElement.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, []);
+
 
     const handleLogout = () => {
         logout();
@@ -115,11 +149,11 @@ const MainLayout = ({ user, onLogout }) => {
                 )}
             </header>
 
-            <main className="main-content">
+            <main className="main-content" ref={mainContentRef}>
                 {ActiveComponent && <ActiveComponent user={user} onNavigateToTab={setActiveTab} />}
             </main>
 
-            <nav className="bottom-nav">
+            <nav className={`bottom-nav ${isNavVisible ? '' : 'hidden'}`}>
                 <div className="nav-container">
                     {tabs.slice(0, 2).map(tab => (
                         <button
