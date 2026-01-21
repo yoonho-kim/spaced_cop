@@ -189,7 +189,7 @@ const WinnersModal = ({ isOpen, onClose, activity }) => {
                                         <div className="winner-avatar">
                                             {avatarEmojis[index % avatarEmojis.length]}
                                         </div>
-                                        <span className="winner-name">{winner.employeeId}</span>
+                                        <span className="winner-name">{`${winner.employeeId} (${winner.userName})`}</span>
                                     </div>
                                 ))}
                             </div>
