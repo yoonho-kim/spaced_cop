@@ -138,13 +138,6 @@ const WinnersModal = ({ isOpen, onClose, activity }) => {
     // 이모지 아바타 목록
     const avatarEmojis = ['🐱', '🐶', '🦊', '🐻', '🦁', '🐼', '🐨', '🐯', '🐮', '🐷'];
 
-    // 당첨자 이름 마스킹 (예: 김철수 -> 김*수)
-    const maskName = (name) => {
-        if (!name || name.length < 2) return name;
-        if (name.length === 2) return name[0] + '*';
-        return name[0] + '*' + name[name.length - 1];
-    };
-
     return (
         <div className="winners-modal-overlay" onClick={handleClose}>
             <div className="winners-modal-container" onClick={(e) => e.stopPropagation()}>
@@ -196,7 +189,7 @@ const WinnersModal = ({ isOpen, onClose, activity }) => {
                                         <div className="winner-avatar">
                                             {avatarEmojis[index % avatarEmojis.length]}
                                         </div>
-                                        <span className="winner-name">{maskName(winner.userName)}</span>
+                                        <span className="winner-name">{winner.employeeId}</span>
                                     </div>
                                 ))}
                             </div>
