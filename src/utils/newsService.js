@@ -1,8 +1,9 @@
-// News Service - Fetches IT news from Hacker News API
-// Hacker News API is free, CORS-enabled, and doesn't require an API key
+// News Service - Fetches Korean AI news from Google News Korea
+// Uses rss2json.com to convert RSS to JSON (free, no API key needed)
 
-const HN_API_BASE = 'https://hacker-news.firebaseio.com/v0';
-const CACHE_KEY = 'spaced_news_cache';
+const RSS2JSON_API = 'https://api.rss2json.com/v1/api.json';
+const GOOGLE_NEWS_RSS = 'https://news.google.com/rss/search?q=AI+%EC%9D%B8%EA%B3%B5%EC%A7%80%EB%8A%A5+%EC%8B%A0%EA%B8%B0%EC%88%A0&hl=ko&gl=KR&ceid=KR:ko';
+const CACHE_KEY = 'spaced_ai_news_cache';
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 /**
@@ -40,31 +41,18 @@ const setCachedNews = (news) => {
 };
 
 /**
- * Fetch a single story from Hacker News
+ * Format relative time in Korean
  */
-const fetchStory = async (id) => {
-    try {
-        const response = await fetch(`${HN_API_BASE}/item/${id}.json`);
-        if (!response.ok) return null;
-        return await response.json();
-    } catch {
-        return null;
-    }
-};
-
-/**
- * Format relative time
- */
-const formatRelativeTime = (unixTime) => {
-    const now = Date.now() / 1000;
-    const diff = now - unixTime;
+const formatRelativeTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = Date.now();
+    const diff = (now - date.getTime()) / 1000;
 
     if (diff < 60) return '방금 전';
     if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
     if (diff < 604800) return `${Math.floor(diff / 86400)}일 전`;
 
-    const date = new Date(unixTime * 1000);
     return date.toLocaleDateString('ko-KR', {
         month: 'short',
         day: 'numeric'
@@ -72,28 +60,45 @@ const formatRelativeTime = (unixTime) => {
 };
 
 /**
- * Normalize story data
+ * Extract source name from Google News title
+ * Google News format: "Title - Source Name"
  */
-const normalizeStory = (story) => {
-    if (!story || story.deleted || story.dead) return null;
-
+const extractSourceAndTitle = (fullTitle) => {
+    const lastDash = fullTitle.lastIndexOf(' - ');
+    if (lastDash > 0) {
+        return {
+            title: fullTitle.substring(0, lastDash).trim(),
+            source: fullTitle.substring(lastDash + 3).trim()
+        };
+    }
     return {
-        id: story.id,
-        title: story.title,
-        url: story.url || `https://news.ycombinator.com/item?id=${story.id}`,
-        source: story.url ? new URL(story.url).hostname.replace('www.', '') : 'Hacker News',
-        time: formatRelativeTime(story.time),
-        score: story.score,
-        comments: story.descendants || 0
+        title: fullTitle,
+        source: 'Google 뉴스'
     };
 };
 
 /**
- * Fetch top IT news stories
- * @param {number} count - Number of stories to fetch (default: 5)
+ * Normalize news item from RSS feed
+ */
+const normalizeNewsItem = (item) => {
+    const { title, source } = extractSourceAndTitle(item.title);
+
+    return {
+        id: item.guid || item.link,
+        title: title,
+        url: item.link,
+        source: source,
+        time: formatRelativeTime(item.pubDate),
+        description: item.description?.replace(/<[^>]*>/g, '').substring(0, 100) || ''
+    };
+};
+
+/**
+ * Fetch Korean AI news
+ * @param {number} count - Number of news items to fetch (default: 5)
  * @param {boolean} forceRefresh - Skip cache and fetch fresh data
  */
-export const fetchITNews = async (count = 5, forceRefresh = false) => {
+export const fetchAINews = async (count = 5, forceRefresh = false) => {
     // Check cache first
     if (!forceRefresh) {
         const cached = getCachedNews();
@@ -103,31 +108,31 @@ export const fetchITNews = async (count = 5, forceRefresh = false) => {
     }
 
     try {
-        // Fetch top story IDs
-        const response = await fetch(`${HN_API_BASE}/topstories.json`);
+        const rssUrl = encodeURIComponent(GOOGLE_NEWS_RSS);
+        const response = await fetch(`${RSS2JSON_API}?rss_url=${rssUrl}`);
+
         if (!response.ok) {
             throw new Error('Failed to fetch news');
         }
 
-        const storyIds = await response.json();
+        const data = await response.json();
 
-        // Fetch first 15 stories to filter and get 5 good ones
-        const stories = await Promise.all(
-            storyIds.slice(0, 15).map(id => fetchStory(id))
-        );
+        if (data.status !== 'ok' || !data.items) {
+            throw new Error('Invalid response from news API');
+        }
 
-        // Normalize and filter valid stories
-        const validStories = stories
-            .map(normalizeStory)
-            .filter(story => story !== null)
+        // Normalize and filter valid news items
+        const validNews = data.items
+            .map(normalizeNewsItem)
+            .filter(item => item.title && item.url)
             .slice(0, count);
 
         // Cache the results
-        setCachedNews(validStories);
+        setCachedNews(validNews);
 
-        return validStories;
+        return validNews;
     } catch (error) {
-        console.error('Error fetching news:', error);
+        console.error('Error fetching AI news:', error);
 
         // Return cached data as fallback, even if expired
         const cached = getCachedNews();
@@ -136,6 +141,9 @@ export const fetchITNews = async (count = 5, forceRefresh = false) => {
         throw error;
     }
 };
+
+// Keep old function name for backward compatibility
+export const fetchITNews = fetchAINews;
 
 /**
  * Clear news cache

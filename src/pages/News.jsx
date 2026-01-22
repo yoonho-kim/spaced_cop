@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchITNews, clearNewsCache } from '../utils/newsService';
+import { fetchAINews, clearNewsCache } from '../utils/newsService';
 import './News.css';
 
 const News = () => {
@@ -22,7 +22,7 @@ const News = () => {
             }
             setError(null);
 
-            const newsData = await fetchITNews(5, forceRefresh);
+            const newsData = await fetchAINews(5, forceRefresh);
             setNews(newsData);
         } catch (err) {
             setError('뉴스를 불러오는데 실패했습니다.');
@@ -45,8 +45,8 @@ const News = () => {
         return (
             <div className="news-container">
                 <div className="news-header">
-                    <h2>IT 뉴스</h2>
-                    <p className="text-secondary">주요 IT 소식을 확인하세요</p>
+                    <h2>AI 동향</h2>
+                    <p className="text-secondary">최신 AI 및 인공지능 소식</p>
                 </div>
                 <div className="news-skeleton-list">
                     {[1, 2, 3, 4, 5].map(i => (
@@ -64,8 +64,8 @@ const News = () => {
         <div className="news-container">
             <div className="news-header">
                 <div className="news-title-section">
-                    <h2>IT 뉴스</h2>
-                    <p className="text-secondary">매일 업데이트되는 주요 IT 소식</p>
+                    <h2>AI 동향</h2>
+                    <p className="text-secondary">매일 업데이트되는 AI 신기술 소식</p>
                 </div>
                 <button
                     className={`refresh-button ${refreshing ? 'refreshing' : ''}`}
@@ -127,7 +127,7 @@ const News = () => {
             <div className="news-footer">
                 <p className="text-secondary">
                     <span className="material-symbols-outlined">info</span>
-                    Hacker News에서 제공하는 최신 IT 뉴스입니다
+                    Google 뉴스에서 제공하는 한국 AI 관련 뉴스입니다
                 </p>
             </div>
         </div>
