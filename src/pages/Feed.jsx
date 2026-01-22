@@ -290,9 +290,6 @@ const Feed = ({ user, onNavigateToTab }) => {
 
                             return (
                                 <div key={post.id} className="post-item animate-fade-in">
-                                    <div className="post-avatar">
-                                        {post.author.charAt(0).toUpperCase()}
-                                    </div>
                                     <div className="post-content">
                                         <div className="post-header">
                                             <span className="post-author">
@@ -334,9 +331,6 @@ const Feed = ({ user, onNavigateToTab }) => {
                                                     <div className="comments-list">
                                                         {comments.map(comment => (
                                                             <div key={comment.id} className="comment-item">
-                                                                <div className="comment-avatar">
-                                                                    {comment.userName.charAt(0).toUpperCase()}
-                                                                </div>
                                                                 <div className="comment-content">
                                                                     <div className="comment-header">
                                                                         <span className="comment-author">{comment.userName}</span>

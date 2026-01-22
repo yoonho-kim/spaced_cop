@@ -507,7 +507,6 @@
 
 .post-item {
     display: flex;
-    gap: 12px;
     padding: 16px;
     background-color: var(--color-surface-light);
     border-radius: 12px;
@@ -609,7 +608,6 @@
 
 .comment-item {
     display: flex;
-    gap: 8px;
 }
 
 .comment-avatar {
