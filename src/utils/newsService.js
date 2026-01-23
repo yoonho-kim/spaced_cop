@@ -103,11 +103,15 @@ export const fetchAINews = async (count = 5, forceRefresh = false) => {
     if (!forceRefresh) {
         const cached = getCachedNews();
         if (cached && cached.length >= count) {
+            console.log('📦 Using cached news data');
             return cached.slice(0, count);
         }
+    } else {
+        console.log('🔄 Force refresh - skipping cache');
     }
 
     try {
+        console.log('🌐 Fetching fresh news from Google News RSS...');
         const rssUrl = encodeURIComponent(GOOGLE_NEWS_RSS);
         const response = await fetch(`${RSS2JSON_API}?rss_url=${rssUrl}`);
 
@@ -127,16 +131,21 @@ export const fetchAINews = async (count = 5, forceRefresh = false) => {
             .filter(item => item.title && item.url)
             .slice(0, count);
 
+        console.log(`✅ Successfully fetched ${validNews.length} fresh news items`);
+
         // Cache the results
         setCachedNews(validNews);
 
         return validNews;
     } catch (error) {
-        console.error('Error fetching AI news:', error);
+        console.error('❌ Error fetching AI news:', error);
 
         // Return cached data as fallback, even if expired
         const cached = getCachedNews();
-        if (cached) return cached.slice(0, count);
+        if (cached) {
+            console.log('⚠️ Using cached data as fallback');
+            return cached.slice(0, count);
+        }
 
         throw error;
     }

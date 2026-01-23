@@ -7,6 +7,7 @@ const News = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState(null);
 
     useEffect(() => {
         loadNews();
@@ -15,6 +16,7 @@ const News = () => {
     const loadNews = async (forceRefresh = false) => {
         try {
             if (forceRefresh) {
+                console.log('🔄 Refreshing news - clearing cache and fetching fresh data...');
                 setRefreshing(true);
                 clearNewsCache();
             } else {
@@ -23,7 +25,9 @@ const News = () => {
             setError(null);
 
             const newsData = await fetchAINews(5, forceRefresh);
+            console.log(`📰 Loaded ${newsData.length} news items`, forceRefresh ? '(fresh)' : '(cached or fresh)');
             setNews(newsData);
+            setLastUpdated(new Date());
         } catch (err) {
             setError('뉴스를 불러오는데 실패했습니다.');
             console.error('Failed to load news:', err);
@@ -34,6 +38,7 @@ const News = () => {
     };
 
     const handleRefresh = () => {
+        console.log('🔄 Refresh button clicked');
         loadNews(true);
     };
 
@@ -65,7 +70,14 @@ const News = () => {
             <div className="news-header">
                 <div className="news-title-section">
                     <h2>AI 동향</h2>
-                    <p className="text-secondary">매일 업데이트되는 AI 신기술 소식</p>
+                    <p className="text-secondary">
+                        매일 업데이트되는 AI 신기술 소식
+                        {lastUpdated && (
+                            <span style={{ marginLeft: '8px', fontSize: '0.85em' }}>
+                                • 마지막 업데이트: {lastUpdated.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        )}
+                    </p>
                 </div>
                 <button
                     className={`refresh-button ${refreshing ? 'refreshing' : ''}`}
