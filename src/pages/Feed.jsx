@@ -17,19 +17,13 @@ const Feed = ({ user, onNavigateToTab }) => {
     const [commentInputs, setCommentInputs] = useState({});
     const [feedCategory, setFeedCategory] = useState('all'); // 'all', 'notice', 'volunteer'
 
-    // Pull-to-refresh 기능
-    const handleRefresh = () => {
-        loadPosts();
-        loadPublishedActivities();
-        loadTopMeetingRoom();
-    };
-    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(handleRefresh);
-
     useEffect(() => {
         loadPosts();
         loadPublishedActivities();
         loadTopMeetingRoom();
     }, []);
+
+
 
     const loadPosts = async () => {
         const allPosts = await getPosts();
@@ -165,6 +159,14 @@ const Feed = ({ user, onNavigateToTab }) => {
         if (feedCategory === 'volunteer') return post.postType === 'volunteer';
         return true;
     });
+
+    // Pull-to-refresh 기능
+    const handleRefresh = () => {
+        loadPosts();
+        loadPublishedActivities();
+        loadTopMeetingRoom();
+    };
+    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(handleRefresh);
 
     return (
         <div className="feed-container" style={{ position: 'relative' }}>

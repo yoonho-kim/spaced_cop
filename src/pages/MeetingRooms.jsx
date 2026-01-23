@@ -22,6 +22,13 @@ const MeetingRooms = ({ user }) => {
     // 09:00 ~ 18:00 시간 옵션
     const timeOptions = Array.from({ length: 10 }, (_, i) => i + 9); // 9 to 18
 
+    const loadData = async () => {
+        const roomsData = await getMeetingRooms();
+        const reservationsData = await getReservations();
+        setRooms(roomsData);
+        setReservations(reservationsData);
+    };
+
     // Pull-to-refresh 기능
     const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData);
 
@@ -31,13 +38,6 @@ const MeetingRooms = ({ user }) => {
         const today = new Date().toISOString().split('T')[0];
         setSelectedDate(today);
     }, []);
-
-    const loadData = async () => {
-        const roomsData = await getMeetingRooms();
-        const reservationsData = await getReservations();
-        setRooms(roomsData);
-        setReservations(reservationsData);
-    };
 
     const handleTimeSlotClick = (room, hour) => {
         // Check if this time slot is available

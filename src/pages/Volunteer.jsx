@@ -12,19 +12,19 @@ const Volunteer = ({ user }) => {
     const [activities, setActivities] = useState([]);
     const [registrations, setRegistrations] = useState([]);
 
-    // Pull-to-refresh 기능
-    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData);
-
-    useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = async () => {
         const activitiesData = await getVolunteerActivities();
         const registrationsData = await getVolunteerRegistrations();
         setActivities(activitiesData);
         setRegistrations(registrationsData);
     };
+
+    // Pull-to-refresh 기능
+    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData);
+
+    useEffect(() => {
+        loadData();
+    }, []);
 
     const handleRegister = async (activity) => {
         // Check if already registered

@@ -14,17 +14,17 @@ const Supplies = ({ user }) => {
         reason: '',
     });
 
+    const loadData = async () => {
+        const requestsData = await getSupplyRequests();
+        setRequests(requestsData);
+    };
+
     // Pull-to-refresh 기능
     const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData);
 
     useEffect(() => {
         loadData();
     }, []);
-
-    const loadData = async () => {
-        const requestsData = await getSupplyRequests();
-        setRequests(requestsData);
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
