@@ -51,7 +51,7 @@ const MainLayout = ({ user, onLogout }) => {
                 // Set timeout to show nav when scrolling stops
                 scrollTimeout = setTimeout(() => {
                     setIsNavVisible(true);
-                }, 1000); // 1 second after scroll stops
+                }, 500); // 0.5 second after scroll stops
             }
         };
 
