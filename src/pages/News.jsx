@@ -9,9 +9,63 @@ const News = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [lastUpdated, setLastUpdated] = useState(null);
 
+    // Pull-to-refresh states
+    const [pullStartY, setPullStartY] = useState(0);
+    const [pullDistance, setPullDistance] = useState(0);
+    const [isPulling, setIsPulling] = useState(false);
+
     useEffect(() => {
         loadNews();
-    }, []);
+
+        // Add pull-to-refresh event listeners
+        const container = document.querySelector('.news-container');
+        if (!container) return;
+
+        const handleTouchStart = (e) => {
+            // Only start pull if at the top of the page
+            if (container.scrollTop === 0) {
+                setPullStartY(e.touches[0].clientY);
+                setIsPulling(true);
+            }
+        };
+
+        const handleTouchMove = (e) => {
+            if (!isPulling || refreshing) return;
+
+            const currentY = e.touches[0].clientY;
+            const distance = currentY - pullStartY;
+
+            // Only allow pulling down (positive distance) and limit to 150px
+            if (distance > 0 && container.scrollTop === 0) {
+                setPullDistance(Math.min(distance, 150));
+                // Prevent default scroll behavior when pulling
+                if (distance > 10) {
+                    e.preventDefault();
+                }
+            }
+        };
+
+        const handleTouchEnd = () => {
+            if (isPulling && pullDistance > 80 && !refreshing) {
+                // Trigger refresh if pulled more than 80px
+                console.log('📱 Pull-to-refresh triggered');
+                loadNews(true);
+            }
+            setIsPulling(false);
+            setPullDistance(0);
+            setPullStartY(0);
+        };
+
+        container.addEventListener('touchstart', handleTouchStart, { passive: true });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false });
+        container.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+        return () => {
+            container.removeEventListener('touchstart', handleTouchStart);
+            container.removeEventListener('touchmove', handleTouchMove);
+            container.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [isPulling, pullStartY, pullDistance, refreshing]);
 
     const loadNews = async (forceRefresh = false) => {
         try {
@@ -66,7 +120,39 @@ const News = () => {
     }
 
     return (
-        <div className="news-container">
+        <div className="news-container" style={{ position: 'relative' }}>
+            {/* Pull-to-refresh indicator */}
+            {pullDistance > 0 && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: `${pullDistance}px`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'linear-gradient(to bottom, rgba(145, 23, 207, 0.1), transparent)',
+                        transition: pullDistance === 0 ? 'height 0.3s ease' : 'none',
+                        zIndex: 10,
+                    }}
+                >
+                    <div style={{
+                        transform: `rotate(${Math.min(pullDistance * 2, 360)}deg)`,
+                        transition: 'transform 0.1s ease',
+                        opacity: Math.min(pullDistance / 80, 1),
+                    }}>
+                        <span className="material-symbols-outlined" style={{
+                            fontSize: '32px',
+                            color: pullDistance > 80 ? '#9117cf' : '#666'
+                        }}>
+                            refresh
+                        </span>
+                    </div>
+                </div>
+            )}
+
             <div className="news-header">
                 <div className="news-title-section">
                     <h2>AI 동향</h2>

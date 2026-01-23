@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getPosts, addPost, addLike, removeLike, addComment, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
+import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import WinnersModal from '../components/WinnersModal';
 import './Feed.css';
@@ -15,6 +16,14 @@ const Feed = ({ user, onNavigateToTab }) => {
     const [expandedComments, setExpandedComments] = useState(new Set());
     const [commentInputs, setCommentInputs] = useState({});
     const [feedCategory, setFeedCategory] = useState('all'); // 'all', 'notice', 'volunteer'
+
+    // Pull-to-refresh 기능
+    const handleRefresh = () => {
+        loadPosts();
+        loadPublishedActivities();
+        loadTopMeetingRoom();
+    };
+    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(handleRefresh, '.feed-container');
 
     useEffect(() => {
         loadPosts();
@@ -158,7 +167,9 @@ const Feed = ({ user, onNavigateToTab }) => {
     });
 
     return (
-        <div className="feed-container">
+        <div className="feed-container" style={{ position: 'relative' }}>
+            {/* Pull-to-refresh indicator */}
+            <PullToRefreshIndicator />
             {/* Volunteer Activities Section */}
             {publishedActivities.length > 0 && (
                 <section className="volunteer-section">

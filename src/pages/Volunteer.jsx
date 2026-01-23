@@ -4,12 +4,16 @@ import {
     getVolunteerRegistrations,
     addVolunteerRegistration
 } from '../utils/storage';
+import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import './Volunteer.css';
 
 const Volunteer = ({ user }) => {
     const [activities, setActivities] = useState([]);
     const [registrations, setRegistrations] = useState([]);
+
+    // Pull-to-refresh 기능
+    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData, '.volunteer-container');
 
     useEffect(() => {
         loadData();
@@ -83,7 +87,9 @@ const Volunteer = ({ user }) => {
     };
 
     return (
-        <div className="volunteer-container">
+        <div className="volunteer-container" style={{ position: 'relative' }}>
+            {/* Pull-to-refresh indicator */}
+            <PullToRefreshIndicator />
             <div className="volunteer-header">
                 <h2>봉사활동</h2>
                 <p className="text-secondary">봉사 프로그램에 참여하고 변화를 만드세요</p>

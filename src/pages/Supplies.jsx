@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSupplyRequests, addSupplyRequest } from '../utils/storage';
+import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import './Supplies.css';
@@ -12,6 +13,9 @@ const Supplies = ({ user }) => {
         quantity: 1,
         reason: '',
     });
+
+    // Pull-to-refresh 기능
+    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData, '.supplies-container');
 
     useEffect(() => {
         loadData();
@@ -55,7 +59,9 @@ const Supplies = ({ user }) => {
     };
 
     return (
-        <div className="supplies-container">
+        <div className="supplies-container" style={{ position: 'relative' }}>
+            {/* Pull-to-refresh indicator */}
+            <PullToRefreshIndicator />
             <div className="supplies-header">
                 <h2>비품 신청</h2>
                 <p className="text-secondary">사무용품을 신청하고 요청 상태를 추적하세요</p>

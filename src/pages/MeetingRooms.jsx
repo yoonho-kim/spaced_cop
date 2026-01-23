@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getMeetingRooms, getReservations, addReservation, deleteReservation } from '../utils/storage';
+import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import './MeetingRooms.css';
@@ -20,6 +21,9 @@ const MeetingRooms = ({ user }) => {
 
     // 09:00 ~ 18:00 시간 옵션
     const timeOptions = Array.from({ length: 10 }, (_, i) => i + 9); // 9 to 18
+
+    // Pull-to-refresh 기능
+    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData, '.meetings-container');
 
     useEffect(() => {
         loadData();
@@ -95,7 +99,9 @@ const MeetingRooms = ({ user }) => {
     };
 
     return (
-        <div className="meetings-container">
+        <div className="meetings-container" style={{ position: 'relative' }}>
+            {/* Pull-to-refresh indicator */}
+            <PullToRefreshIndicator />
             <div className="meetings-header">
                 <h2>회의실</h2>
                 <p className="text-secondary">회의를 위한 회의실을 예약하세요</p>
