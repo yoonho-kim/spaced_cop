@@ -15,7 +15,7 @@ const Supplies = ({ user }) => {
     });
 
     // Pull-to-refresh 기능
-    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData, '.supplies-container');
+    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData);
 
     useEffect(() => {
         loadData();

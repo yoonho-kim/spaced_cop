@@ -23,30 +23,48 @@ const MainLayout = ({ user, onLogout }) => {
 
 
     useEffect(() => {
+        if (mainContentRef.current) {
+            mainContentRef.current.scrollTop = 0;
+        }
+    }, [activeTab]);
+
+    useEffect(() => {
+        let scrollTimeout;
+
         const handleScroll = () => {
             if (mainContentRef.current) {
                 const currentScrollY = mainContentRef.current.scrollTop;
-                // A small threshold to prevent hiding on minor scrolls or bounces
+
+                // Clear existing timeout
+                if (scrollTimeout) clearTimeout(scrollTimeout);
+
+                // Hide/Show logic based on direction
                 if (Math.abs(currentScrollY - lastScrollY.current) > 10) {
-                    if (currentScrollY > lastScrollY.current && currentScrollY > 56) { // 56 is header height approx
+                    if (currentScrollY > lastScrollY.current && currentScrollY > 56) {
                         setIsNavVisible(false);
                     } else {
                         setIsNavVisible(true);
                     }
                 }
                 lastScrollY.current = currentScrollY;
+
+                // Set timeout to show nav when scrolling stops
+                scrollTimeout = setTimeout(() => {
+                    setIsNavVisible(true);
+                }, 1000); // 1 second after scroll stops
             }
         };
 
         const mainContentElement = mainContentRef.current;
         if (mainContentElement) {
-            mainContentElement.addEventListener('scroll', handleScroll);
+            mainContentElement.addEventListener('scroll', handleScroll, { passive: true });
         }
 
         return () => {
             if (mainContentElement) {
                 mainContentElement.removeEventListener('scroll', handleScroll);
             }
+            if (scrollTimeout) clearTimeout(scrollTimeout);
         };
     }, []);
 

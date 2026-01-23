@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
  * @param {string} containerSelector - CSS selector for the container element (default: '.news-container')
  * @returns {Object} - { pullDistance, isPulling, PullToRefreshIndicator }
  */
-export const usePullToRefresh = (onRefresh, containerSelector = '.news-container, .feed-container, .meeting-rooms-container, .volunteer-container, .supplies-container, .admin-container') => {
+export const usePullToRefresh = (onRefresh, containerSelector = '.main-content') => {
     const [pullStartY, setPullStartY] = useState(0);
     const [pullDistance, setPullDistance] = useState(0);
     const [isPulling, setIsPulling] = useState(false);
@@ -16,8 +16,8 @@ export const usePullToRefresh = (onRefresh, containerSelector = '.news-container
         if (!container) return;
 
         const handleTouchStart = (e) => {
-            // Only start pull if at the top of the page
-            if (container.scrollTop === 0) {
+            // Only start pull if at the top of the container
+            if (container.scrollTop <= 5) {
                 setPullStartY(e.touches[0].clientY);
                 setIsPulling(true);
             }
@@ -30,18 +30,24 @@ export const usePullToRefresh = (onRefresh, containerSelector = '.news-container
             const distance = currentY - pullStartY;
 
             // Only allow pulling down (positive distance) and limit to 150px
-            if (distance > 0 && container.scrollTop === 0) {
-                setPullDistance(Math.min(distance, 150));
-                // Prevent default scroll behavior when pulling
-                if (distance > 10) {
-                    e.preventDefault();
+            if (distance > 0 && container.scrollTop <= 5) {
+                const dampedDistance = Math.min(distance * 0.5, 120);
+                setPullDistance(dampedDistance);
+
+                // Only prevent default if we've pulled enough to show intent
+                if (dampedDistance > 10) {
+                    if (e.cancelable) e.preventDefault();
                 }
+            } else if (distance < 0) {
+                // If user pulls up, cancel pulling
+                setIsPulling(false);
+                setPullDistance(0);
             }
         };
 
         const handleTouchEnd = () => {
-            if (isPulling && pullDistance > 80) {
-                // Trigger refresh if pulled more than 80px
+            if (isPulling && pullDistance > 70) {
+                // Trigger refresh if pulled more than 70px
                 console.log('📱 Pull-to-refresh triggered');
                 if (onRefresh) {
                     onRefresh();

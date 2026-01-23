@@ -23,7 +23,7 @@ const Feed = ({ user, onNavigateToTab }) => {
         loadPublishedActivities();
         loadTopMeetingRoom();
     };
-    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(handleRefresh, '.feed-container');
+    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(handleRefresh);
 
     useEffect(() => {
         loadPosts();

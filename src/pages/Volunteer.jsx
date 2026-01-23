@@ -13,7 +13,7 @@ const Volunteer = ({ user }) => {
     const [registrations, setRegistrations] = useState([]);
 
     // Pull-to-refresh 기능
-    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData, '.volunteer-container');
+    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData);
 
     useEffect(() => {
         loadData();

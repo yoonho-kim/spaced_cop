@@ -23,7 +23,7 @@ const MeetingRooms = ({ user }) => {
     const timeOptions = Array.from({ length: 10 }, (_, i) => i + 9); // 9 to 18
 
     // Pull-to-refresh 기능
-    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData, '.meetings-container');
+    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData);
 
     useEffect(() => {
         loadData();
