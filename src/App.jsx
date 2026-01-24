@@ -17,7 +17,7 @@ function App() {
       // Initialize storage with default data
       await initializeStorage();
 
-      // Check if user is already logged in
+      // Check if user is already logged in (and not expired)
       const currentUser = getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
@@ -26,7 +26,20 @@ function App() {
     };
 
     init();
-  }, []);
+
+    // Check session expiration every minute
+    const sessionCheckInterval = setInterval(() => {
+      if (user) {
+        const currentUser = getCurrentUser();
+        if (!currentUser) {
+          // Session expired
+          setUser(null);
+        }
+      }
+    }, 60000); // Check every 60 seconds
+
+    return () => clearInterval(sessionCheckInterval);
+  }, [user]);
 
   const handleLogin = (userData) => {
     // Store user data in ref
