@@ -110,6 +110,15 @@ const Feed = ({ user, onNavigateToTab }) => {
         return date.toLocaleDateString();
     };
 
+    // Terminal-style time format [HH:MM:SS]
+    const formatTerminalTime = (timestamp) => {
+        const date = new Date(timestamp);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        return `[${hours}:${minutes}:${seconds}]`;
+    };
+
     const handleShowWinners = (activity) => {
         setSelectedActivity(activity);
         setShowWinnersModal(true);
@@ -309,10 +318,11 @@ const Feed = ({ user, onNavigateToTab }) => {
 
                             return (
                                 <div key={post.id} className="post-item animate-fade-in">
+                                    <span className="post-terminal-time">{formatTerminalTime(post.timestamp)}</span>
                                     <div className="post-content">
                                         <div className="post-header">
                                             <span className="post-author">
-                                                {post.author}
+                                                <span className="post-prompt">&gt;</span> {post.author}
                                                 {post.isAdmin && <span className="badge badge-admin">관리자</span>}
                                                 {post.postType === 'notice' && <span className="badge badge-notice">공지사항</span>}
                                                 {post.postType === 'volunteer' && <span className="badge badge-volunteer">봉사활동</span>}

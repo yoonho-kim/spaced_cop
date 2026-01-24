@@ -201,7 +201,11 @@
     border-bottom: 1px solid rgba(16, 185, 129, 0.2);
     padding-bottom: 0;
     overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-x;
 }
 
 .category-tabs::-webkit-scrollbar {
@@ -466,6 +470,9 @@
     background-color: transparent;
     border: 1px solid rgba(16, 185, 129, 0.2);
     transition: all 0.2s ease;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
 }
 
 .post-item:hover {
@@ -473,8 +480,23 @@
     background-color: rgba(16, 185, 129, 0.02);
 }
 
+.post-terminal-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(16, 185, 129, 0.5);
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding-top: 2px;
+}
+
+.post-prompt {
+    color: var(--terminal-green);
+    opacity: 0.6;
+}
+
 .post-content {
     flex: 1;
+    min-width: 0;
 }
 
 .post-header {
@@ -492,12 +514,6 @@
     flex-wrap: wrap;
     gap: 8px;
     font-size: 13px;
-}
-
-.post-author::before {
-    content: '>';
-    margin-right: 4px;
-    opacity: 0.5;
 }
 
 .post-time {
