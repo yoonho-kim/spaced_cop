@@ -80,13 +80,14 @@ const MainLayout = ({ user, onLogout }) => {
         };
 
         if (showMenu) {
-            document.addEventListener('mousedown', handleClickOutside);
-            document.addEventListener('touchstart', handleClickOutside);
+            // Use 'click' instead of 'mousedown' so menu item clicks are processed first
+            document.addEventListener('click', handleClickOutside);
+            document.addEventListener('touchend', handleClickOutside);
         }
 
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('touchstart', handleClickOutside);
+            document.removeEventListener('click', handleClickOutside);
+            document.removeEventListener('touchend', handleClickOutside);
         };
     }, [showMenu]);
 
@@ -169,7 +170,10 @@ const MainLayout = ({ user, onLogout }) => {
                 {/* Dropdown Menu */}
                 {showMenu && (
                     <div className="header-menu">
-                        <button className="menu-item" onClick={handleLogout}>
+                        <button className="menu-item" onClick={(e) => {
+                            e.stopPropagation();
+                            handleLogout();
+                        }}>
                             <span className="material-symbols-outlined">logout</span>
                             <span>로그아웃</span>
                         </button>
