@@ -1,204 +1,314 @@
-/* Kurly-inspired Login Design */
+/* Terminal-style Login Design */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+    --terminal-green: #10B981;
+    --terminal-bg: #0C0C0C;
+    --terminal-blue: #3B82F6;
+}
+
+/* Main Container */
 .login-container {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #ffffff;
-    padding: 24px;
+    flex-direction: column;
+    background-color: var(--terminal-bg);
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--terminal-green);
     position: relative;
-    font-family: 'Manrope', 'Noto Sans KR', sans-serif;
+    overflow: hidden;
 }
 
-/* Background Decoration */
-.login-decoration {
+/* CRT Scanline Effect */
+.scanline-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 8px;
-    background: linear-gradient(to right, #a855f7, #9117cf, #7e22ce);
-    opacity: 0.2;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    background:
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 2px, 3px 100%;
 }
 
-.login-card {
-    width: 100%;
-    max-width: 400px;
+/* Top Status Bar */
+.terminal-status-bar {
+    padding: 12px 24px;
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
+    font-size: 12px;
+    opacity: 0.7;
 }
 
-/* Logo Section */
-.login-logo {
-    margin-bottom: 40px;
-    display: flex;
-    justify-content: center;
-    width: 100%;
+.terminal-tty {
+    font-family: 'JetBrains Mono', monospace;
 }
 
-.logo-image {
-    width: auto;
-    height: 180px;
-    max-width: 100%;
-    object-fit: contain;
-}
-
-/* Headline */
-.login-headline {
-    font-size: 24px;
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 32px;
-    color: #1a1a1a;
-    line-height: 1.4;
-    letter-spacing: -0.02em;
-}
-
-/* Login Form */
-.login-form {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-/* Input Wrapper */
-.input-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.password-wrapper {
-    position: relative;
-}
-
-.login-input {
-    width: 100%;
-    height: 48px;
-    padding: 0 16px;
-    border-radius: 8px;
-    border: 1px solid #d1d5db;
-    background-color: #ffffff !important;
-    font-size: 16px;
-    color: #1a1a1a !important;
-    transition: all 0.2s ease;
-    font-family: 'Manrope', 'Noto Sans KR', sans-serif;
-}
-
-/* Prevent autofill from changing background color */
-.login-input:-webkit-autofill,
-.login-input:-webkit-autofill:hover,
-.login-input:-webkit-autofill:focus,
-.login-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px white inset !important;
-    -webkit-text-fill-color: #1a1a1a !important;
-    transition: background-color 5000s ease-in-out 0s;
-}
-
-.login-input::placeholder {
-    color: #9ca3af;
-}
-
-.login-input:focus {
-    outline: none;
-    border-color: #9117cf;
-    box-shadow: 0 0 0 1px #9117cf;
-}
-
-.password-wrapper .login-input {
-    padding-right: 48px;
-}
-
-/* Password Toggle Button */
-.password-toggle {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    padding: 4px;
-    cursor: pointer;
-    color: #9ca3af;
-    transition: color 0.2s ease;
+.status-icons {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 8px;
 }
 
-.password-toggle:hover {
-    color: #9117cf;
-}
-
-.password-toggle .material-symbols-outlined {
-    font-size: 20px;
-}
-
-/* Error Message */
-.error-message {
-    background-color: rgba(239, 68, 68, 0.1);
-    border: 1px solid #ef4444;
-    color: #dc2626;
-    padding: 12px 16px;
-    border-radius: 6px;
+.status-icons .material-symbols-outlined {
     font-size: 14px;
-    text-align: center;
 }
 
-/* Login Button */
-.login-button {
-    width: 100%;
-    height: 48px;
-    margin-top: 12px;
-    background-color: #9117cf;
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    font-family: 'Manrope', 'Noto Sans KR', sans-serif;
-}
-
-.login-button:hover {
-    background-color: rgba(145, 23, 207, 0.9);
-}
-
-.login-button:active {
-    transform: scale(0.98);
-}
-
-/* Footer Links */
-.login-footer {
-    margin-top: 24px;
+/* Main Terminal Content */
+.terminal-main {
+    flex: 1;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     justify-content: center;
+    padding: 0 32px;
+    position: relative;
+}
+
+/* Terminal container effect */
+.terminal-main::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+    z-index: 50;
+}
+
+/* ASCII Logo Section */
+.ascii-logo-section {
+    margin-bottom: 48px;
+}
+
+.ascii-logo {
+    font-size: 8px;
+    line-height: 1.1;
+    font-weight: bold;
+    color: var(--terminal-green);
+    opacity: 0.5;
+    margin: 0;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: pre;
+}
+
+.version-text {
+    font-size: 14px;
+    color: var(--terminal-green);
+    opacity: 0.6;
+    margin-top: 8px;
+}
+
+/* Terminal Content */
+.terminal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Terminal Prompt */
+.terminal-prompt {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.prompt-line {
+    font-weight: bold;
+    margin: 0;
+}
+
+.prompt-user {
+    color: var(--terminal-blue);
+}
+
+.prompt-host {
+    color: var(--terminal-green);
+}
+
+.prompt-path {
+    color: #9CA3AF;
+}
+
+.welcome-text {
+    font-size: 14px;
+    color: var(--terminal-green);
+    opacity: 0.8;
+    margin: 0;
+}
+
+/* Terminal Form */
+.terminal-form {
+    display: flex;
+    flex-direction: column;
     gap: 16px;
 }
 
-.footer-link {
+/* Input Row */
+.terminal-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-label {
+    color: var(--terminal-green);
+    flex-shrink: 0;
+}
+
+.input-field-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.terminal-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--terminal-green);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    width: 100%;
+    padding: 0;
+    caret-color: var(--terminal-green);
+}
+
+.terminal-input::placeholder {
+    color: rgba(16, 185, 129, 0.2);
+}
+
+.terminal-input:focus {
+    outline: none;
+}
+
+/* Prevent autofill styling */
+.terminal-input:-webkit-autofill,
+.terminal-input:-webkit-autofill:hover,
+.terminal-input:-webkit-autofill:focus,
+.terminal-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--terminal-bg) inset !important;
+    -webkit-text-fill-color: var(--terminal-green) !important;
+    transition: background-color 5000s ease-in-out 0s;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Password Field */
+.password-field {
+    display: flex;
+    align-items: center;
+}
+
+.password-mask {
+    color: rgba(16, 185, 129, 0.5);
+    margin-right: 4px;
+}
+
+/* Blinking Cursor */
+.cursor-blink {
+    width: 10px;
+    height: 20px;
+    background-color: var(--terminal-green);
+    animation: blink 1s step-end infinite;
+    flex-shrink: 0;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+/* Error Message */
+.terminal-error {
+    color: #EF4444;
     font-size: 14px;
-    color: #6b7280;
-    text-decoration: none;
-    transition: color 0.2s ease;
+    padding: 8px 0;
 }
 
-.footer-link:hover {
-    color: #9117cf;
+.error-prefix {
+    font-weight: bold;
 }
 
-.footer-link-signup {
-    font-weight: 500;
+/* Button Section */
+.button-section {
+    padding-top: 40px;
 }
 
-.footer-divider {
-    width: 1px;
-    height: 12px;
-    background-color: #d1d5db;
+.terminal-button {
+    width: 100%;
+    padding: 16px 24px;
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid var(--terminal-green);
+    color: var(--terminal-green);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.terminal-button:hover {
+    background: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+}
+
+.terminal-button:active {
+    transform: scale(0.95);
+}
+
+.bracket {
+    margin: 0 4px;
+}
+
+/* System Status */
+.system-status {
+    margin-top: 80px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.system-status p {
+    margin: 0;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(16, 185, 129, 0.4);
+}
+
+.status-value {
+    color: rgba(16, 185, 129, 0.9);
+}
+
+/* Footer */
+.terminal-footer {
+    padding: 32px;
+    text-align: center;
+}
+
+.footer-text {
+    font-size: 10px;
+    color: rgba(16, 185, 129, 0.3);
+    font-family: 'JetBrains Mono', monospace;
 }
 
 /* Animation */
@@ -218,47 +328,28 @@
     animation: fade-in 0.3s ease-out;
 }
 
-/* Dark Mode Support (optional) */
-@media (prefers-color-scheme: dark) {
-    .login-container {
-        background-color: #1c1121;
-    }
-
-    .login-headline {
-        color: #ffffff;
-    }
-
-    .login-input {
-        background-color: #2d2433;
-        border-color: #4a4a4a;
-        color: #ffffff;
-    }
-
-    .login-input::placeholder {
-        color: #9ca3af;
-    }
-
-    .login-input:focus {
-        border-color: #9117cf;
-    }
+/* Selection Style */
+::selection {
+    background-color: var(--terminal-green);
+    color: black;
 }
 
 /* Responsive Design */
 @media (max-width: 480px) {
-    .login-card {
-        padding: 0 16px;
+    .terminal-main {
+        padding: 0 24px;
     }
 
-    .login-headline {
-        font-size: 20px;
+    .ascii-logo {
+        font-size: 6px;
     }
 
-    .logo-icon-wrapper {
-        width: 80px;
-        height: 80px;
+    .terminal-input-row {
+        flex-wrap: wrap;
     }
 
-    .logo-icon {
-        font-size: 40px !important;
+    .input-label {
+        width: 100%;
+        margin-bottom: 4px;
     }
 }

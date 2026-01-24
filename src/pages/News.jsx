@@ -146,7 +146,7 @@ const News = () => {
             <div className="news-footer">
                 <p className="text-secondary">
                     <span className="material-symbols-outlined">info</span>
-                    Google 뉴스에서 제공하는 한국 AI 관련 뉴스입니다
+                    Space D AI 에서 제공하는 한국 AI 관련 뉴스입니다
                 </p>
             </div>
         </div>

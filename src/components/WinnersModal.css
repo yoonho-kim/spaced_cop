@@ -1,10 +1,17 @@
+/* Terminal Winners Modal Design */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+    --terminal-green: #10B981;
+    --terminal-bg: #0C0C0C;
+}
+
 /* Winners Modal Overlay */
 .winners-modal-overlay {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
-    z-index: var(--z-modal);
+    background-color: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -14,14 +21,15 @@
 
 /* Modal Container */
 .winners-modal-container {
-    background-color: white;
+    background-color: #0C0C0C;
     width: 100%;
     max-width: 448px;
-    border-radius: 24px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.3);
     overflow: hidden;
     position: relative;
     animation: slideUp 0.3s ease-out;
+    font-family: 'JetBrains Mono', monospace;
 }
 
 /* Gradient Background */
@@ -30,10 +38,9 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 128px;
-    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-    z-index: -1;
-    border-radius: 24px 24px 0 0;
+    height: 100px;
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
+    z-index: 0;
 }
 
 /* Close Button */
@@ -41,12 +48,11 @@
     position: absolute;
     top: 16px;
     right: 16px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    width: 28px;
+    height: 28px;
     background: none;
-    border: none;
-    color: #9ca3af;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: rgba(16, 185, 129, 0.6);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -56,12 +62,12 @@
 }
 
 .winners-modal-close:hover {
-    color: #6b7280;
-    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--terminal-green);
+    border-color: var(--terminal-green);
 }
 
 .winners-modal-close .material-symbols-outlined {
-    font-size: 24px;
+    font-size: 20px;
 }
 
 /* Modal Content */
@@ -69,37 +75,40 @@
     padding: 24px;
     padding-top: 32px;
     text-align: center;
+    position: relative;
+    z-index: 1;
 }
 
 /* Header Icon */
 .winners-modal-icon {
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
     margin: 0 auto 16px;
-    background-color: rgba(145, 23, 207, 0.1);
-    border-radius: 50%;
+    background-color: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 0 4px white;
 }
 
 .winners-modal-icon .material-symbols-outlined {
-    font-size: 32px;
-    color: var(--color-primary);
+    font-size: 28px;
+    color: var(--terminal-green);
 }
 
 /* Title */
 .winners-modal-title {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
-    color: var(--color-text-main);
+    color: var(--terminal-green);
     margin: 0 0 4px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
 }
 
 .winners-modal-subtitle {
-    font-size: 14px;
-    color: var(--color-text-secondary);
+    font-size: 11px;
+    color: rgba(16, 185, 129, 0.5);
     margin: 0 0 24px 0;
 }
 
@@ -108,9 +117,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    background-color: var(--color-bg-primary);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
+    background-color: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.2);
     padding: 12px;
     margin-bottom: 24px;
     text-align: left;
@@ -119,8 +127,8 @@
 .winners-activity-thumbnail {
     width: 48px;
     height: 48px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #e9d5ff 0%, #f0eff1 100%);
+    background-color: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -129,7 +137,7 @@
 
 .winners-activity-thumbnail .material-symbols-outlined {
     font-size: 24px;
-    color: var(--color-primary);
+    color: var(--terminal-green);
 }
 
 .winners-activity-info {
@@ -138,9 +146,9 @@
 }
 
 .winners-activity-info h3 {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
-    color: var(--color-text-main);
+    color: var(--terminal-green);
     margin: 0 0 4px 0;
     white-space: nowrap;
     overflow: hidden;
@@ -151,13 +159,13 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 12px;
-    color: var(--color-text-secondary);
+    font-size: 10px;
+    color: rgba(16, 185, 129, 0.6);
 }
 
 .winners-activity-date .material-symbols-outlined {
     font-size: 12px;
-    color: var(--color-primary);
+    color: var(--terminal-green);
 }
 
 /* Scratch Container */
@@ -166,9 +174,8 @@
     width: 100%;
     height: 200px;
     overflow: hidden;
-    border-radius: 16px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
     cursor: pointer;
-    border: 1px solid var(--color-border);
 }
 
 /* Winners Content (Behind) */
@@ -177,15 +184,15 @@
     inset: 0;
     padding: 16px;
     overflow-y: auto;
-    background-color: white;
+    background-color: rgba(16, 185, 129, 0.02);
 }
 
 .winners-congrats {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
-    color: var(--color-primary);
+    color: var(--terminal-green);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.2em;
     margin-bottom: 12px;
     text-align: center;
 }
@@ -200,26 +207,27 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: #faf5ff;
-    padding: 6px;
-    border-radius: 8px;
+    background-color: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    padding: 8px;
 }
 
 .winner-avatar {
     width: 24px;
     height: 24px;
-    border-radius: 50%;
-    background-color: #e9d5ff;
+    background-color: rgba(16, 185, 129, 0.2);
+    border: 1px solid var(--terminal-green);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 11px;
     flex-shrink: 0;
+    color: var(--terminal-green);
 }
 
 .winner-name {
-    font-size: 14px;
-    color: var(--color-text-main);
+    font-size: 12px;
+    color: var(--terminal-green);
     font-weight: 500;
 }
 
@@ -244,11 +252,10 @@
     pointer-events: none;
 }
 
-
 /* Action Buttons */
 .winners-modal-actions {
     padding: 16px;
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid rgba(16, 185, 129, 0.2);
     display: flex;
     gap: 12px;
 }
@@ -256,31 +263,37 @@
 .winners-btn {
     flex: 1;
     padding: 12px;
-    border-radius: 12px;
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 600;
-    border: none;
+    border: 1px solid;
     cursor: pointer;
     transition: all 0.2s ease;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
 }
 
 .winners-btn-secondary {
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-main);
+    background-color: transparent;
+    color: rgba(16, 185, 129, 0.6);
+    border-color: rgba(16, 185, 129, 0.3);
 }
 
 .winners-btn-secondary:hover {
-    background-color: var(--color-bg-hover);
+    border-color: var(--terminal-green);
+    color: var(--terminal-green);
 }
 
 .winners-btn-primary {
-    background-color: var(--color-primary);
-    color: white;
-    box-shadow: 0 0 15px rgba(145, 23, 207, 0.3);
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--terminal-green);
+    border-color: var(--terminal-green);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
 }
 
 .winners-btn-primary:hover {
-    background-color: var(--color-accent-hover);
+    background-color: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.5);
 }
 
 /* Animations */
@@ -313,7 +326,7 @@
     }
 
     .winners-modal-title {
-        font-size: 18px;
+        font-size: 14px;
     }
 
     .scratch-container {
@@ -325,6 +338,6 @@
     }
 
     .winner-card {
-        padding: 4px;
+        padding: 6px;
     }
 }

@@ -1,39 +1,69 @@
-/* Volunteer Container - Feed 기준 통일 */
+/* Terminal Volunteer Design */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+    --terminal-green: #10B981;
+    --terminal-bg: #0C0C0C;
+}
+
 .volunteer-container {
-    max-width: 448px;
+    max-width: 100%;
     margin: 0 auto;
-    padding-bottom: 24px;
+    padding: 24px;
+    padding-bottom: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--terminal-green);
 }
 
 .volunteer-header {
-    padding: 0 16px 12px;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
 }
 
 .volunteer-header h2 {
-    font-size: 24px;
+    font-size: 14px;
     font-weight: 700;
-    color: var(--color-text-main);
+    color: var(--terminal-green);
     margin: 0 0 4px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.volunteer-header h2::before {
+    content: '> ';
+    opacity: 0.5;
 }
 
 .volunteer-header p {
     margin: 0;
-    font-size: 14px;
+    font-size: 11px;
+    color: rgba(16, 185, 129, 0.6);
 }
 
 .activities-section,
 .my-registrations-section {
-    margin-top: 16px;
-    padding: 0 16px;
+    margin-bottom: 32px;
 }
 
 .activities-section h3,
 .my-registrations-section h3 {
-    font-size: 18px;
+    font-size: 12px;
     font-weight: 700;
-    color: var(--color-text-main);
-    margin: 0 0 12px 0;
+    color: rgba(16, 185, 129, 0.6);
+    margin: 0 0 16px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.activities-section h3::before,
+.my-registrations-section h3::before {
+    content: '[ ';
+    color: var(--terminal-green);
+}
+
+.activities-section h3::after,
+.my-registrations-section h3::after {
+    content: ' ]';
+    color: var(--terminal-green);
 }
 
 .activities-list,
@@ -45,15 +75,14 @@
 
 .activity-card {
     padding: 16px;
-    background-color: var(--color-surface-light);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background-color: rgba(16, 185, 129, 0.02);
+    border: 1px solid rgba(16, 185, 129, 0.2);
     transition: all 0.2s ease;
 }
 
 .activity-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--terminal-green);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
 }
 
 .activity-header {
@@ -61,22 +90,22 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 .activity-header h4 {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
-    color: var(--color-text-main);
+    color: var(--terminal-green);
     margin: 0;
     flex: 1;
 }
 
 .activity-description {
-    color: var(--color-text-main);
+    color: rgba(16, 185, 129, 0.7);
     margin-bottom: 12px;
     line-height: 1.5;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .activity-meta {
@@ -84,21 +113,22 @@
     flex-direction: column;
     gap: 4px;
     margin-bottom: 12px;
-    padding: 8px;
-    background-color: var(--color-bg-primary);
-    border-radius: 8px;
+    padding: 12px;
+    background-color: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.1);
 }
 
 .meta-item {
     display: flex;
     gap: 8px;
-    font-size: 14px;
+    font-size: 11px;
 }
 
 .meta-label {
-    color: var(--color-text-secondary);
+    color: rgba(16, 185, 129, 0.5);
     font-weight: 600;
     min-width: 60px;
+    text-transform: uppercase;
 }
 
 .registration-item {
@@ -107,10 +137,8 @@
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background-color: var(--color-surface-light);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background-color: rgba(16, 185, 129, 0.02);
+    border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .registration-info {
@@ -118,32 +146,40 @@
 }
 
 .registration-info h4 {
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 700;
-    color: var(--color-text-main);
+    color: var(--terminal-green);
     margin: 0 0 4px 0;
 }
 
 .registration-info p {
     margin: 0;
-    font-size: 14px;
+    font-size: 11px;
+    color: rgba(16, 185, 129, 0.6);
 }
 
 .empty-state {
     text-align: center;
     padding: 48px 24px;
+    color: rgba(16, 185, 129, 0.5);
 }
 
 .empty-icon {
     font-size: 48px;
     margin-bottom: 16px;
+    opacity: 0.5;
 }
 
 .empty-state p {
     margin: 4px 0;
+    font-family: 'JetBrains Mono', monospace;
 }
 
 @media (max-width: 480px) {
+    .volunteer-container {
+        padding: 16px;
+    }
+
     .activity-header {
         flex-direction: column;
         align-items: flex-start;

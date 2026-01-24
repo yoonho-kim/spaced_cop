@@ -211,9 +211,15 @@ const Feed = ({ user, onNavigateToTab }) => {
                     </div>
                     <div className="meeting-cards">
                         <div className="meeting-card-new" onClick={() => onNavigateToTab && onNavigateToTab('meetings')}>
-                            <div className="meeting-image-container">
-                                <img src="/meeting-room.png" alt="Meeting Room" className="meeting-room-image" />
-                                <div className="meeting-overlay">
+                            <div className="meeting-ascii-container">
+                                <pre className="meeting-ascii-art">
+                                    {`   ██████  █████  ██████  ██████      ██ ███████ ███████ 
+  ██      ██   ██ ██   ██ ██   ██    ███ ██      ██      
+  ██      ███████ ██████  ██   ██     ██ ███████ █████   
+  ██      ██   ██ ██   ██ ██   ██     ██      ██ ██      
+   ██████ ██   ██ ██   ██ ██████      ██ ███████ ██      `}
+                                </pre>
+                                <div className="meeting-status-overlay">
                                     <div className={`meeting-status-badge ${topMeetingRoom.isBusinessHours && topMeetingRoom.isAvailable ? 'available' : 'in-use'}`}>
                                         <div className="status-indicator"></div>
                                         <span>

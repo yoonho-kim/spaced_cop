@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { login } from '../utils/auth';
-import Button from '../components/Button';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
     const [nickname, setNickname] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [showPasswordText, setShowPasswordText] = useState(false);
     const [error, setError] = useState('');
 
     const handleNicknameChange = (e) => {
@@ -48,73 +46,120 @@ const Login = ({ onLogin }) => {
 
     return (
         <div className="login-container">
-            {/* Background Decoration */}
-            <div className="login-decoration"></div>
+            {/* CRT Scanline Effect Overlay */}
+            <div className="scanline-overlay"></div>
 
-            <div className="login-card">
-                {/* Logo Section */}
-                <div className="login-logo">
-                    <img src="/space-d-logo.png" alt="Space D" className="logo-image" />
+            {/* Top Status Bar */}
+            <div className="terminal-status-bar">
+                <span className="terminal-tty">tty1 login</span>
+                <div className="status-icons">
+                    <span className="material-symbols-outlined">signal_cellular_alt</span>
+                    <span className="material-symbols-outlined">wifi</span>
+                    <span className="material-symbols-outlined">battery_full</span>
+                </div>
+            </div>
+
+            {/* Main Terminal Content */}
+            <main className="terminal-main">
+                {/* ASCII Logo */}
+                <div className="ascii-logo-section">
+                    <pre className="ascii-logo">
+                        {` ██████  ██████   █████   ██████ ███████     ██████  
+██       ██   ██ ██   ██ ██      ██          ██   ██ 
+ █████   ██████  ███████ ██      █████       ██   ██ 
+     ██  ██      ██   ██ ██      ██          ██   ██ 
+██████   ██      ██   ██  ██████ ███████     ██████  `}
+                    </pre>
+                    <p className="version-text">v2.0.4-stable-arm64</p>
                 </div>
 
-                {/* Headline */}
-                <h1 className="login-headline">
-                    반가워요!
-                </h1>
-
-                {/* Login Form */}
-                <form onSubmit={handleSubmit} className="login-form">
-                    {/* Nickname Input */}
-                    <div className="input-wrapper">
-                        <input
-                            type="text"
-                            value={nickname}
-                            onChange={handleNicknameChange}
-                            placeholder="닉네임 (또는 사번)"
-                            className="login-input"
-                            autoFocus
-                            autoComplete="off"
-                        />
+                {/* Terminal Login Section */}
+                <div className="terminal-content">
+                    <div className="terminal-prompt">
+                        <p className="prompt-line">
+                            <span className="prompt-user">user</span>@<span className="prompt-host">spaced</span>:<span className="prompt-path">~</span>$ login --auth
+                        </p>
+                        <p className="welcome-text">Welcome to Space D Management System.</p>
                     </div>
 
-                    {/* Password Input */}
-                    {showPassword && (
-                        <div className="input-wrapper password-wrapper animate-fade-in">
-                            <input
-                                type={showPasswordText ? "text" : "password"}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="비밀번호"
-                                className="login-input"
-                                autoComplete="off"
-                            />
-                            <button
-                                type="button"
-                                className="password-toggle"
-                                onClick={() => setShowPasswordText(!showPasswordText)}
-                            >
-                                <span className="material-symbols-outlined">
-                                    {showPasswordText ? 'visibility' : 'visibility_off'}
-                                </span>
+                    {/* Login Form */}
+                    <form onSubmit={handleSubmit} className="terminal-form">
+                        {/* Nickname Input */}
+                        <div className="terminal-input-row">
+                            <span className="input-label">identifier:</span>
+                            <div className="input-field-wrapper">
+                                <input
+                                    type="text"
+                                    value={nickname}
+                                    onChange={handleNicknameChange}
+                                    placeholder="nickname_or_id"
+                                    className="terminal-input"
+                                    autoFocus
+                                    autoComplete="off"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Password Input */}
+                        {showPassword && (
+                            <div className="terminal-input-row animate-fade-in">
+                                <span className="input-label">access_token:</span>
+                                <div className="input-field-wrapper password-field">
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        className="terminal-input"
+                                        autoComplete="off"
+                                    />
+                                    <div className="cursor-blink"></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Non-admin password placeholder */}
+                        {!showPassword && (
+                            <div className="terminal-input-row">
+                                <span className="input-label">access_token:</span>
+                                <div className="input-field-wrapper password-field">
+                                    <span className="password-mask">********</span>
+                                    <div className="cursor-blink"></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Error Message */}
+                        {error && (
+                            <div className="terminal-error animate-fade-in">
+                                <span className="error-prefix">[ERROR]</span> {error}
+                            </div>
+                        )}
+
+                        {/* Login Button */}
+                        <div className="button-section">
+                            <button type="submit" className="terminal-button">
+                                <span className="bracket">[</span>
+                                Connect to Space
+                                <span className="bracket">]</span>
                             </button>
                         </div>
-                    )}
+                    </form>
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className="error-message animate-fade-in">
-                            {error}
-                        </div>
-                    )}
+                    {/* System Status */}
+                    <div className="system-status">
+                        <p>System Status: <span className="status-value">Operational</span></p>
+                        <p>Encrypted Tunnel: <span className="status-value">AES-256-GCM</span></p>
+                    </div>
+                </div>
+            </main>
 
-                    {/* Login Button */}
-                    <button type="submit" className="login-button">
-                        로그인
-                    </button>
-                </form>
-
-
-            </div>
+            {/* Footer */}
+            <footer className="terminal-footer">
+                <div className="footer-text">
+                    © 2024 SPACE D INDUSTRIES // INTERNAL USE ONLY
+                </div>
+            </footer>
         </div>
     );
 };
