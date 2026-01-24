@@ -20,6 +20,7 @@ const MainLayout = ({ user, onLogout }) => {
     const [isNavVisible, setIsNavVisible] = useState(true);
     const lastScrollY = useRef(0);
     const mainContentRef = useRef(null);
+    const menuRef = useRef(null);
 
 
     useEffect(() => {
@@ -48,6 +49,9 @@ const MainLayout = ({ user, onLogout }) => {
                 }
                 lastScrollY.current = currentScrollY;
 
+                // Close menu on scroll
+                setShowMenu(false);
+
                 // Set timeout to show nav when scrolling stops
                 scrollTimeout = setTimeout(() => {
                     setIsNavVisible(true);
@@ -67,6 +71,24 @@ const MainLayout = ({ user, onLogout }) => {
             if (scrollTimeout) clearTimeout(scrollTimeout);
         };
     }, []);
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenu(false);
+            }
+        };
+
+        if (showMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('touchstart', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [showMenu]);
 
 
     const handleLogout = () => {
@@ -129,7 +151,7 @@ const MainLayout = ({ user, onLogout }) => {
                             <h2 className="user-name">{user.nickname}님</h2>
                         </div>
                     </div>
-                    <div className="header-actions">
+                    <div className="header-actions" ref={menuRef}>
                         <button className="icon-button" aria-label="알림">
                             <span className="material-symbols-outlined">notifications</span>
                             <span className="notification-badge"></span>

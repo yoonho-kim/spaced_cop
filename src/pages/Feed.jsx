@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getPosts, addPost, addLike, removeLike, addComment, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations } from '../utils/storage';
+import { getPosts, addPost, addLike, removeLike, addComment, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations, getTop3Volunteers } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
@@ -16,11 +16,13 @@ const Feed = ({ user, onNavigateToTab }) => {
     const [expandedComments, setExpandedComments] = useState(new Set());
     const [commentInputs, setCommentInputs] = useState({});
     const [feedCategory, setFeedCategory] = useState('all'); // 'all', 'notice', 'volunteer'
+    const [top3Volunteers, setTop3Volunteers] = useState([]);
 
     useEffect(() => {
         loadPosts();
         loadPublishedActivities();
         loadTopMeetingRoom();
+        loadTop3Volunteers();
     }, []);
 
 
@@ -28,6 +30,19 @@ const Feed = ({ user, onNavigateToTab }) => {
     const loadPosts = async () => {
         const allPosts = await getPosts();
         setPosts(allPosts);
+    };
+
+    const loadTop3Volunteers = async () => {
+        const top3 = await getTop3Volunteers();
+        setTop3Volunteers(top3);
+    };
+
+    const getVolunteerRankBadge = (nickname) => {
+        const rank = top3Volunteers.indexOf(nickname);
+        if (rank === 0) return '🥇';
+        if (rank === 1) return '🥈';
+        if (rank === 2) return '🥉';
+        return null;
     };
 
     const loadPublishedActivities = async () => {
@@ -306,6 +321,11 @@ const Feed = ({ user, onNavigateToTab }) => {
                                     <div className="post-content">
                                         <div className="post-header">
                                             <span className="post-author">
+                                                {getVolunteerRankBadge(post.author) && (
+                                                    <span className="badge badge-volunteer-rank" title="봉사활동 Top 3">
+                                                        {getVolunteerRankBadge(post.author)}
+                                                    </span>
+                                                )}
                                                 {post.author}
                                                 {post.isAdmin && <span className="badge badge-admin">관리자</span>}
                                                 {post.postType === 'notice' && <span className="badge badge-notice">공지사항</span>}
@@ -346,7 +366,14 @@ const Feed = ({ user, onNavigateToTab }) => {
                                                             <div key={comment.id} className="comment-item">
                                                                 <div className="comment-content">
                                                                     <div className="comment-header">
-                                                                        <span className="comment-author">{comment.userName}</span>
+                                                                        <span className="comment-author">
+                                                                            {getVolunteerRankBadge(comment.userName) && (
+                                                                                <span className="badge badge-volunteer-rank" title="봉사활동 Top 3">
+                                                                                    {getVolunteerRankBadge(comment.userName)}
+                                                                                </span>
+                                                                            )}
+                                                                            {comment.userName}
+                                                                        </span>
                                                                         <span className="comment-time">{formatTimestamp(comment.timestamp)}</span>
                                                                     </div>
                                                                     <p className="comment-text">{comment.content}</p>

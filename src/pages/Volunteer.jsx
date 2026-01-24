@@ -11,6 +11,7 @@ import './Volunteer.css';
 const Volunteer = ({ user }) => {
     const [activities, setActivities] = useState([]);
     const [registrations, setRegistrations] = useState([]);
+    const [activeTab, setActiveTab] = useState('ranking'); // 'ranking' or 'myStatus'
 
     const loadData = async () => {
         const activitiesData = await getVolunteerActivities();
@@ -60,6 +61,49 @@ const Volunteer = ({ user }) => {
     const myRegistrations = registrations.filter(r => r.userName === user.nickname);
     const openActivities = activities.filter(a => a.status === 'open'); // 모집중인 활동만 표시
 
+    // Calculate volunteer ranking for the current year
+    const calculateRanking = () => {
+        const currentYear = new Date().getFullYear();
+
+        // Filter registrations for current year with 'confirmed' status
+        const yearRegistrations = registrations.filter(r => {
+            const regYear = new Date(r.registeredAt).getFullYear();
+            return regYear === currentYear && r.status === 'confirmed';
+        });
+
+        // Group by employeeId and count
+        const employeeStats = {};
+        yearRegistrations.forEach(r => {
+            if (!r.employeeId) return;
+
+            if (!employeeStats[r.employeeId]) {
+                employeeStats[r.employeeId] = {
+                    employeeId: r.employeeId,
+                    count: 0,
+                    lastNickname: r.userName,
+                    lastRegisteredAt: r.registeredAt
+                };
+            }
+
+            employeeStats[r.employeeId].count += 1;
+
+            // Update to the latest nickname
+            if (new Date(r.registeredAt) > new Date(employeeStats[r.employeeId].lastRegisteredAt)) {
+                employeeStats[r.employeeId].lastNickname = r.userName;
+                employeeStats[r.employeeId].lastRegisteredAt = r.registeredAt;
+            }
+        });
+
+        // Convert to array and sort by count (descending), limit to top 10
+        const ranking = Object.values(employeeStats)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+
+        return ranking;
+    };
+
+    const ranking = calculateRanking();
+
     const getStatusBadge = (status) => {
         const badges = {
             pending: 'badge-warning',
@@ -84,6 +128,13 @@ const Volunteer = ({ user }) => {
             month: 'long',
             day: 'numeric',
         });
+    };
+
+    const getRankEmoji = (index) => {
+        if (index === 0) return '🥇';
+        if (index === 1) return '🥈';
+        if (index === 2) return '🥉';
+        return `${index + 1}`;
     };
 
     return (
@@ -146,29 +197,78 @@ const Volunteer = ({ user }) => {
                 )}
             </div>
 
-            <div className="my-registrations-section">
-                <h3>내 등록 현황</h3>
-                {myRegistrations.length === 0 ? (
-                    <div className="empty-state">
-                        <p className="text-secondary">아직 등록한 활동이 없습니다</p>
-                    </div>
-                ) : (
-                    <div className="registrations-list">
-                        {myRegistrations.map(registration => (
-                            <div key={registration.id} className="registration-item">
-                                <div className="registration-info">
-                                    <h4>{registration.activityTitle}</h4>
-                                    <p className="text-secondary">
-                                        {formatDate(registration.registeredAt)} 등록
-                                    </p>
+            {/* Bottom Section with Tabs */}
+            <div className="bottom-tabs-section">
+                <div className="tabs-header">
+                    <button
+                        className={`tab-button ${activeTab === 'ranking' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('ranking')}
+                    >
+                        봉사랭킹
+                    </button>
+                    <button
+                        className={`tab-button ${activeTab === 'myStatus' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('myStatus')}
+                    >
+                        내 등록현황
+                    </button>
+                </div>
+
+                <div className="tabs-content">
+                    {activeTab === 'ranking' && (
+                        <div className="ranking-section">
+                            <p className="ranking-description">{new Date().getFullYear()}년 봉사활동 참여 랭킹 (당첨 기준)</p>
+                            {ranking.length === 0 ? (
+                                <div className="empty-state">
+                                    <p className="text-secondary">아직 봉사활동 참여 기록이 없습니다</p>
                                 </div>
-                                <span className={`badge ${getStatusBadge(registration.status)}`}>
-                                    {getStatusLabel(registration.status)}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                            ) : (
+                                <div className="ranking-list">
+                                    {ranking.map((item, index) => (
+                                        <div key={item.employeeId} className={`ranking-item ${index < 3 ? 'top-rank' : ''}`}>
+                                            <div className="rank-badge">
+                                                {getRankEmoji(index)}
+                                            </div>
+                                            <div className="ranking-info">
+                                                <span className="employee-id">{item.employeeId}</span>
+                                                <span className="employee-nickname">{item.lastNickname}</span>
+                                            </div>
+                                            <div className="ranking-count">
+                                                {item.count}회
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'myStatus' && (
+                        <div className="my-registrations-section">
+                            {myRegistrations.length === 0 ? (
+                                <div className="empty-state">
+                                    <p className="text-secondary">아직 등록한 활동이 없습니다</p>
+                                </div>
+                            ) : (
+                                <div className="registrations-list">
+                                    {myRegistrations.map(registration => (
+                                        <div key={registration.id} className="registration-item">
+                                            <div className="registration-info">
+                                                <h4>{registration.activityTitle}</h4>
+                                                <p className="text-secondary">
+                                                    {formatDate(registration.registeredAt)} 등록
+                                                </p>
+                                            </div>
+                                            <span className={`badge ${getStatusBadge(registration.status)}`}>
+                                                {getStatusLabel(registration.status)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

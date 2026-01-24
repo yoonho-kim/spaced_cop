@@ -557,3 +557,59 @@ export const updateSupplyRequest = async (requestId, updates) => {
     console.error('Error updating supply request:', error);
   }
 };
+
+// ============================================
+// TOP VOLUNTEERS (for badge display)
+// ============================================
+
+export const getTop3Volunteers = async () => {
+  const currentYear = new Date().getFullYear();
+
+  // Get all confirmed registrations for the current year
+  const { data, error } = await supabase
+    .from('volunteer_registrations')
+    .select('*')
+    .eq('status', 'confirmed');
+
+  if (error) {
+    console.error('Error fetching top volunteers:', error);
+    return [];
+  }
+
+  // Filter for current year
+  const yearRegistrations = data.filter(r => {
+    const regYear = new Date(r.created_at).getFullYear();
+    return regYear === currentYear;
+  });
+
+  // Group by employee_id and count
+  const employeeStats = {};
+  yearRegistrations.forEach(r => {
+    if (!r.employee_id) return;
+
+    if (!employeeStats[r.employee_id]) {
+      employeeStats[r.employee_id] = {
+        employeeId: r.employee_id,
+        count: 0,
+        lastNickname: r.user_nickname,
+        lastRegisteredAt: r.created_at
+      };
+    }
+
+    employeeStats[r.employee_id].count += 1;
+
+    // Update to the latest nickname
+    if (new Date(r.created_at) > new Date(employeeStats[r.employee_id].lastRegisteredAt)) {
+      employeeStats[r.employee_id].lastNickname = r.user_nickname;
+      employeeStats[r.employee_id].lastRegisteredAt = r.created_at;
+    }
+  });
+
+  // Get top 3 by count
+  const top3 = Object.values(employeeStats)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3)
+    .map(v => v.lastNickname);
+
+  return top3;
+};

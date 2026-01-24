@@ -216,6 +216,15 @@
     margin-left: 6px;
 }
 
+.badge-volunteer-rank {
+    background-color: rgba(255, 215, 0, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-left: 4px;
+    cursor: help;
+}
+
 /* Meeting Room Section - New Design */
 .meeting-section {
     margin-top: 16px;
