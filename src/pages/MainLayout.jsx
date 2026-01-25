@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { logout, isAdmin } from '../utils/auth';
 import { addPost } from '../utils/storage';
+import { generatePostFromImage } from '../utils/openaiService';
 import Feed from './Feed';
 import MeetingRooms from './MeetingRooms';
 import Volunteer from './Volunteer';
@@ -18,6 +19,12 @@ const MainLayout = ({ user, onLogout }) => {
     const [newPost, setNewPost] = useState('');
     const [postType, setPostType] = useState('normal'); // 'normal', 'notice', 'volunteer'
     const userIsAdmin = isAdmin();
+
+    // Image upload and AI generation states
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const fileInputRef = useRef(null);
 
     const [isNavVisible, setIsNavVisible] = useState(true);
     const lastScrollY = useRef(0);
@@ -110,6 +117,44 @@ const MainLayout = ({ user, onLogout }) => {
         onLogout();
     };
 
+    // Handle image selection and AI post generation
+    const handleImageSelect = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('이미지 파일만 업로드할 수 있습니다.');
+            return;
+        }
+
+        // Generate post using AI (이미지 미리보기는 표시하지 않음)
+        setIsGenerating(true);
+        try {
+            const generatedText = await generatePostFromImage(file);
+            setNewPost(generatedText);
+        } catch (error) {
+            console.error('Error generating post:', error);
+            alert(error.message || 'AI 글 생성에 실패했습니다. 다시 시도해주세요.');
+        } finally {
+            setIsGenerating(false);
+        }
+
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    // Clear image preview
+    const clearImage = () => {
+        if (imagePreview) {
+            URL.revokeObjectURL(imagePreview);
+        }
+        setSelectedImage(null);
+        setImagePreview(null);
+    };
+
     const handleCreatePost = async () => {
         if (!newPost.trim()) return;
 
@@ -122,6 +167,7 @@ const MainLayout = ({ user, onLogout }) => {
 
         setNewPost('');
         setPostType('normal');
+        clearImage();
         setShowPostModal(false);
         setActiveTab('feed'); // Navigate to feed to show the new post
         // Force feed refresh by re-rendering
@@ -291,10 +337,20 @@ const MainLayout = ({ user, onLogout }) => {
                     setShowPostModal(false);
                     setNewPost('');
                     setPostType('normal');
+                    clearImage();
                 }}
                 title="새 게시물 작성"
             >
                 <div className="post-modal-content">
+                    {/* Hidden file input */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        style={{ display: 'none' }}
+                    />
+
                     {userIsAdmin && (
                         <div className="post-type-selector">
                             <label className="post-type-label">게시물 유형</label>
@@ -323,6 +379,8 @@ const MainLayout = ({ user, onLogout }) => {
                             </div>
                         </div>
                     )}
+
+
                     <div className="modal-composer">
                         <div className="composer-avatar">
                             {user.nickname.charAt(0).toUpperCase()}
@@ -335,14 +393,35 @@ const MainLayout = ({ user, onLogout }) => {
                                 className="modal-textarea"
                                 rows="5"
                                 autoFocus
+                                disabled={isGenerating}
                             />
                         </div>
                     </div>
+
+                    {/* Loading overlay */}
+                    {isGenerating && (
+                        <div className="ai-generating-overlay">
+                            <div className="ai-generating-content">
+                                <div className="ai-spinner"></div>
+                                <span>AI가 글을 작성하고 있습니다...</span>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="modal-actions">
+                        <button
+                            className="modal-ai-button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isGenerating}
+                            title="AI로 사진 분석하여 글 작성하기"
+                        >
+                            <span className="material-symbols-outlined">auto_awesome</span>
+                            <span className="ai-button-label">AI 사진</span>
+                        </button>
                         <button
                             className="modal-publish-button"
                             onClick={handleCreatePost}
-                            disabled={!newPost.trim()}
+                            disabled={!newPost.trim() || isGenerating}
                         >
                             게시하기
                         </button>
