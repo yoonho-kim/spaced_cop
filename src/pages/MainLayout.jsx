@@ -6,6 +6,7 @@ import MeetingRooms from './MeetingRooms';
 import Volunteer from './Volunteer';
 import News from './News';
 import Admin from './Admin';
+import Statistics from './Statistics';
 import Modal from '../components/Modal';
 import './MainLayout.css';
 
@@ -13,6 +14,7 @@ const MainLayout = ({ user, onLogout }) => {
     const [activeTab, setActiveTab] = useState('feed');
     const [showMenu, setShowMenu] = useState(false);
     const [showPostModal, setShowPostModal] = useState(false);
+    const [showStatistics, setShowStatistics] = useState(false);
     const [newPost, setNewPost] = useState('');
     const [postType, setPostType] = useState('normal'); // 'normal', 'notice', 'volunteer'
     const userIsAdmin = isAdmin();
@@ -194,16 +196,42 @@ const MainLayout = ({ user, onLogout }) => {
                             <span>로그아웃</span>
                         </button>
                         {userIsAdmin && (
-                            <button
-                                className="menu-item"
-                                onClick={() => {
-                                    setActiveTab('admin');
-                                    setShowMenu(false);
-                                }}
-                            >
-                                <span className="material-symbols-outlined">admin_panel_settings</span>
-                                <span>관리자 페이지</span>
-                            </button>
+                            <>
+                                <button
+                                    className="menu-item"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowStatistics(true);
+                                        setShowMenu(false);
+                                    }}
+                                    onTouchEnd={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setShowStatistics(true);
+                                        setShowMenu(false);
+                                    }}
+                                >
+                                    <span className="material-symbols-outlined">analytics</span>
+                                    <span>통계</span>
+                                </button>
+                                <button
+                                    className="menu-item"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveTab('admin');
+                                        setShowMenu(false);
+                                    }}
+                                    onTouchEnd={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setActiveTab('admin');
+                                        setShowMenu(false);
+                                    }}
+                                >
+                                    <span className="material-symbols-outlined">admin_panel_settings</span>
+                                    <span>관리자 페이지</span>
+                                </button>
+                            </>
                         )}
                     </div>
                 )}
@@ -321,6 +349,11 @@ const MainLayout = ({ user, onLogout }) => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Statistics Modal */}
+            {showStatistics && (
+                <Statistics onClose={() => setShowStatistics(false)} />
+            )}
         </div>
     );
 };
