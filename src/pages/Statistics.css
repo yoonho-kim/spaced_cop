@@ -4,7 +4,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--bg-primary);
+    background: var(--color-bg-primary);
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -16,7 +16,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, #6b0f99 100%);
     color: white;
 }
 
@@ -51,14 +51,14 @@
     align-items: center;
     justify-content: center;
     gap: 16px;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
 }
 
 .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid var(--border-color);
-    border-top-color: var(--primary-color);
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -74,8 +74,8 @@
     display: flex;
     padding: 16px 20px 0;
     gap: 8px;
-    background: var(--bg-primary);
-    border-bottom: 1px solid var(--border-color);
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .tab-btn {
@@ -87,7 +87,7 @@
     padding: 14px 20px;
     border: none;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
@@ -108,12 +108,12 @@
 }
 
 .tab-btn.active {
-    color: var(--primary-color);
-    background: var(--bg-secondary);
+    color: var(--color-primary);
+    background: var(--color-bg-tertiary);
 }
 
 .tab-btn.active::after {
-    background: var(--primary-color);
+    background: var(--color-primary);
 }
 
 .tab-btn .material-symbols-outlined {
@@ -125,7 +125,7 @@
     flex: 1;
     overflow-y: auto;
     padding: 20px;
-    background: var(--bg-secondary);
+    background: var(--color-bg-tertiary);
 }
 
 .tab-content {
@@ -136,7 +136,7 @@
 
 /* Cards */
 .stat-card {
-    background: var(--bg-primary);
+    background: var(--color-bg-secondary);
     border-radius: 16px;
     padding: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -149,17 +149,17 @@
     margin: 0 0 16px;
     font-size: 1rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--color-text-primary);
 }
 
 .stat-card h3 .material-symbols-outlined {
     font-size: 1.25rem;
-    color: var(--primary-color);
+    color: var(--color-primary);
 }
 
 .no-data {
     text-align: center;
-    color: var(--text-tertiary);
+    color: var(--color-text-tertiary);
     padding: 24px;
     font-size: 0.9rem;
 }
@@ -180,7 +180,7 @@
 .bar-label {
     width: 80px;
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
@@ -190,14 +190,14 @@
 .bar-wrapper {
     flex: 1;
     height: 28px;
-    background: var(--bg-tertiary);
+    background: var(--color-bg-tertiary);
     border-radius: 6px;
     overflow: hidden;
 }
 
 .bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    background: linear-gradient(90deg, var(--color-primary) 0%, #b84ddf 100%);
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -234,7 +234,7 @@
 
 .time-bar {
     width: 100%;
-    background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    background: linear-gradient(180deg, var(--color-primary) 0%, #b84ddf 100%);
     border-radius: 4px 4px 0 0;
     min-height: 4px;
     display: flex;
@@ -252,7 +252,7 @@
 
 .time-label {
     font-size: 0.7rem;
-    color: var(--text-tertiary);
+    color: var(--color-text-tertiary);
 }
 
 /* Summary Card */
@@ -267,7 +267,7 @@
     flex-direction: column;
     align-items: center;
     padding: 16px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, #6b0f99 100%);
     border-radius: 12px;
     color: white;
 }
@@ -308,7 +308,7 @@
     transform: translate(-50%, -50%);
     width: 90px;
     height: 90px;
-    background: var(--bg-primary);
+    background: var(--color-bg-secondary);
     border-radius: 50%;
     display: flex;
     flex-direction: column;
@@ -319,12 +319,12 @@
 .pie-total {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--color-text-primary);
 }
 
 .pie-label {
     font-size: 0.75rem;
-    color: var(--text-tertiary);
+    color: var(--color-text-tertiary);
 }
 
 .status-legend {
@@ -346,27 +346,27 @@
 }
 
 .legend-dot.confirmed {
-    background: var(--success-color);
+    background: var(--color-success);
 }
 
 .legend-dot.pending {
-    background: var(--warning-color);
+    background: var(--color-warning);
 }
 
 .legend-dot.rejected {
-    background: var(--danger-color);
+    background: var(--color-error);
 }
 
 .legend-label {
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     flex: 1;
 }
 
 .legend-value {
     font-size: 0.9rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--color-text-primary);
 }
 
 /* Monthly Chart */
@@ -408,7 +408,7 @@
 
 .monthly-label {
     font-size: 0.65rem;
-    color: var(--text-tertiary);
+    color: var(--color-text-tertiary);
 }
 
 /* Employee Table */
@@ -428,13 +428,13 @@
 .employee-table td {
     padding: 12px 10px;
     text-align: center;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .employee-table th {
-    background: var(--bg-tertiary);
+    background: var(--color-bg-tertiary);
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     font-size: 0.8rem;
 }
 
@@ -445,39 +445,32 @@
 }
 
 .employee-table tbody tr:hover {
-    background: var(--bg-secondary);
+    background: var(--color-bg-tertiary);
 }
 
 .employee-table .emp-id {
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--color-text-primary);
 }
 
 .employee-table .confirmed {
-    color: var(--success-color);
+    color: var(--color-success);
     font-weight: 600;
 }
 
 .employee-table .pending {
-    color: var(--warning-color);
+    color: var(--color-warning);
     font-weight: 600;
 }
 
 .employee-table .rejected {
-    color: var(--danger-color);
+    color: var(--color-error);
     font-weight: 600;
 }
 
 .employee-table .total {
     font-weight: 700;
-    color: var(--primary-color);
-}
-
-/* CSS Variables fallback */
-:root {
-    --success-color: #10b981;
-    --warning-color: #f59e0b;
-    --danger-color: #ef4444;
+    color: var(--color-primary);
 }
 
 /* Mobile Responsive */
