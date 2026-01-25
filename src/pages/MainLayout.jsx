@@ -74,20 +74,31 @@ const MainLayout = ({ user, onLogout }) => {
     // Close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
+            // Check if the click is inside the menu - if so, don't close
             if (menuRef.current && !menuRef.current.contains(event.target)) {
                 setShowMenu(false);
             }
         };
 
+        const handleTouchOutside = (event) => {
+            // For touch events, check if target is inside menu area
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                // Use a small delay to allow button clicks to process first
+                setTimeout(() => {
+                    setShowMenu(false);
+                }, 100);
+            }
+        };
+
         if (showMenu) {
-            // Use 'click' instead of 'mousedown' so menu item clicks are processed first
+            // Use 'click' for desktop and 'touchstart' for mobile
             document.addEventListener('click', handleClickOutside);
-            document.addEventListener('touchend', handleClickOutside);
+            document.addEventListener('touchstart', handleTouchOutside);
         }
 
         return () => {
             document.removeEventListener('click', handleClickOutside);
-            document.removeEventListener('touchend', handleClickOutside);
+            document.removeEventListener('touchstart', handleTouchOutside);
         };
     }, [showMenu]);
 
@@ -173,7 +184,12 @@ const MainLayout = ({ user, onLogout }) => {
                         <button className="menu-item" onClick={(e) => {
                             e.stopPropagation();
                             handleLogout();
-                        }}>
+                        }}
+                            onTouchEnd={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleLogout();
+                            }}>
                             <span className="material-symbols-outlined">logout</span>
                             <span>로그아웃</span>
                         </button>
