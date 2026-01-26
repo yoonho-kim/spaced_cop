@@ -177,7 +177,7 @@ const MainLayout = ({ user, onLogout }) => {
     const tabs = [
         { id: 'feed', label: '홈', icon: 'home', component: Feed },
         { id: 'meetings', label: '회의실', icon: 'meeting_room', component: MeetingRooms },
-        { id: 'volunteer', label: '봉사활동', icon: 'volunteer_activism', component: Volunteer },
+        { id: 'volunteer', label: '봉사활동1', icon: 'volunteer_activism', component: Volunteer },
         { id: 'news', label: 'AI동향', icon: 'newspaper', component: News },
     ];
 
