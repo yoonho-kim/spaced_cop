@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getReservations, getVolunteerRegistrations, getVolunteerActivities } from '../utils/storage';
+import AdminVolunteerStats from './AdminVolunteerStats';
 import './Statistics.css';
 
 const Statistics = ({ onClose }) => {
@@ -237,105 +238,7 @@ const Statistics = ({ onClose }) => {
 
                 {activeTab === 'volunteer' && (
                     <div className="tab-content volunteer-stats">
-                        {/* Status Overview */}
-                        <div className="stat-card">
-                            <h3>
-                                <span className="material-symbols-outlined">pie_chart</span>
-                                신청 현황
-                            </h3>
-                            <div className="status-chart">
-                                <div className="pie-chart-wrapper">
-                                    <div className="pie-chart" style={{
-                                        background: `conic-gradient(
-                                            var(--success-color) 0% ${(statusStats.confirmed / totalStatus) * 100}%,
-                                            var(--warning-color) ${(statusStats.confirmed / totalStatus) * 100}% ${((statusStats.confirmed + statusStats.pending) / totalStatus) * 100}%,
-                                            var(--danger-color) ${((statusStats.confirmed + statusStats.pending) / totalStatus) * 100}% 100%
-                                        )`
-                                    }}>
-                                        <div className="pie-center">
-                                            <span className="pie-total">{totalStatus}</span>
-                                            <span className="pie-label">총 신청</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="status-legend">
-                                    <div className="legend-item">
-                                        <span className="legend-dot confirmed"></span>
-                                        <span className="legend-label">승인</span>
-                                        <span className="legend-value">{statusStats.confirmed}</span>
-                                    </div>
-                                    <div className="legend-item">
-                                        <span className="legend-dot pending"></span>
-                                        <span className="legend-label">대기</span>
-                                        <span className="legend-value">{statusStats.pending}</span>
-                                    </div>
-                                    <div className="legend-item">
-                                        <span className="legend-dot rejected"></span>
-                                        <span className="legend-label">미선정</span>
-                                        <span className="legend-value">{statusStats.rejected}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Monthly Stats */}
-                        <div className="stat-card">
-                            <h3>
-                                <span className="material-symbols-outlined">trending_up</span>
-                                월별 신청 추이
-                            </h3>
-                            <div className="monthly-chart">
-                                {monthlyStats.map(({ month, count }) => (
-                                    <div key={month} className="monthly-bar-container">
-                                        <div
-                                            className="monthly-bar"
-                                            style={{
-                                                height: `${(count / Math.max(...monthlyStats.map(m => m.count), 1)) * 100}%`
-                                            }}
-                                        >
-                                            {count > 0 && <span className="monthly-bar-value">{count}</span>}
-                                        </div>
-                                        <span className="monthly-label">{month}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Employee Stats Table */}
-                        <div className="stat-card">
-                            <h3>
-                                <span className="material-symbols-outlined">badge</span>
-                                사번별 참여 현황
-                            </h3>
-                            <div className="employee-table-wrapper">
-                                {employeeStats.length === 0 ? (
-                                    <p className="no-data">참여 데이터가 없습니다</p>
-                                ) : (
-                                    <table className="employee-table">
-                                        <thead>
-                                            <tr>
-                                                <th>사번</th>
-                                                <th>승인</th>
-                                                <th>대기</th>
-                                                <th>미선정</th>
-                                                <th>합계</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {employeeStats.slice(0, 20).map(emp => (
-                                                <tr key={emp.employeeId}>
-                                                    <td className="emp-id">{emp.employeeId}</td>
-                                                    <td className="confirmed">{emp.confirmed}</td>
-                                                    <td className="pending">{emp.pending}</td>
-                                                    <td className="rejected">{emp.rejected}</td>
-                                                    <td className="total">{emp.total}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )}
-                            </div>
-                        </div>
+                        <AdminVolunteerStats />
                     </div>
                 )}
             </div>

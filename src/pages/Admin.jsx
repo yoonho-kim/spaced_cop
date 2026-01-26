@@ -15,6 +15,7 @@ import {
 import { updateAdminPassword } from '../utils/auth';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import ParticipantListModal from '../components/ParticipantListModal';
 import './Admin.css';
 
 const Admin = () => {
@@ -26,6 +27,8 @@ const Admin = () => {
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('');
     const [formData, setFormData] = useState({});
+    const [selectedActivity, setSelectedActivity] = useState(null);
+    const [showParticipantModal, setShowParticipantModal] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -310,8 +313,8 @@ const Admin = () => {
 
                                 return (
                                     <div key={activity.id} className="admin-item">
-                                        <div className="item-info">
-                                            <h4>{activity.title}</h4>
+                                        <div className="item-info" onClick={() => { setSelectedActivity(activity); setShowParticipantModal(true); }} style={{ cursor: 'pointer' }}>
+                                            <h4>{activity.title} <span className="material-symbols-outlined" style={{ fontSize: '14px', verticalAlign: 'middle', color: '#6366f1' }}>groups</span></h4>
                                             <p className="text-secondary">
                                                 {new Date(activity.date).toLocaleDateString()} ·
                                                 {pendingCount}건 대기중 · {confirmedCount}명 확정
@@ -515,6 +518,15 @@ const Admin = () => {
                     </div>
                 </form>
             </Modal>
+
+            {/* Participant List Modal */}
+            {showParticipantModal && selectedActivity && (
+                <ParticipantListModal
+                    activity={selectedActivity}
+                    onClose={() => { setShowParticipantModal(false); setSelectedActivity(null); }}
+                    onUpdate={loadData}
+                />
+            )}
         </div>
     );
 };

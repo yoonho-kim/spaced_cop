@@ -1,0 +1,493 @@
+.participant-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+}
+
+.participant-modal {
+    background: #1a1a2e;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.modal-header h3 .material-symbols-outlined {
+    color: #6366f1;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.activity-info {
+    padding: 12px 20px;
+    background: rgba(99, 102, 241, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.activity-info h4 {
+    color: #fff;
+    font-size: 1rem;
+    margin: 0 0 4px 0;
+}
+
+.activity-date {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+/* Add Button */
+.add-participant-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 12px 20px;
+    padding: 10px;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px dashed rgba(99, 102, 241, 0.5);
+    border-radius: 8px;
+    color: #a5b4fc;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.add-participant-btn:hover {
+    background: rgba(99, 102, 241, 0.3);
+    border-style: solid;
+}
+
+/* Add Form */
+.add-form {
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.form-row input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.form-row input::placeholder {
+    color: #666;
+}
+
+.form-row input:focus {
+    outline: none;
+    border-color: #6366f1;
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.form-actions .save-btn,
+.form-actions .cancel-btn {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.form-actions .save-btn {
+    background: #6366f1;
+    color: #fff;
+}
+
+.form-actions .save-btn:hover {
+    background: #5558e8;
+}
+
+.form-actions .cancel-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #888;
+}
+
+.form-actions .cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+/* Participant List */
+.participant-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.participant-item:last-child {
+    margin-bottom: 0;
+}
+
+.participant-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.emp-id {
+    display: block;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.emp-name {
+    display: block;
+    color: #fff;
+    font-weight: 500;
+    margin: 2px 0;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    color: #fff;
+}
+
+.participant-hours {
+    text-align: center;
+    padding: 4px 12px;
+    background: rgba(34, 197, 94, 0.15);
+    border-radius: 6px;
+}
+
+.hours-value {
+    display: block;
+    color: #22c55e;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.hours-label {
+    font-size: 0.7rem;
+    color: #888;
+}
+
+.participant-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.edit-btn,
+.delete-btn {
+    background: none;
+    border: none;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.edit-btn {
+    color: #888;
+}
+
+.edit-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    color: #6366f1;
+}
+
+.delete-btn {
+    color: #888;
+}
+
+.delete-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.edit-btn .material-symbols-outlined,
+.delete-btn .material-symbols-outlined {
+    font-size: 18px;
+}
+
+/* Edit Mode */
+.edit-mode {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.edit-fields {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+}
+
+.edit-fields input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #fff;
+    font-size: 0.85rem;
+}
+
+.edit-fields input:focus {
+    outline: none;
+    border-color: #6366f1;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.confirm-btn,
+.edit-actions .cancel-btn {
+    background: none;
+    border: none;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.confirm-btn {
+    color: #22c55e;
+}
+
+.confirm-btn:hover {
+    background: rgba(34, 197, 94, 0.2);
+}
+
+.edit-actions .cancel-btn {
+    color: #888;
+}
+
+.edit-actions .cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* Confirm Overlay */
+.confirm-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.confirm-dialog {
+    text-align: center;
+}
+
+.confirm-dialog p {
+    color: #fff;
+    margin: 0 0 12px 0;
+    font-size: 0.9rem;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.confirm-yes {
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.confirm-yes:hover {
+    background: #dc2626;
+}
+
+.confirm-no {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.confirm-no:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Empty & Loading States */
+.empty-state,
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #666;
+}
+
+.empty-state .material-symbols-outlined {
+    font-size: 48px;
+    margin-bottom: 12px;
+    color: #444;
+}
+
+.empty-state p,
+.loading-state p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Footer */
+.modal-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.total-count,
+.total-hours {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.total-hours {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .form-row {
+        flex-direction: column;
+    }
+
+    .participant-item {
+        flex-wrap: wrap;
+    }
+
+    .participant-info {
+        flex: 1 1 100%;
+        margin-bottom: 8px;
+    }
+
+    .participant-hours {
+        flex: 1;
+    }
+
+    .edit-fields {
+        flex-direction: column;
+    }
+}

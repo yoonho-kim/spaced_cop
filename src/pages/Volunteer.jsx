@@ -6,12 +6,15 @@ import {
 } from '../utils/storage';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
+import ParticipantListModal from '../components/ParticipantListModal';
 import './Volunteer.css';
 
 const Volunteer = ({ user }) => {
     const [activities, setActivities] = useState([]);
     const [registrations, setRegistrations] = useState([]);
     const [activeTab, setActiveTab] = useState('ranking'); // 'ranking' or 'myStatus'
+    const [selectedActivity, setSelectedActivity] = useState(null);
+    const [showParticipantModal, setShowParticipantModal] = useState(false);
 
     const loadData = async () => {
         const activitiesData = await getVolunteerActivities();
@@ -58,7 +61,9 @@ const Volunteer = ({ user }) => {
         alert('봉사활동 신청이 완료되었습니다');
     };
 
-    const myRegistrations = registrations.filter(r => r.userName === user.nickname);
+    const myRegistrations = user?.isAdmin
+        ? registrations  // 관리자는 전체 목록
+        : registrations.filter(r => r.userName === user.nickname); // 일반 사용자는 본인 것만
     const openActivities = activities.filter(a => a.status === 'open'); // 모집중인 활동만 표시
 
     // Calculate volunteer ranking for the current year
@@ -210,7 +215,7 @@ const Volunteer = ({ user }) => {
                         className={`tab-button ${activeTab === 'myStatus' ? 'active' : ''}`}
                         onClick={() => setActiveTab('myStatus')}
                     >
-                        내 등록현황
+                        {user?.isAdmin ? '전체 등록현황' : '내 등록현황'}
                     </button>
                 </div>
 
@@ -251,25 +256,51 @@ const Volunteer = ({ user }) => {
                                 </div>
                             ) : (
                                 <div className="registrations-list">
-                                    {myRegistrations.map(registration => (
-                                        <div key={registration.id} className="registration-item">
-                                            <div className="registration-info">
-                                                <h4>{registration.activityTitle}</h4>
-                                                <p className="text-secondary">
-                                                    {formatDate(registration.registeredAt)} 등록
-                                                </p>
+                                    {myRegistrations.map(registration => {
+                                        const activity = activities.find(a => a.id === registration.activityId);
+                                        return (
+                                            <div
+                                                key={registration.id}
+                                                className="registration-item"
+                                                onClick={() => {
+                                                    if (user?.isAdmin && activity) {
+                                                        setSelectedActivity(activity);
+                                                        setShowParticipantModal(true);
+                                                    }
+                                                }}
+                                                style={user?.isAdmin ? { cursor: 'pointer' } : {}}
+                                            >
+                                                <div className="registration-info">
+                                                    <h4>
+                                                        {registration.activityTitle}
+                                                        {user?.isAdmin && <span className="material-symbols-outlined" style={{ fontSize: '14px', marginLeft: '6px', verticalAlign: 'middle', color: '#6366f1' }}>groups</span>}
+                                                    </h4>
+                                                    <p className="text-secondary">
+                                                        {user?.isAdmin && <span style={{ color: '#a5b4fc' }}>{registration.employeeId} · </span>}
+                                                        {formatDate(registration.registeredAt)} 등록
+                                                    </p>
+                                                </div>
+                                                <span className={`badge ${getStatusBadge(registration.status)}`}>
+                                                    {getStatusLabel(registration.status)}
+                                                </span>
                                             </div>
-                                            <span className={`badge ${getStatusBadge(registration.status)}`}>
-                                                {getStatusLabel(registration.status)}
-                                            </span>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* Participant List Modal (Admin) */}
+            {showParticipantModal && selectedActivity && (
+                <ParticipantListModal
+                    activity={selectedActivity}
+                    onClose={() => { setShowParticipantModal(false); setSelectedActivity(null); }}
+                    onUpdate={loadData}
+                />
+            )}
         </div>
     );
 };

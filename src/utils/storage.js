@@ -22,7 +22,7 @@ export const initializeStorage = async () => {
       { name: 'Meeting Room 1', capacity: 4, floor: '2F' },
       { name: 'Meeting Room 2', capacity: 4, floor: '2F' },
     ];
-    await supabase.from('meeting_rooms').insert(defaultRooms);
+    //await supabase.from('meeting_rooms').insert(defaultRooms);
   }
 };
 
@@ -612,4 +612,220 @@ export const getTop3Volunteers = async () => {
     .map(v => v.lastNickname);
 
   return top3;
+};
+
+// ============================================
+// ADMIN VOLUNTEER STATISTICS
+// ============================================
+
+// 사용자별 봉사 통계
+export const getVolunteerStatsByUser = async () => {
+  const { data, error } = await supabase
+    .from('volunteer_registrations')
+    .select(`
+      *,
+      volunteer_activities(title, date)
+    `)
+    .eq('status', 'confirmed');
+
+  if (error) {
+    console.error('Error fetching volunteer stats by user:', error);
+    return [];
+  }
+
+  // Group by employee_id
+  const userStats = {};
+  data.forEach(reg => {
+    const empId = reg.employee_id || 'unknown';
+    if (!userStats[empId]) {
+      userStats[empId] = {
+        employeeId: empId,
+        employeeName: reg.employee_name || reg.user_nickname || '-',
+        totalParticipations: 0,
+        totalHours: 0,
+        activities: []
+      };
+    }
+    userStats[empId].totalParticipations += 1;
+    userStats[empId].totalHours += parseFloat(reg.recognized_hours || 0);
+    if (reg.volunteer_activities?.title) {
+      userStats[empId].activities.push(reg.volunteer_activities.title);
+    }
+  });
+
+  // Convert to array and format
+  return Object.values(userStats)
+    .map(u => ({
+      ...u,
+      totalHours: Math.round(u.totalHours * 10) / 10,
+      activityList: [...new Set(u.activities)].join(', ')
+    }))
+    .sort((a, b) => b.totalHours - a.totalHours);
+};
+
+// 봉사활동별 통계 (참여인원, 모집률)
+export const getVolunteerStatsByActivity = async () => {
+  const { data: activities, error: actError } = await supabase
+    .from('volunteer_activities')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (actError) {
+    console.error('Error fetching activities:', actError);
+    return [];
+  }
+
+  const { data: registrations, error: regError } = await supabase
+    .from('volunteer_registrations')
+    .select('*')
+    .eq('status', 'confirmed');
+
+  if (regError) {
+    console.error('Error fetching registrations:', regError);
+    return [];
+  }
+
+  // Count registrations per activity
+  const regCounts = {};
+  registrations.forEach(reg => {
+    regCounts[reg.activity_id] = (regCounts[reg.activity_id] || 0) + 1;
+  });
+
+  return activities.map(act => {
+    const participantCount = regCounts[act.id] || 0;
+    const maxParticipants = act.max_participants || 0;
+    const fillRate = maxParticipants > 0
+      ? Math.round((participantCount / maxParticipants) * 100)
+      : 0;
+
+    return {
+      id: act.id,
+      title: act.title,
+      date: act.date,
+      maxParticipants,
+      participantCount,
+      fillRate
+    };
+  });
+};
+
+// 월별 참여 통계
+export const getMonthlyVolunteerStats = async () => {
+  const { data, error } = await supabase
+    .from('volunteer_registrations')
+    .select('*')
+    .eq('status', 'confirmed');
+
+  if (error) {
+    console.error('Error fetching monthly stats:', error);
+    return [];
+  }
+
+  // Group by month
+  const monthlyStats = {};
+  data.forEach(reg => {
+    const date = new Date(reg.created_at);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+    if (!monthlyStats[monthKey]) {
+      monthlyStats[monthKey] = {
+        month: monthKey,
+        participantCount: 0,
+        uniqueParticipants: new Set(),
+        totalHours: 0
+      };
+    }
+    monthlyStats[monthKey].participantCount += 1;
+    monthlyStats[monthKey].uniqueParticipants.add(reg.employee_id);
+    monthlyStats[monthKey].totalHours += parseFloat(reg.recognized_hours || 0);
+  });
+
+  return Object.values(monthlyStats)
+    .map(m => ({
+      month: m.month,
+      participantCount: m.participantCount,
+      uniqueParticipants: m.uniqueParticipants.size,
+      totalHours: Math.round(m.totalHours * 10) / 10
+    }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+};
+
+// 특정 활동의 참가자 목록
+export const getActivityParticipants = async (activityId) => {
+  const { data, error } = await supabase
+    .from('volunteer_registrations')
+    .select('*')
+    .eq('activity_id', activityId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching participants:', error);
+    return [];
+  }
+
+  return data.map(reg => ({
+    id: reg.id,
+    activityId: reg.activity_id,
+    employeeId: reg.employee_id,
+    employeeName: reg.employee_name || reg.user_nickname,
+    userName: reg.user_nickname,
+    status: reg.status,
+    recognizedHours: reg.recognized_hours || 0,
+    registeredAt: reg.created_at
+  }));
+};
+
+// 관리자가 참가자 추가
+export const addParticipantByAdmin = async (activityId, activityTitle, employeeId, employeeName, hours) => {
+  const { data, error } = await supabase
+    .from('volunteer_registrations')
+    .insert([{
+      activity_id: activityId,
+      activity_title: activityTitle,
+      employee_id: employeeId,
+      employee_name: employeeName,
+      user_nickname: employeeName,
+      status: 'confirmed',
+      recognized_hours: hours || 0
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding participant:', error);
+    return null;
+  }
+
+  return data;
+};
+
+// 참가자 인정시간 수정
+export const updateParticipantHours = async (registrationId, hours, employeeName) => {
+  const updates = { recognized_hours: hours };
+  if (employeeName) updates.employee_name = employeeName;
+
+  const { error } = await supabase
+    .from('volunteer_registrations')
+    .update(updates)
+    .match({ id: registrationId });
+
+  if (error) {
+    console.error('Error updating participant hours:', error);
+    return false;
+  }
+  return true;
+};
+
+// 참가자 삭제
+export const deleteVolunteerRegistration = async (registrationId) => {
+  const { error } = await supabase
+    .from('volunteer_registrations')
+    .delete()
+    .match({ id: registrationId });
+
+  if (error) {
+    console.error('Error deleting registration:', error);
+    return false;
+  }
+  return true;
 };
