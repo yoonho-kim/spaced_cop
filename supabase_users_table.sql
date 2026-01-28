@@ -1,0 +1,32 @@
+-- ============================================
+-- Space D - 기존 users 테이블에 컬럼 추가 SQL
+-- ============================================
+-- 이 SQL을 Supabase 대시보드 > SQL Editor에서 실행하세요
+
+-- 1. 성향 질문 답변 컬럼 추가
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS personality_time VARCHAR(50),
+ADD COLUMN IF NOT EXISTS personality_feeling VARCHAR(50),
+ADD COLUMN IF NOT EXISTS personality_place VARCHAR(50);
+
+-- 2. AI 생성 프로필 아이콘 컬럼 추가
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS profile_icon_url TEXT,
+ADD COLUMN IF NOT EXISTS profile_icon_prompt TEXT;
+
+-- 3. 비밀번호 해시 컬럼 추가 (없는 경우)
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+
+-- 4. 사번 컬럼 추가 (없는 경우)
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS employee_id VARCHAR(20);
+
+-- 5. 성별 컬럼 추가 (없는 경우)
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS gender VARCHAR(10);
+
+-- ============================================
+-- 기존 테이블 구조 확인용 쿼리
+-- ============================================
+-- SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users';

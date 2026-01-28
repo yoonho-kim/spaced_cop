@@ -201,8 +201,16 @@ const MainLayout = ({ user, onLogout }) => {
                 <div className="header-content">
                     <div className="header-user-info">
                         <div className="user-avatar-wrapper">
-                            <div className="user-avatar">
-                                {user.nickname.charAt(0).toUpperCase()}
+                            <div
+                                className="user-avatar"
+                                style={user.profileIconUrl ? {
+                                    backgroundImage: `url(${user.profileIconUrl})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    border: '1px solid rgba(0,0,0,0.1)'
+                                } : {}}
+                            >
+                                {!user.profileIconUrl && user.nickname.charAt(0).toUpperCase()}
                             </div>
                             <div className="user-status-indicator"></div>
                         </div>
@@ -382,8 +390,16 @@ const MainLayout = ({ user, onLogout }) => {
 
 
                     <div className="modal-composer">
-                        <div className="composer-avatar">
-                            {user.nickname.charAt(0).toUpperCase()}
+                        <div
+                            className="composer-avatar"
+                            style={user.profileIconUrl ? {
+                                backgroundImage: `url(${user.profileIconUrl})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                border: '1px solid rgba(0,0,0,0.1)'
+                            } : {}}
+                        >
+                            {!user.profileIconUrl && user.nickname.charAt(0).toUpperCase()}
                         </div>
                         <div className="composer-input-area">
                             <textarea

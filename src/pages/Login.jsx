@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { login } from '../utils/auth';
+import { login, loginWithPassword } from '../utils/auth';
+import SignUpModal from '../components/SignUpModal';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
@@ -9,6 +11,9 @@ const Login = ({ onLogin }) => {
     const [showPasswordText, setShowPasswordText] = useState(false);
     const [error, setError] = useState('');
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [showSignUpModal, setShowSignUpModal] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Handle dark mode toggle
     useEffect(() => {
@@ -33,7 +38,7 @@ const Login = ({ onLogin }) => {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!nickname.trim()) {
@@ -41,18 +46,39 @@ const Login = ({ onLogin }) => {
             return;
         }
 
-        if (nickname.toLowerCase() === 'admin' && !password) {
-            setError('관리자 비밀번호를 입력해주세요');
+        // 비밀번호 필수 (게스트 로그인 제거)
+        if (!password) {
+            setError('비밀번호를 입력해주세요');
             return;
         }
 
-        const result = login(nickname, password || null);
+        // 관리자 로그인
+        if (nickname.toLowerCase() === 'admin') {
+            const result = login(nickname, password);
+            if (result.success) {
+                onLogin(result.user);
+            } else {
+                setError(result.error);
+            }
+            return;
+        }
+
+        // DB 인증 로그인
+        setIsLoading(true);
+        const result = await loginWithPassword(nickname, password);
+        setIsLoading(false);
 
         if (result.success) {
             onLogin(result.user);
         } else {
             setError(result.error);
         }
+    };
+
+    const handleSignUpSuccess = (registeredNickname) => {
+        setNickname(registeredNickname);
+        setPassword('');
+        setShowPassword(false);
     };
 
     return (
@@ -93,29 +119,27 @@ const Login = ({ onLogin }) => {
                             />
                         </div>
 
-                        {/* Password Input */}
-                        {showPassword && (
-                            <div className="input-wrapper password-wrapper animate-fade-in">
-                                <span className="material-icons-outlined input-icon">lock</span>
-                                <input
-                                    type={showPasswordText ? "text" : "password"}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="비밀번호"
-                                    className="login-input"
-                                    autoComplete="off"
-                                />
-                                <button
-                                    type="button"
-                                    className="password-toggle"
-                                    onClick={() => setShowPasswordText(!showPasswordText)}
-                                >
-                                    <span className="material-icons-outlined">
-                                        {showPasswordText ? 'visibility' : 'visibility_off'}
-                                    </span>
-                                </button>
-                            </div>
-                        )}
+                        {/* Password Input - 회원은 필수, 게스트는 선택 */}
+                        <div className="input-wrapper password-wrapper">
+                            <span className="material-icons-outlined input-icon">lock</span>
+                            <input
+                                type={showPasswordText ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="비밀번호"
+                                className="login-input"
+                                autoComplete="off"
+                            />
+                            <button
+                                type="button"
+                                className="password-toggle"
+                                onClick={() => setShowPasswordText(!showPasswordText)}
+                            >
+                                <span className="material-icons-outlined">
+                                    {showPasswordText ? 'visibility' : 'visibility_off'}
+                                </span>
+                            </button>
+                        </div>
 
                         {/* Error Message */}
                         {error && (
@@ -132,11 +156,21 @@ const Login = ({ onLogin }) => {
 
                     {/* Footer Links - Inside Card */}
                     <div className="login-card-footer">
-                        <a href="#">비밀번호 찾기</a>
+                        <button
+                            type="button"
+                            className="footer-link-btn"
+                            onClick={() => setShowPasswordModal(true)}
+                        >
+                            비밀번호 변경
+                        </button>
                         <span className="divider"></span>
-                        <a href="#">회원가입</a>
-                        <span className="divider"></span>
-                        <a href="#">문의하기</a>
+                        <button
+                            type="button"
+                            className="footer-link-btn"
+                            onClick={() => setShowSignUpModal(true)}
+                        >
+                            회원가입
+                        </button>
                     </div>
                 </div>
 
@@ -154,6 +188,19 @@ const Login = ({ onLogin }) => {
                     {isDarkMode ? 'light_mode' : 'dark_mode'}
                 </span>
             </button>
+
+            {/* Sign Up Modal */}
+            <SignUpModal
+                isOpen={showSignUpModal}
+                onClose={() => setShowSignUpModal(false)}
+                onSignUpSuccess={handleSignUpSuccess}
+            />
+
+            {/* Change Password Modal */}
+            <ChangePasswordModal
+                isOpen={showPasswordModal}
+                onClose={() => setShowPasswordModal(false)}
+            />
         </>
     );
 };
