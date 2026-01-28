@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/api/huggingface/:path*",
+            "destination": "https://router.huggingface.co/:path*"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
