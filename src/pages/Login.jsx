@@ -63,17 +63,7 @@ const Login = ({ onLogin }) => {
             </div>
 
             <main className="login-container">
-                {/* Status Bar */}
-                <div className="login-status-bar">
-                    <span className="time">9:41</span>
-                    <div className="icons">
-                        <span className="material-icons-outlined">signal_cellular_alt</span>
-                        <span className="material-icons-outlined">wifi</span>
-                        <span className="material-icons-outlined" style={{ transform: 'rotate(90deg)' }}>battery_full</span>
-                    </div>
-                </div>
 
-                {/* Glass Card */}
                 <div className="login-glass-card">
                     {/* Logo Section */}
                     <div className="login-logo-section">
