@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/api/huggingface/:path*",
-            "destination": "https://router.huggingface.co/:path*"
+            "destination": "https://api-inference.huggingface.co/:path*"
         },
         {
             "source": "/(.*)",
