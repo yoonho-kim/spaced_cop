@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/huggingface': {
-        target: 'https://api-inference.huggingface.co',
+        target: 'https://router.huggingface.co',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/huggingface/, '/models/stabilityai/stable-diffusion-xl-base-1.0'),
         secure: false,

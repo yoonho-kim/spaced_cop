@@ -16,7 +16,7 @@ export default async function handler(request, response) {
         return
     }
 
-    const MODEL_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
+    const MODEL_URL = "https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
     const API_KEY = process.env.VITE_HUGGINGFACE_API_KEY;
 
     if (request.method !== 'POST') {
