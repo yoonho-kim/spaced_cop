@@ -9,7 +9,7 @@ export default defineConfig({
       '/api/huggingface': {
         target: 'https://api-inference.huggingface.co',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/huggingface/, ''),
+        rewrite: (path) => path.replace(/^\/api\/huggingface/, '/models/stabilityai/stable-diffusion-xl-base-1.0'),
         secure: false,
       },
     },

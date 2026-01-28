@@ -4,7 +4,7 @@
  */
 
 const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
-const MODEL_URL = '/api/huggingface/models/stabilityai/stable-diffusion-xl-base-1.0';
+const MODEL_URL = '/api/huggingface';
 
 // 성향 질문 → AI 프롬프트 매핑
 const PERSONALITY_MAPPINGS = {
