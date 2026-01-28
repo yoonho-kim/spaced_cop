@@ -1,11 +1,11 @@
 {
     "rewrites": [
         {
-            "source": "/api/huggingface",
-            "destination": "/api/huggingface"
+            "source": "/api/(.*)",
+            "destination": "/api/$1"
         },
         {
-            "source": "/((?!api/.*).*)",
+            "source": "/(.*)",
             "destination": "/index.html"
         }
     ]
