@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { login } from '../utils/auth';
-import Button from '../components/Button';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
@@ -9,6 +8,16 @@ const Login = ({ onLogin }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordText, setShowPasswordText] = useState(false);
     const [error, setError] = useState('');
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    // Handle dark mode toggle
+    useEffect(() => {
+        if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [isDarkMode]);
 
     const handleNicknameChange = (e) => {
         const value = e.target.value;
@@ -47,75 +56,115 @@ const Login = ({ onLogin }) => {
     };
 
     return (
-        <div className="login-container">
-            {/* Background Decoration */}
-            <div className="login-decoration"></div>
+        <>
+            {/* Background Image with Overlay */}
+            <div className="login-bg-image">
+                <div className="login-bg-overlay"></div>
+            </div>
 
-            <div className="login-card">
-                {/* Logo Section */}
-                <div className="login-logo">
-                    <img src="/space-d-logo.png" alt="Space D" className="logo-image" />
+            <main className="login-container">
+                {/* Status Bar */}
+                <div className="login-status-bar">
+                    <span className="time">9:41</span>
+                    <div className="icons">
+                        <span className="material-icons-outlined">signal_cellular_alt</span>
+                        <span className="material-icons-outlined">wifi</span>
+                        <span className="material-icons-outlined" style={{ transform: 'rotate(90deg)' }}>battery_full</span>
+                    </div>
                 </div>
 
-                {/* Headline */}
-                <h1 className="login-headline">
-                    반가워요!
-                </h1>
-
-                {/* Login Form */}
-                <form onSubmit={handleSubmit} className="login-form">
-                    {/* Nickname Input */}
-                    <div className="input-wrapper">
-                        <input
-                            type="text"
-                            value={nickname}
-                            onChange={handleNicknameChange}
-                            placeholder="닉네임 (또는 사번)"
-                            className="login-input"
-                            autoFocus
-                            autoComplete="off"
-                        />
+                {/* Glass Card */}
+                <div className="login-glass-card">
+                    {/* Logo Section */}
+                    <div className="login-logo-section">
+                        <h1 className="login-title">Space D</h1>
+                        <p className="login-subtitle">Creative Workspace</p>
                     </div>
 
-                    {/* Password Input */}
-                    {showPassword && (
-                        <div className="input-wrapper password-wrapper animate-fade-in">
+                    {/* Greeting */}
+                    <div className="login-greeting">
+                        <h2>반가워요!</h2>
+                        <p>로그인하여 업무를 시작하세요</p>
+                    </div>
+
+                    {/* Login Form */}
+                    <form onSubmit={handleSubmit} className="login-form">
+                        {/* Nickname Input */}
+                        <div className="input-wrapper">
+                            <span className="material-icons-outlined input-icon">person</span>
                             <input
-                                type={showPasswordText ? "text" : "password"}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="비밀번호"
+                                type="text"
+                                value={nickname}
+                                onChange={handleNicknameChange}
+                                placeholder="닉네임 (또는 사번)"
                                 className="login-input"
+                                autoFocus
                                 autoComplete="off"
                             />
-                            <button
-                                type="button"
-                                className="password-toggle"
-                                onClick={() => setShowPasswordText(!showPasswordText)}
-                            >
-                                <span className="material-symbols-outlined">
-                                    {showPasswordText ? 'visibility' : 'visibility_off'}
-                                </span>
-                            </button>
                         </div>
-                    )}
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className="error-message animate-fade-in">
-                            {error}
-                        </div>
-                    )}
+                        {/* Password Input */}
+                        {showPassword && (
+                            <div className="input-wrapper password-wrapper animate-fade-in">
+                                <span className="material-icons-outlined input-icon">lock</span>
+                                <input
+                                    type={showPasswordText ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="비밀번호"
+                                    className="login-input"
+                                    autoComplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    className="password-toggle"
+                                    onClick={() => setShowPasswordText(!showPasswordText)}
+                                >
+                                    <span className="material-icons-outlined">
+                                        {showPasswordText ? 'visibility' : 'visibility_off'}
+                                    </span>
+                                </button>
+                            </div>
+                        )}
 
-                    {/* Login Button */}
-                    <button type="submit" className="login-button">
-                        로그인
-                    </button>
-                </form>
+                        {/* Error Message */}
+                        {error && (
+                            <div className="error-message animate-fade-in">
+                                {error}
+                            </div>
+                        )}
 
+                        {/* Login Button */}
+                        <button type="submit" className="login-button">
+                            로그인
+                        </button>
+                    </form>
 
-            </div>
-        </div>
+                    {/* Footer Links - Inside Card */}
+                    <div className="login-card-footer">
+                        <a href="#">비밀번호 찾기</a>
+                        <span className="divider"></span>
+                        <a href="#">회원가입</a>
+                        <span className="divider"></span>
+                        <a href="#">문의하기</a>
+                    </div>
+                </div>
+
+                {/* Home Indicator */}
+                <div className="login-home-indicator"></div>
+            </main>
+
+            {/* Dark Mode Toggle */}
+            <button
+                className="dark-mode-toggle"
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                aria-label="다크 모드 전환"
+            >
+                <span className="material-icons-outlined">
+                    {isDarkMode ? 'light_mode' : 'dark_mode'}
+                </span>
+            </button>
+        </>
     );
 };
 
