@@ -3,8 +3,6 @@ export default async function handler(request, response) {
     // CORS handling
     response.setHeader('Access-Control-Allow-Credentials', true)
     response.setHeader('Access-Control-Allow-Origin', '*')
-    // another common pattern
-    // response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
     response.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')
     response.setHeader(
         'Access-Control-Allow-Headers',
@@ -16,11 +14,20 @@ export default async function handler(request, response) {
         return
     }
 
+    // Health check for GET request (debugging)
+    if (request.method === 'GET') {
+        return response.status(200).json({ status: 'ok', message: 'Hugging Face Proxy is running' });
+    }
+
+    // Use router endpoint as api-inference is deprecated
     const MODEL_URL = "https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
     const API_KEY = process.env.VITE_HUGGINGFACE_API_KEY;
 
     if (request.method !== 'POST') {
-        return response.status(405).json({ error: 'Method Not Allowed' });
+        return response.status(405).json({
+            error: 'Method Not Allowed',
+            receivedMethod: request.method || 'unknown'
+        });
     }
 
     try {
@@ -42,7 +49,7 @@ export default async function handler(request, response) {
         const arrayBuffer = await hfResponse.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // Set appropriate content type (usually image/jpeg for Stable Diffusion)
+        // Set appropriate content type
         response.setHeader('Content-Type', hfResponse.headers.get('content-type') || 'image/jpeg');
         return response.status(200).send(buffer);
 

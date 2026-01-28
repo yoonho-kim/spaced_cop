@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/api/huggingface",
+            "destination": "/api/huggingface"
+        },
+        {
             "source": "/((?!api/.*).*)",
             "destination": "/index.html"
         }
