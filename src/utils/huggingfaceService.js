@@ -32,14 +32,15 @@ const PERSONALITY_MAPPINGS = {
 
 /**
  * 성향 데이터를 기반으로 AI 프롬프트 생성
+ * 항상 사람 캐릭터가 나오도록 강화된 프롬프트
  */
-export const generatePrompt = (personality) => {
+export const generatePrompt = (personality, nickname = '') => {
     const timeData = PERSONALITY_MAPPINGS.time[personality.time] || PERSONALITY_MAPPINGS.time.morning;
     const feelingData = PERSONALITY_MAPPINGS.feeling[personality.feeling] || PERSONALITY_MAPPINGS.feeling.citrus;
     const placeData = PERSONALITY_MAPPINGS.place[personality.place] || PERSONALITY_MAPPINGS.place.city;
 
-    // 인물(Human) 중심의 3D 캐릭터 스타일 프롬프트
-    const prompt = `Cute 3d character avatar, stylized person portrait, pixar style, disney style, ${timeData.colors}, ${timeData.mood} atmosphere, ${feelingData.shape} design elements, ${feelingData.texture} texture, ${placeData.background} background, soft studio lighting, octane render, high quality, detailed, 8k, 1:1 aspect ratio, looking at camera`;
+    // 강화된 인물 중심 프롬프트 - 반드시 사람 캐릭터가 나오도록
+    const prompt = `portrait of a single friendly young adult person, cute 3d cartoon character, pixar disney style, facing camera, centered composition, upper body shot, human face with expressive eyes and smile, ${timeData.colors} color scheme, ${timeData.mood} mood, wearing stylish modern clothes, ${placeData.background} in background, soft diffused lighting, high quality render, clean sharp details, professional character design, 4k, masterpiece`;
 
     return prompt;
 };
@@ -62,9 +63,10 @@ export const generateProfileIcon = async (personality) => {
             body: JSON.stringify({
                 inputs: prompt,
                 parameters: {
-                    negative_prompt: 'ugly, blurry, low quality, text, watermark, signature, deformed, bad anatomy, disfigured, logo, icon, flat',
-                    num_inference_steps: 30,
-                    guidance_scale: 7.5,
+                    // 강화된 negative prompt - 깨진 이미지와 비인물 요소 방지
+                    negative_prompt: 'abstract, icon, logo, text, watermark, multiple people, group, animal, monster, robot, alien, deformed face, ugly, distorted, blurry, low quality, bad anatomy, disfigured, mutated, extra limbs, missing limbs, floating limbs, disconnected limbs, malformed hands, extra fingers, fused fingers, too many fingers, long neck, mutation, poorly drawn face, cloned face, gross proportions, missing arms, missing legs, extra arms, extra legs, fused bodies, glitchy, grainy, pixelated, jpeg artifacts',
+                    num_inference_steps: 35,
+                    guidance_scale: 8.5,
                     width: 512,
                     height: 512
                 }
