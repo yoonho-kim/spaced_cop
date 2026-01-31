@@ -192,9 +192,9 @@ const Feed = ({ user, onNavigateToTab }) => {
                 <section className="volunteer-section">
                     <div className="section-header">
                         <h3>봉사활동 신청 결과</h3>
-                        <a href="#" className="view-all-link" onClick={(e) => { e.preventDefault(); onNavigateToTab && onNavigateToTab('volunteer'); }}>전체보기</a>
+                        <button className="view-all-link" onClick={() => onNavigateToTab && onNavigateToTab('volunteer')}>전체보기</button>
                     </div>
-                    <div className="volunteer-cards-scroll">
+                    <div className="volunteer-cards-scroll no-scrollbar">
                         {publishedActivities.map(activity => (
                             <div key={activity.id} className="volunteer-card" onClick={() => handleShowWinners(activity)}>
                                 <div className="volunteer-card-content">
@@ -221,55 +221,28 @@ const Feed = ({ user, onNavigateToTab }) => {
             {topMeetingRoom && (
                 <section className="meeting-section">
                     <div className="section-header">
-                        <h3>회의실 예약 현황</h3>
-                        <a href="#" className="view-all-link" onClick={(e) => { e.preventDefault(); onNavigateToTab && onNavigateToTab('meetings'); }}>예약하기</a>
+                        <h3>회의실 현황</h3>
+                        <button className="view-all-link" onClick={() => onNavigateToTab && onNavigateToTab('meetings')}>전체보기</button>
                     </div>
                     <div className="meeting-cards">
                         <div className="meeting-card-new" onClick={() => onNavigateToTab && onNavigateToTab('meetings')}>
                             <div className="meeting-image-container">
                                 <img src="/meeting-room.png" alt="Meeting Room" className="meeting-room-image" />
-                                <div className="meeting-overlay">
-                                    <div className={`meeting-status-badge ${topMeetingRoom.isBusinessHours && topMeetingRoom.isAvailable ? 'available' : 'in-use'}`}>
-                                        <div className="status-indicator"></div>
-                                        <span>
-                                            {!topMeetingRoom.isBusinessHours
-                                                ? '운영시간 외'
-                                                : topMeetingRoom.isAvailable
-                                                    ? '사용 가능'
-                                                    : '사용 중'}
-                                        </span>
-                                    </div>
-                                </div>
+                            </div>
+                            <div className="meeting-overlay"></div>
+                            <div className={`meeting-status-badge ${topMeetingRoom.isBusinessHours && topMeetingRoom.isAvailable ? 'available' : 'in-use'}`}>
+                                <span className="status-indicator"></span>
+                                {!topMeetingRoom.isBusinessHours
+                                    ? '운영시간 외'
+                                    : topMeetingRoom.isAvailable
+                                        ? 'Available'
+                                        : '사용 중'}
                             </div>
                             <div className="meeting-card-info">
                                 <div className="meeting-header">
                                     <h4>{topMeetingRoom.name}</h4>
-                                    <span className="meeting-floor">{topMeetingRoom.floor}</span>
+                                    <span className="meeting-floor">{topMeetingRoom.capacity}~12인실 • {topMeetingRoom.floor}</span>
                                 </div>
-                                <div className="meeting-meta">
-                                    <div className="meta-item">
-                                        <span className="material-symbols-outlined">group</span>
-                                        <span>최대 {topMeetingRoom.capacity}명</span>
-                                    </div>
-                                    {topMeetingRoom.currentReservation && topMeetingRoom.isBusinessHours && (
-                                        <div className="meta-item">
-                                            <span className="material-symbols-outlined">schedule</span>
-                                            <span>{topMeetingRoom.currentReservation.startTime}:00 - {topMeetingRoom.currentReservation.endTime}:00</span>
-                                        </div>
-                                    )}
-                                    {!topMeetingRoom.isBusinessHours && (
-                                        <div className="meta-item">
-                                            <span className="material-symbols-outlined">schedule</span>
-                                            <span>운영시간: 09:00 - 18:00</span>
-                                        </div>
-                                    )}
-                                </div>
-                                {topMeetingRoom.currentReservation && topMeetingRoom.isBusinessHours && (
-                                    <div className="current-reservation">
-                                        <p className="reservation-label">현재 예약</p>
-                                        <p className="reservation-detail">{topMeetingRoom.currentReservation.department} · {topMeetingRoom.currentReservation.purpose}</p>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -320,20 +293,25 @@ const Feed = ({ user, onNavigateToTab }) => {
                                 <div key={post.id} className="post-item animate-fade-in">
                                     <div className="post-content">
                                         <div className="post-header">
-                                            <span className="post-author">
-                                                {getVolunteerRankBadge(post.author) && (
-                                                    <span className="badge badge-volunteer-rank" title="봉사활동 Top 3">
-                                                        {getVolunteerRankBadge(post.author)}
-                                                    </span>
-                                                )}
-                                                {post.author}
-                                                {post.isAdmin && <span className="badge badge-admin">관리자</span>}
-                                                {post.postType === 'notice' && <span className="badge badge-notice">공지사항</span>}
-                                                {post.postType === 'volunteer' && <span className="badge badge-volunteer">봉사활동</span>}
-                                            </span>
-                                            <span className="post-time text-secondary">
-                                                {formatTimestamp(post.timestamp)}
-                                            </span>
+                                            <div className="avatar-placeholder">
+                                                <span className="material-symbols-outlined">person</span>
+                                            </div>
+                                            <div>
+                                                <p className="post-author">
+                                                    {getVolunteerRankBadge(post.author) && (
+                                                        <span className="badge badge-volunteer-rank" title="봉사활동 Top 3">
+                                                            {getVolunteerRankBadge(post.author)}
+                                                        </span>
+                                                    )}
+                                                    {post.author}
+                                                    {post.isAdmin && <span className="badge badge-admin">관리자</span>}
+                                                    {post.postType === 'notice' && <span className="badge badge-notice">공지사항</span>}
+                                                    {post.postType === 'volunteer' && <span className="badge badge-volunteer">봉사활동</span>}
+                                                </p>
+                                                <p className="post-time">
+                                                    {formatTimestamp(post.timestamp)}
+                                                </p>
+                                            </div>
                                         </div>
                                         <p className="post-text">{post.content}</p>
 

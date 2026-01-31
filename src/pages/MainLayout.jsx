@@ -220,9 +220,12 @@ const MainLayout = ({ user, onLogout }) => {
                         </div>
                     </div>
                     <div className="header-actions" ref={menuRef}>
-                        <button className="icon-button" aria-label="알림">
-                            <span className="material-symbols-outlined">notifications</span>
-                            <span className="notification-badge"></span>
+                        <button
+                            className="ai-card-button"
+                            aria-label="AI카드"
+                            onClick={() => window.open('https://cardtest-ivory.vercel.app/', '_blank')}
+                        >
+                            <span className="ai-card-text">AI카드</span>
                         </button>
                         <button
                             className="icon-button"

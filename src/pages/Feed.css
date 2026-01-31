@@ -1,16 +1,42 @@
-/* Kurly Feed Design */
+/* Feed Design - Soft Gradient & Glass Morphism */
 .feed-container {
     max-width: 448px;
     margin: 0 auto;
     padding-bottom: 24px;
+    background: transparent;
+}
+
+/* Greeting Section */
+.greeting-section {
+    margin-bottom: 24px;
+}
+
+.greeting-section h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.greeting-section h2 .highlight {
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.greeting-section p {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 4px;
+    font-weight: 500;
 }
 
 /* Section Headers */
 .section-header {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
-    padding: 0 16px 12px;
+    padding: 0 0 12px;
 }
 
 .section-header h3 {
@@ -21,27 +47,31 @@
 }
 
 .view-all-link {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     text-decoration: none;
-    transition: text-decoration 0.2s ease;
+    transition: opacity 0.2s ease;
 }
 
 .view-all-link:hover {
-    text-decoration: underline;
+    opacity: 0.8;
 }
 
 /* Volunteer Activities Section */
 .volunteer-section {
     margin-top: 16px;
+    padding: 0 16px;
 }
 
 .volunteer-cards-scroll {
     display: flex;
     overflow-x: auto;
     gap: 16px;
-    padding: 0 16px 16px;
+    padding: 0 0 16px;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -55,18 +85,21 @@
     min-width: 200px;
     width: 60%;
     flex-shrink: 0;
-    background-color: var(--color-surface-light);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border-radius: 24px;
     overflow: hidden;
     scroll-snap-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 }
 
 .volunteer-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: scale(1.01);
 }
 
 
@@ -144,9 +177,9 @@
 .detail-button {
     width: 100%;
     padding: 8px;
-    border-radius: 8px;
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-main);
+    border-radius: 12px;
+    background-color: rgba(147, 51, 234, 0.1);
+    color: #9333ea;
     font-size: 14px;
     font-weight: 600;
     border: none;
@@ -155,10 +188,10 @@
 }
 
 .detail-button:hover {
-    background-color: var(--color-bg-hover);
+    background-color: rgba(147, 51, 234, 0.15);
 }
 
-/* Feed Categories */
+/* Feed Categories - New Pill Style */
 .feed-categories {
     margin-top: 16px;
     padding: 0 16px;
@@ -167,32 +200,39 @@
 .category-tabs {
     display: flex;
     gap: 8px;
-    border-bottom: 2px solid var(--color-border);
-    padding-bottom: 0;
+    overflow-x: auto;
+    padding: 4px 0;
+    scrollbar-width: none;
+}
+
+.category-tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .category-tab {
-    flex: 1;
-    padding: 12px 16px;
-    background: none;
-    border: none;
-    border-bottom: 3px solid transparent;
+    padding: 10px 20px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     color: var(--color-text-secondary);
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
-    position: relative;
-    bottom: -2px;
+    white-space: nowrap;
 }
 
 .category-tab:hover {
-    color: var(--color-text-main);
+    background: rgba(255, 255, 255, 0.6);
 }
 
 .category-tab.active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 8px 16px rgba(147, 51, 234, 0.3);
 }
 
 /* Post Type Badges */
@@ -225,7 +265,7 @@
     cursor: help;
 }
 
-/* Meeting Room Section - New Design */
+/* Meeting Room Section - New Hero Card Design */
 .meeting-section {
     margin-top: 16px;
     padding: 0 16px;
@@ -238,24 +278,30 @@
 }
 
 .meeting-card-new {
-    background-color: var(--color-surface-light);
-    border-radius: 16px;
+    position: relative;
+    height: 220px;
+    border-radius: 32px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 1px solid var(--color-border);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .meeting-card-new:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     transform: translateY(-2px);
 }
 
+.meeting-card-new:hover .meeting-room-image {
+    transform: scale(1.05);
+}
+
 .meeting-image-container {
-    position: relative;
+    position: absolute;
+    inset: 0;
     width: 100%;
-    height: 180px;
+    height: 100%;
     overflow: hidden;
 }
 
@@ -263,40 +309,39 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.7s ease;
 }
 
 .meeting-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 50%);
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-end;
-    padding: 12px;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 60%);
 }
 
 .meeting-status-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-    font-size: 14px;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 12px;
     font-weight: 700;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .meeting-status-badge.available {
-    background-color: rgba(16, 185, 129, 0.95);
+    background-color: rgba(147, 51, 234, 0.9);
     color: white;
 }
 
 .meeting-status-badge.in-use {
-    background-color: rgba(239, 68, 68, 0.95);
+    background-color: rgba(239, 68, 68, 0.9);
     color: white;
 }
 
@@ -304,8 +349,13 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: white;
+    background-color: #4ade80;
     animation: pulse 2s ease-in-out infinite;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.meeting-status-badge.in-use .status-indicator {
+    background-color: white;
 }
 
 @keyframes pulse {
@@ -321,185 +371,55 @@
 }
 
 .meeting-card-info {
-    padding: 16px;
+    position: absolute;
+    bottom: 20px;
+    left: 24px;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .meeting-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 0;
 }
 
 .meeting-header h4 {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
-    color: var(--color-text-main);
+    color: white;
     margin: 0;
 }
 
 .meeting-floor {
-    padding: 4px 12px;
-    background-color: var(--color-primary-light);
-    color: var(--color-primary);
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .meeting-meta {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 8px;
+    margin-top: 4px;
 }
 
 .meta-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    color: var(--color-text-secondary);
+    gap: 4px;
+    color: rgba(255, 255, 255, 0.9);
     font-size: 14px;
-}
-
-.meta-item .material-symbols-outlined {
-    font-size: 18px;
-}
-
-.current-reservation {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--color-border);
-}
-
-.reservation-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    margin: 0 0 4px 0;
-}
-
-.reservation-detail {
-    font-size: 14px;
-    color: var(--color-text-main);
-    margin: 0;
-}
-
-/* Old meeting card styles - keeping for backward compatibility */
-.meeting-card {
-    display: flex;
-    align-items: center;
-    background-color: var(--color-surface-light);
-    padding: 12px;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border: 1px solid var(--color-border);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.meeting-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.meeting-time {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 0 12px;
-    border-right: 1px solid var(--color-border);
-    min-width: 70px;
-}
-
-.time-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-}
-
-.time-value {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--color-text-main);
-}
-
-.time-period {
-    font-size: 10px;
-    color: var(--color-text-tertiary);
     font-weight: 500;
 }
 
-.meeting-info {
-    flex: 1;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding-left: 16px;
-    padding-right: 8px;
-}
-
-.meeting-details h4 {
+.meta-item .material-symbols-outlined {
     font-size: 16px;
-    font-weight: 700;
-    color: var(--color-text-main);
-    margin: 0 0 4px 0;
-    line-height: 1.2;
 }
 
-.meeting-location {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 14px;
-    color: var(--color-text-secondary);
-    margin: 0;
-}
-
-.meeting-location .material-symbols-outlined {
-    font-size: 14px;
-}
-
-.meeting-participants {
-    display: flex;
-    align-items: center;
-    gap: -8px;
-    margin-left: -8px;
-}
-
-.participant-avatar {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-primary) 0%, #7e22ce 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 10px;
-    font-weight: 700;
-    border: 2px solid white;
-    margin-left: -8px;
-}
-
-.participant-avatar:first-child {
-    margin-left: 0;
-}
-
-.participant-count {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background-color: var(--color-bg-hover);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 8px;
-    font-weight: 700;
-    color: var(--color-text-secondary);
-    border: 2px solid white;
-    margin-left: -8px;
+.current-reservation {
+    display: none;
 }
 
 /* Posts Section */
@@ -511,29 +431,53 @@
 .posts-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 }
 
 .post-item {
     display: flex;
-    padding: 16px;
-    background-color: var(--color-surface-light);
-    border-radius: 12px;
-    border: 1px solid var(--color-border);
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border-radius: 24px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.post-item:hover {
+    transform: scale(1.01);
 }
 
 .post-avatar {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-primary) 0%, #7e22ce 100%);
+    background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-weight: 700;
-    font-size: 16px;
+    font-size: 12px;
     flex-shrink: 0;
+}
+
+.avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.avatar-placeholder .material-symbols-outlined {
+    font-size: 14px;
 }
 
 .post-content {
@@ -543,58 +487,62 @@
 .post-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 .post-author {
     font-weight: 700;
+    font-size: 12px;
     color: var(--color-text-main);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .post-time {
-    font-size: 14px;
+    font-size: 10px;
+    color: var(--color-text-tertiary);
+    font-weight: 500;
 }
 
 .post-text {
     color: var(--color-text-main);
-    line-height: 1.5;
+    line-height: 1.75;
     margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.025em;
 }
 
 /* Post Actions */
 .post-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 12px;
-    padding-top: 8px;
-    border-top: 1px solid var(--color-border);
+    gap: 16px;
+    margin-top: 16px;
 }
 
 .action-btn {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 6px 12px;
-    border-radius: 6px;
+    gap: 6px;
+    padding: 0;
     background: none;
     border: none;
     color: var(--color-text-secondary);
-    font-size: 14px;
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .action-btn:hover {
-    background-color: var(--color-bg-hover);
+    color: #9333ea;
 }
 
 .action-btn.liked {
-    color: #ef4444;
+    color: #9333ea;
 }
 
 .action-btn .material-symbols-outlined {
@@ -603,9 +551,9 @@
 
 /* Comments Section */
 .comments-section {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--color-border);
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .comments-list {
@@ -670,18 +618,19 @@
 
 .comment-input {
     flex: 1;
-    padding: 8px 12px;
-    border: 1px solid var(--color-border);
+    padding: 8px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 20px;
     font-size: 14px;
     color: var(--color-text-main);
-    background-color: var(--color-bg-primary);
+    background-color: rgba(255, 255, 255, 0.5);
     font-family: var(--font-family);
 }
 
 .comment-input:focus {
     outline: none;
-    border-color: var(--color-primary);
+    border-color: #9333ea;
+    background-color: white;
 }
 
 .comment-input::placeholder {
@@ -692,7 +641,7 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background-color: var(--color-primary);
+    background-color: #9333ea;
     border: none;
     display: flex;
     align-items: center;
@@ -703,7 +652,7 @@
 }
 
 .comment-submit:hover {
-    background-color: var(--color-accent-hover);
+    background-color: #7e22ce;
 }
 
 .comment-submit:disabled {
@@ -719,6 +668,11 @@
 .empty-state {
     text-align: center;
     padding: 48px 24px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 24px;
 }
 
 .empty-icon {
@@ -776,7 +730,7 @@
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background-color: var(--color-primary);
+    background-color: #9333ea;
     color: white;
     display: flex;
     align-items: center;
@@ -803,15 +757,6 @@
     }
 
     .volunteer-card {
-        min-width: 260px;
-    }
-
-    .meeting-time {
-        min-width: 60px;
-        padding: 0 8px;
-    }
-
-    .time-value {
-        font-size: 16px;
+        min-width: 200px;
     }
 }

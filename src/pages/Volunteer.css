@@ -1,8 +1,9 @@
-/* Volunteer Container - Feed 기준 통일 */
+/* Volunteer Container - Soft Gradient Theme */
 .volunteer-container {
     max-width: 448px;
     margin: 0 auto;
     padding-bottom: 24px;
+    background: transparent;
 }
 
 .volunteer-header {
@@ -45,15 +46,18 @@
 
 .activity-card {
     padding: 16px;
-    background-color: var(--color-surface-light);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border-radius: 24px;
+    transition: all 0.3s ease;
 }
 
 .activity-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: scale(1.01);
 }
 
 .activity-header {
@@ -107,10 +111,12 @@
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background-color: var(--color-surface-light);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border-radius: 24px;
 }
 
 .registration-info {
@@ -203,9 +209,11 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background-color: var(--color-surface-light);
-    border: 1px solid var(--color-border);
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 16px;
     transition: all 0.2s ease;
 }
 
