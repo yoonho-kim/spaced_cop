@@ -69,8 +69,8 @@ const MeetingRooms = ({ user }) => {
             roomName: selectedRoom.name,
             userName: user.nickname,
             date: selectedDate,
-            startTime: selectedTimeSlot.toString(),
-            endTime: (selectedTimeSlot + 1).toString(),
+            startTime: `${selectedTimeSlot.toString().padStart(2, '0')}:00`,
+            endTime: `${(selectedTimeSlot + 1).toString().padStart(2, '0')}:00`,
             ...formData,
         });
 

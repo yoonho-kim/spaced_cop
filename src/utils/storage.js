@@ -910,19 +910,27 @@ const expandRecurringReservations = async (rule) => {
   }
 
   // 일괄 삽입 시 중복 체크
-  // 성능을 위해 먼저 기존 등록된 예약들을 조회
   const { data: existingReservations } = await supabase
     .from('meeting_reservations')
-    .select('room_id, date, start_time');
+    .select('room_id, date, start_time, end_time')
+    .eq('room_id', rule.room_id);
 
-  const existingMap = new Set(
-    existingReservations?.map(r => `${r.room_id}_${r.date}_${r.start_time}`) || []
-  );
+  const isConflicting = (newRes) => {
+    return existingReservations?.some(existing => {
+      if (existing.date !== newRes.date) return false;
+
+      const newStart = parseInt(newRes.start_time);
+      const newEnd = parseInt(newRes.end_time);
+      const existingStart = parseInt(existing.start_time);
+      const existingEnd = parseInt(existing.end_time);
+
+      // Overlap condition: (StartA < EndB) and (EndA > StartB)
+      return (newStart < existingEnd) && (newEnd > existingStart);
+    });
+  };
 
   // 중복되지 않은 예약들만 필터링
-  const newReservations = reservations.filter(res =>
-    !existingMap.has(`${res.room_id}_${res.date}_${res.start_time}`)
-  );
+  const newReservations = reservations.filter(res => !isConflicting(res));
 
   if (newReservations.length > 0) {
     const { error } = await supabase

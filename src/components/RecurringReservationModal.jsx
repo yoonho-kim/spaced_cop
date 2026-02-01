@@ -5,24 +5,42 @@ import './RecurringReservationModal.css';
 
 const RecurringReservationModal = ({ isOpen, onClose, rooms, onAdd }) => {
     const [formData, setFormData] = useState({
-        roomId: rooms[0]?.id || '',
+        roomId: '',
         ruleType: 'weekly',
         dayOfWeek: 1, // 월요일
         weekOfMonth: 1, // 첫째주
-        startTime: '10:00',
-        endTime: '11:00',
+        startHour: 9,
+        endHour: 10,
         department: '',
         purpose: ''
     });
 
+    // Reset form when rooms change or modal opens
+    React.useEffect(() => {
+        if (isOpen && rooms.length > 0) {
+            setFormData({
+                roomId: rooms[0].id,
+                ruleType: 'weekly',
+                dayOfWeek: 1,
+                weekOfMonth: 1,
+                startHour: 9,
+                endHour: 10,
+                department: '',
+                purpose: ''
+            });
+        }
+    }, [isOpen, rooms]);
+
+    const hours = Array.from({ length: 11 }, (_, i) => i + 9); // 9 to 19
+
     const days = [
-        { value: 0, label: '일' },
-        { value: 1, label: '월' },
-        { value: 2, label: '화' },
-        { value: 3, label: '수' },
-        { value: 4, label: '목' },
-        { value: 5, label: '금' },
-        { value: 6, label: '토' }
+        { value: 0, label: '일요일' },
+        { value: 1, label: '월요일' },
+        { value: 2, label: '화요일' },
+        { value: 3, label: '수요일' },
+        { value: 4, label: '목요일' },
+        { value: 5, label: '금요일' },
+        { value: 6, label: '토요일' }
     ];
 
     const weeks = [
@@ -34,15 +52,38 @@ const RecurringReservationModal = ({ isOpen, onClose, rooms, onAdd }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        const startH = parseInt(formData.startHour);
+        const endH = parseInt(formData.endHour);
+
+        if (isNaN(startH) || isNaN(endH)) {
+            alert('올바른 시간을 선택해주세요.');
+            return;
+        }
+
+        if (startH >= endH) {
+            alert('종료 시간은 시작 시간보다 늦어야 합니다.');
+            return;
+        }
+
         const selectedRoom = rooms.find(r => r.id === formData.roomId);
+        if (!selectedRoom) return;
+
         onAdd({
-            ...formData,
-            roomName: selectedRoom ? selectedRoom.name : ''
+            roomId: formData.roomId,
+            roomName: selectedRoom.name,
+            ruleType: formData.ruleType,
+            dayOfWeek: formData.dayOfWeek,
+            weekOfMonth: formData.ruleType === 'monthly' ? formData.weekOfMonth : null,
+            startTime: `${startH.toString().padStart(2, '0')}:00`,
+            endTime: `${endH.toString().padStart(2, '0')}:00`,
+            department: formData.department,
+            purpose: formData.purpose
         });
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="반복 예약 추가">
+        <Modal isOpen={isOpen} onClose={onClose} title="회의실 반복 예약 추가">
             <form onSubmit={handleSubmit} className="recurring-form">
                 <div className="form-group">
                     <label>회의실</label>
@@ -60,7 +101,7 @@ const RecurringReservationModal = ({ isOpen, onClose, rooms, onAdd }) => {
                 <div className="form-group">
                     <label>반복 유형</label>
                     <div className="radio-group">
-                        <label>
+                        <label className="radio-label">
                             <input
                                 type="radio"
                                 name="ruleType"
@@ -70,7 +111,7 @@ const RecurringReservationModal = ({ isOpen, onClose, rooms, onAdd }) => {
                             />
                             매주
                         </label>
-                        <label>
+                        <label className="radio-label">
                             <input
                                 type="radio"
                                 name="ruleType"
@@ -104,7 +145,7 @@ const RecurringReservationModal = ({ isOpen, onClose, rooms, onAdd }) => {
                             onChange={(e) => setFormData({ ...formData, dayOfWeek: parseInt(e.target.value) })}
                         >
                             {days.map(d => (
-                                <option key={d.value} value={d.value}>{d.label}요일</option>
+                                <option key={d.value} value={d.value}>{d.label}</option>
                             ))}
                         </select>
                     </div>
@@ -113,21 +154,25 @@ const RecurringReservationModal = ({ isOpen, onClose, rooms, onAdd }) => {
                 <div className="form-row">
                     <div className="form-group flex-1">
                         <label>시작 시간</label>
-                        <input
-                            type="time"
-                            value={formData.startTime}
-                            onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                            required
-                        />
+                        <select
+                            value={formData.startHour}
+                            onChange={(e) => setFormData({ ...formData, startHour: e.target.value })}
+                        >
+                            {hours.slice(0, -1).map(h => (
+                                <option key={h} value={h}>{h.toString().padStart(2, '0')}:00</option>
+                            ))}
+                        </select>
                     </div>
                     <div className="form-group flex-1">
                         <label>종료 시간</label>
-                        <input
-                            type="time"
-                            value={formData.endTime}
-                            onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                            required
-                        />
+                        <select
+                            value={formData.endHour}
+                            onChange={(e) => setFormData({ ...formData, endHour: e.target.value })}
+                        >
+                            {hours.filter(h => h > parseInt(formData.startHour)).map(h => (
+                                <option key={h} value={h}>{h.toString().padStart(2, '0')}:00</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 

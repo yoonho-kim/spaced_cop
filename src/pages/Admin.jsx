@@ -591,6 +591,7 @@ const Admin = () => {
 
             {/* Recurring Reservation Modal */}
             <RecurringReservationModal
+                key={`recurring-${rooms.length}-${showRecurringModal}`}
                 isOpen={showRecurringModal}
                 onClose={() => setShowRecurringModal(false)}
                 rooms={rooms}
