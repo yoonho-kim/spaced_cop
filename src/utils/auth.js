@@ -212,7 +212,19 @@ export const findUserByNickname = async (nickname) => {
 
 // ===== 기존 함수들 (게스트 로그인 호환) =====
 
-export const login = (nickname, password = null) => {
+/**
+ * 로그인 (관리자 및 게스트 통합)
+ */
+export const login = async (nickname, password = null) => {
+    // 관리자 로그인 시 DB 인증 사용
+    if (nickname.toLowerCase() === 'admin') {
+        if (!password) {
+            return { success: false, error: '비밀번호를 입력해주세요.' };
+        }
+        return await loginWithPassword(nickname, password);
+    }
+
+    // 게스트 로그인 (보안상 권장되지 않으나 기존 호환성 유지)
     const user = {
         nickname,
         isAdmin: false,
@@ -220,16 +232,6 @@ export const login = (nickname, password = null) => {
         loginTime: new Date().toISOString(),
         expiresAt: new Date(Date.now() + SESSION_DURATION).toISOString(),
     };
-
-    // Check if admin login
-    if (nickname === 'admin') {
-        const adminPassword = localStorage.getItem(STORAGE_KEYS.ADMIN_PASSWORD);
-        if (password === adminPassword) {
-            user.isAdmin = true;
-        } else {
-            return { success: false, error: 'Invalid admin password' };
-        }
-    }
 
     setItem(STORAGE_KEYS.USER, user);
     return { success: true, user };
@@ -266,16 +268,43 @@ export const isAdmin = () => {
     return user && user.isAdmin === true;
 };
 
-export const updateAdminPassword = (newPassword) => {
+/**
+ * 관리자 비밀번호 변경 (DB 기반)
+ */
+export const updateAdminPassword = async (newPassword) => {
     if (!isAdmin()) {
-        return { success: false, error: 'Unauthorized' };
+        return { success: false, error: '권한이 없습니다.' };
     }
-    localStorage.setItem(STORAGE_KEYS.ADMIN_PASSWORD, newPassword);
-    return { success: true };
+
+    try {
+        const user = getCurrentUser();
+        const newHash = await hashPassword(newPassword);
+
+        const { data, error } = await supabase
+            .from('users')
+            .update({ password_hash: newHash })
+            .eq('nickname', user.nickname)
+            .select();
+
+        if (error) {
+            console.error('Admin password update error:', error);
+            return { success: false, error: '데이터베이스 오류가 발생했습니다.' };
+        }
+
+        if (!data || data.length === 0) {
+            return { success: false, error: '비밀번호를 변경할 수 없습니다. RLS 정책을 확인하세요.' };
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('Admin password update error:', error);
+        return { success: false, error: error.message };
+    }
 };
 
 export const getAdminPassword = () => {
-    return localStorage.getItem(STORAGE_KEYS.ADMIN_PASSWORD);
+    // 더 이상 사용되지 않음 (DB 기반 보안)
+    return null;
 };
 
 // Get remaining session time in minutes

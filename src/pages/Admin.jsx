@@ -210,11 +210,15 @@ const Admin = () => {
     };
 
     // Password Management
-    const handleChangePassword = () => {
+    const handleChangePassword = async () => {
         const newPassword = prompt('새 관리자 비밀번호를 입력하세요:');
         if (newPassword && newPassword.trim()) {
-            updateAdminPassword(newPassword);
-            alert('관리자 비밀번호가 성공적으로 변경되었습니다!');
+            const result = await updateAdminPassword(newPassword);
+            if (result.success) {
+                alert('관리자 비밀번호가 성공적으로 변경되었습니다!');
+            } else {
+                alert(`비밀번호 변경 실패: ${result.error}`);
+            }
         }
     };
 

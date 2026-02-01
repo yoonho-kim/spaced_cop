@@ -54,7 +54,7 @@ const Login = ({ onLogin }) => {
 
         // 관리자 로그인
         if (nickname.toLowerCase() === 'admin') {
-            const result = login(nickname, password);
+            const result = await login(nickname, password);
             if (result.success) {
                 onLogin(result.user);
             } else {
