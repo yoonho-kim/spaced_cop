@@ -3,6 +3,9 @@ import {
     getMeetingRooms,
     addMeetingRoom,
     deleteMeetingRoom,
+    getRecurringRules,
+    addRecurringRule,
+    deleteRecurringRule,
     getVolunteerActivities,
     addVolunteerActivity,
     updateVolunteerActivity,
@@ -15,16 +18,19 @@ import {
 import { updateAdminPassword } from '../utils/auth';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import RecurringReservationModal from '../components/RecurringReservationModal';
 import ParticipantListModal from '../components/ParticipantListModal';
 import './Admin.css';
 
 const Admin = () => {
     const [activeSection, setActiveSection] = useState('rooms');
     const [rooms, setRooms] = useState([]);
+    const [recurringRules, setRecurringRules] = useState([]);
     const [activities, setActivities] = useState([]);
     const [registrations, setRegistrations] = useState([]);
     const [supplyRequests, setSupplyRequests] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showRecurringModal, setShowRecurringModal] = useState(false);
     const [modalType, setModalType] = useState('');
     const [formData, setFormData] = useState({});
     const [selectedActivity, setSelectedActivity] = useState(null);
@@ -36,10 +42,12 @@ const Admin = () => {
 
     const loadData = async () => {
         const roomsData = await getMeetingRooms();
+        const recurringData = await getRecurringRules();
         const activitiesData = await getVolunteerActivities();
         const registrationsData = await getVolunteerRegistrations();
         const supplyRequestsData = await getSupplyRequests();
         setRooms(roomsData);
+        setRecurringRules(recurringData);
         setActivities(activitiesData);
         setRegistrations(registrationsData);
         setSupplyRequests(supplyRequestsData);
@@ -53,8 +61,30 @@ const Admin = () => {
     };
 
     const handleDeleteRoom = async (roomId) => {
-        if (confirm('이 회의실을 삭제하시겠습니까?')) {
+        if (confirm('이 회의실을 삭제하시겠습니까? 관련 예약 데이터가 모두 삭제됩니다.')) {
             await deleteMeetingRoom(roomId);
+            loadData();
+        }
+    };
+
+    const handleAddRecurring = () => {
+        setShowRecurringModal(true);
+    };
+
+    const handleAddRecurringSubmit = async (ruleData) => {
+        try {
+            await addRecurringRule(ruleData);
+            setShowRecurringModal(false);
+            loadData();
+            alert('반복 예약 규칙이 추가되었으며 향후 1년치 예약이 생성되었습니다.');
+        } catch (error) {
+            alert('반복 예약 추가 중 오류가 발생했습니다.');
+        }
+    };
+
+    const handleDeleteRecurring = async (ruleId) => {
+        if (confirm('이 반복 예약 규칙을 삭제하시겠습니까? 규칙에 의해 생성된 모든 예약이 삭제됩니다.')) {
+            await deleteRecurringRule(ruleId);
             loadData();
         }
     };
@@ -261,25 +291,61 @@ const Admin = () => {
                 {activeSection === 'rooms' && (
                     <div className="admin-section">
                         <div className="section-header">
-                            <h3>회의실</h3>
-                            <Button variant="admin" size="sm" onClick={handleAddRoom}>
-                                + 회의실 추가
-                            </Button>
+                            <h3>회의실 관리</h3>
+                            <div className="header-actions">
+                                <Button variant="secondary" size="sm" onClick={handleAddRecurring}>
+                                    반복 예약 설정
+                                </Button>
+                                <Button variant="admin" size="sm" onClick={handleAddRoom}>
+                                    + 회의실 추가
+                                </Button>
+                            </div>
                         </div>
+
                         <div className="items-list">
-                            {rooms.map(room => (
-                                <div key={room.id} className="admin-item">
-                                    <div className="item-info">
-                                        <h4>{room.name}</h4>
-                                        <p className="text-secondary">
-                                            {room.floor} · 수용인원: {room.capacity}명
-                                        </p>
+                            {rooms.map(room => {
+                                const roomRules = recurringRules.filter(r => r.roomId === room.id);
+                                return (
+                                    <div key={room.id} className="admin-item-card">
+                                        <div className="admin-item">
+                                            <div className="item-info">
+                                                <h4>{room.name}</h4>
+                                                <p className="text-secondary">
+                                                    {room.floor} · 수용인원: {room.capacity}명
+                                                </p>
+                                            </div>
+                                            <Button variant="danger" size="sm" onClick={() => handleDeleteRoom(room.id)}>
+                                                삭제
+                                            </Button>
+                                        </div>
+
+                                        {roomRules.length > 0 && (
+                                            <div className="item-details">
+                                                <div className="details-header">활성 반복 예약 규칙</div>
+                                                {roomRules.map(rule => (
+                                                    <div key={rule.id} className="detail-row">
+                                                        <div className="detail-info">
+                                                            <span className="badge badge-info">
+                                                                {rule.ruleType === 'weekly' ? '매주' : `매월 ${rule.weekOfMonth}주차`}
+                                                                {['일', '월', '화', '수', '목', '금', '토'][rule.dayOfWeek]}요일
+                                                            </span>
+                                                            <span className="detail-time">{rule.startTime} - {rule.endTime}</span>
+                                                            <span className="detail-purpose">[{rule.department}] {rule.purpose}</span>
+                                                        </div>
+                                                        <button
+                                                            className="detail-delete-btn"
+                                                            onClick={() => handleDeleteRecurring(rule.id)}
+                                                            title="규칙 삭제"
+                                                        >
+                                                            <span className="material-icons-outlined">close</span>
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                    <Button variant="danger" size="sm" onClick={() => handleDeleteRoom(room.id)}>
-                                        삭제
-                                    </Button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -518,6 +584,14 @@ const Admin = () => {
                     </div>
                 </form>
             </Modal>
+
+            {/* Recurring Reservation Modal */}
+            <RecurringReservationModal
+                isOpen={showRecurringModal}
+                onClose={() => setShowRecurringModal(false)}
+                rooms={rooms}
+                onAdd={handleAddRecurringSubmit}
+            />
 
             {/* Participant List Modal */}
             {showParticipantModal && selectedActivity && (

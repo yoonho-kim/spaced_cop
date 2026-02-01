@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { register } from '../utils/auth';
+import { register, checkNicknameAvailability } from '../utils/auth';
 import { generateProfileIconWithRetry } from '../utils/huggingfaceService';
 import './SignUpModal.css';
 
@@ -33,6 +33,36 @@ const PERSONALITY_QUESTIONS = [
             { value: 'beach', label: '🏖️ 파도 소리 들리는 바닷가', description: '파도와 해변' },
             { value: 'space', label: '🚀 4차원 우주 정거장', description: '별과 우주' }
         ]
+    },
+    {
+        id: 'animal',
+        question: '당신의 영혼 동물은?',
+        options: [
+            { value: 'cat', label: '🐱 도도한 고양이', description: '우아함, 독립적' },
+            { value: 'dog', label: '🐕 충직한 강아지', description: '친근함, 활발함' },
+            { value: 'owl', label: '🦉 지혜로운 부엉이', description: '신비로움, 차분함' },
+            { value: 'dolphin', label: '🐬 자유로운 돌고래', description: '유연함, 사교적' }
+        ]
+    },
+    {
+        id: 'superpower',
+        question: '하나만 가질 수 있다면?',
+        options: [
+            { value: 'teleport', label: '✨ 순간이동', description: '역동적, 자유로움' },
+            { value: 'invisible', label: '👻 투명인간', description: '신비함, 조용함' },
+            { value: 'mindread', label: '🧠 마음 읽기', description: '깊이, 통찰력' },
+            { value: 'fly', label: '🕊️ 하늘을 나는 능력', description: '가벼움, 꿈' }
+        ]
+    },
+    {
+        id: 'snack',
+        question: '야근할 때 최고의 간식은?',
+        options: [
+            { value: 'coffee', label: '☕ 진한 아메리카노', description: '깔끔함, 집중' },
+            { value: 'chips', label: '🍟 바삭한 감자칩', description: '재미, 가벼움' },
+            { value: 'fruit', label: '🍎 상큼한 과일', description: '건강미, 청량함' },
+            { value: 'chocolate', label: '🍫 달콤한 초콜릿', description: '달콤함, 위로' }
+        ]
     }
 ];
 
@@ -52,8 +82,16 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
     const [personality, setPersonality] = useState({
         time: '',
         feeling: '',
-        place: ''
+        place: '',
+        animal: '',
+        superpower: '',
+        snack: ''
     });
+
+    // 닉네임 중복 체크 상태
+    const [nicknameChecked, setNicknameChecked] = useState(false);
+    const [nicknameAvailable, setNicknameAvailable] = useState(false);
+    const [checkingNickname, setCheckingNickname] = useState(false);
 
     // 생성된 아이콘
     const [generatedIcon, setGeneratedIcon] = useState(null);
@@ -65,15 +103,63 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
         setPasswordConfirm('');
         setEmployeeId('');
         setGender('');
-        setPersonality({ time: '', feeling: '', place: '' });
+        setPersonality({ time: '', feeling: '', place: '', animal: '', superpower: '', snack: '' });
         setGeneratedIcon(null);
         setError('');
         setIsLoading(false);
+        setNicknameChecked(false);
+        setNicknameAvailable(false);
+        setCheckingNickname(false);
     };
 
     const handleClose = () => {
         resetForm();
         onClose();
+    };
+
+    // 닉네임 중복 체크 핸들러
+    const handleCheckNickname = async () => {
+        if (!nickname.trim()) {
+            setError('닉네임을 입력해주세요.');
+            return;
+        }
+        if (nickname.length < 2) {
+            setError('닉네임은 2자 이상이어야 합니다.');
+            return;
+        }
+        if (nickname.toLowerCase() === 'admin') {
+            setError('사용할 수 없는 닉네임입니다.');
+            return;
+        }
+
+        setCheckingNickname(true);
+        setError('');
+
+        const result = await checkNicknameAvailability(nickname);
+
+        setCheckingNickname(false);
+
+        if (result.success) {
+            if (result.available) {
+                setNicknameChecked(true);
+                setNicknameAvailable(true);
+                setError('');
+            } else {
+                setNicknameChecked(true);
+                setNicknameAvailable(false);
+                setError('이미 사용 중인 닉네임입니다.');
+            }
+        } else {
+            setError('닉네임 확인 중 오류가 발생했습니다.');
+        }
+    };
+
+    // 닉네임 변경 시 체크 상태 초기화
+    const handleNicknameChange = (value) => {
+        setNickname(value);
+        setNicknameChecked(false);
+        setNicknameAvailable(false);
+        setError('');
     };
 
     // Step 1: 기본 정보 유효성 검사
@@ -84,6 +170,10 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
         }
         if (nickname.length < 2) {
             setError('닉네임은 2자 이상이어야 합니다.');
+            return false;
+        }
+        if (!nicknameChecked || !nicknameAvailable) {
+            setError('닉네임 중복 확인을 해주세요.');
             return false;
         }
         if (!password) {
@@ -104,7 +194,9 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
 
     // Step 2: 성향 질문 유효성 검사
     const validateStep2 = () => {
-        if (!personality.time || !personality.feeling || !personality.place) {
+        const requiredFields = ['time', 'feeling', 'place', 'animal', 'superpower', 'snack'];
+        const allAnswered = requiredFields.every(field => personality[field]);
+        if (!allAnswered) {
             setError('모든 질문에 답해주세요.');
             return false;
         }
@@ -228,13 +320,33 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
                         <div className="signup-form">
                             <div className="form-group">
                                 <label>닉네임 (이름) *</label>
-                                <input
-                                    type="text"
-                                    value={nickname}
-                                    onChange={e => setNickname(e.target.value)}
-                                    placeholder="사용할 닉네임을 입력하세요"
-                                    autoFocus
-                                />
+                                <div className="nickname-check-wrapper">
+                                    <input
+                                        type="text"
+                                        value={nickname}
+                                        onChange={e => handleNicknameChange(e.target.value)}
+                                        placeholder="사용할 닉네임을 입력하세요"
+                                        autoFocus
+                                        className={nicknameChecked ? (nicknameAvailable ? 'valid' : 'invalid') : ''}
+                                    />
+                                    <button
+                                        type="button"
+                                        className={`nickname-check-btn ${nicknameChecked && nicknameAvailable ? 'checked' : ''}`}
+                                        onClick={handleCheckNickname}
+                                        disabled={checkingNickname || !nickname.trim()}
+                                    >
+                                        {checkingNickname ? (
+                                            <span className="material-icons-outlined spinning">sync</span>
+                                        ) : nicknameChecked && nicknameAvailable ? (
+                                            <span className="material-icons-outlined">check_circle</span>
+                                        ) : (
+                                            '중복확인'
+                                        )}
+                                    </button>
+                                </div>
+                                {nicknameChecked && nicknameAvailable && (
+                                    <p className="nickname-available">✓ 사용 가능한 닉네임입니다</p>
+                                )}
                             </div>
 
                             <div className="form-group">

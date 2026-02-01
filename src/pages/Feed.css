@@ -42,7 +42,12 @@
 .section-header h3 {
     font-size: 18px;
     font-weight: 700;
-    color: var(--color-text-main);
+    color: #9333ea;
+    /* Fallback for gradient */
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin: 0;
 }
 
@@ -478,6 +483,50 @@
 
 .avatar-placeholder .material-symbols-outlined {
     font-size: 14px;
+}
+
+.avatar-image {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.post-header {
+    position: relative;
+}
+
+.post-header-info {
+    flex: 1;
+}
+
+.delete-post-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.1);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+}
+
+.delete-post-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    opacity: 1;
+}
+
+.delete-post-btn .material-symbols-outlined {
+    font-size: 16px;
 }
 
 .post-content {

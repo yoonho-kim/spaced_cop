@@ -17,37 +17,69 @@ const PERSONALITY_MAPPINGS = {
     },
     // Q2: 느낌 → 형태/질감
     feeling: {
-        citrus: { shape: 'sharp angular geometric shapes', texture: 'bright and crisp' },
-        chocolate: { shape: 'soft rounded organic shapes', texture: 'smooth and warm' },
-        mint: { shape: 'clean straight lines', texture: 'minimal and cool' }
+        citrus: { style: 'vibrant and crisp details', texture: 'fresh and zesty' },
+        chocolate: { style: 'soft organic lines', texture: 'warm and smooth' },
+        mint: { style: 'minimal clean aesthetic', texture: 'cool and sharp' }
     },
     // Q3: 드림 하우스 → 배경
     place: {
-        city: { background: 'abstract city skyline silhouettes', elements: 'modern buildings' },
-        forest: { background: 'stylized trees and leaves', elements: 'nature and greenery' },
-        beach: { background: 'gentle waves and sand patterns', elements: 'ocean and sun' },
-        space: { background: 'stars and cosmic nebula', elements: 'planets and galaxies' }
+        city: { background: 'abstract modern city skyline', atmosphere: 'urban and sophisticated' },
+        forest: { background: 'stylized nature with lush trees', atmosphere: 'peaceful and natural' },
+        beach: { background: 'gentle ocean waves and sunny beach', atmosphere: 'refreshing and sunny' },
+        space: { background: 'magic cosmic nebula and stars', atmosphere: 'infinite and wondrous' }
+    },
+    // Q4: 영혼 동물 → 인물 특징
+    animal: {
+        cat: { trait: 'elegant and independent look', vibe: 'graceful' },
+        dog: { trait: 'friendly and active energetic look', vibe: 'cheerful' },
+        owl: { trait: 'wise and mysterious calm look', vibe: 'thoughtful' },
+        dolphin: { trait: 'flexible and social outgoing look', vibe: 'playful' }
+    },
+    // Q5: 초능력 → 시각적 효과
+    superpower: {
+        teleport: { effect: 'dynamic particles and motion blur', energy: 'high energy' },
+        invisible: { effect: 'ethereal transparency and subtle glows', energy: 'mystical' },
+        mindread: { effect: 'deep thoughtful gaze with aura', energy: 'spiritual' },
+        fly: { effect: 'lightness and wind wisps', energy: 'dreamy' }
+    },
+    // Q6: 최고 간식 → 부가 특징
+    snack: {
+        coffee: { detail: 'concentrated and focused expression', finish: 'clean and modern' },
+        chips: { detail: 'joyful and fun expression', finish: 'bright and lively' },
+        fruit: { detail: 'refreshing and healthy glow', finish: 'clear and pure' },
+        chocolate: { detail: 'sweet and comforting expression', finish: 'warm and cozy' }
     }
 };
 
 /**
  * 성향 데이터를 기반으로 AI 프롬프트 생성
  * 항상 사람 캐릭터가 나오도록 강화된 프롬프트
+ * 유저의 요구사항: "무조건 한 명"의 사람만 나오도록 함
  */
-export const generatePrompt = (personality, nickname = '') => {
-    const timeData = PERSONALITY_MAPPINGS.time[personality.time] || PERSONALITY_MAPPINGS.time.morning;
-    const feelingData = PERSONALITY_MAPPINGS.feeling[personality.feeling] || PERSONALITY_MAPPINGS.feeling.citrus;
-    const placeData = PERSONALITY_MAPPINGS.place[personality.place] || PERSONALITY_MAPPINGS.place.city;
+export const generatePrompt = (personality) => {
+    const p = personality;
+    const t = PERSONALITY_MAPPINGS.time[p.time] || PERSONALITY_MAPPINGS.time.morning;
+    const f = PERSONALITY_MAPPINGS.feeling[p.feeling] || PERSONALITY_MAPPINGS.feeling.citrus;
+    const pl = PERSONALITY_MAPPINGS.place[p.place] || PERSONALITY_MAPPINGS.place.city;
+    const a = PERSONALITY_MAPPINGS.animal[p.animal] || PERSONALITY_MAPPINGS.animal.cat;
+    const s = PERSONALITY_MAPPINGS.superpower[p.superpower] || PERSONALITY_MAPPINGS.superpower.teleport;
+    const sn = PERSONALITY_MAPPINGS.snack[p.snack] || PERSONALITY_MAPPINGS.snack.coffee;
 
-    // 강화된 인물 중심 프롬프트 - 반드시 사람 캐릭터가 나오도록
-    const prompt = `portrait of a single friendly young adult person, cute 3d cartoon character, pixar disney style, facing camera, centered composition, upper body shot, human face with expressive eyes and smile, ${timeData.colors} color scheme, ${timeData.mood} mood, wearing stylish modern clothes, ${placeData.background} in background, soft diffused lighting, high quality render, clean sharp details, professional character design, 4k, masterpiece`;
+    // "SINGLE CHARACTER"와 "SOLO"를 매우 강력하게 강조. 그리드 방지 문구 포함.
+    const prompt = `One single 3d cartoon character, only one person visible. 
+    A solo portrait of a young adult, centered, directly facing camera. 
+    human face, expressive eyes, ${a.trait}, ${sn.detail}.
+    style: pixar disney animation style, ${f.style}, ${s.effect}, ${sn.finish}.
+    colors: ${t.colors} palette, ${t.mood} atmosphere.
+    background: single ${pl.background} background.
+    no grid, no collage, no split screen, no multiple views, no frames, no boarders, only one person.`;
 
-    return prompt;
+    return prompt.replace(/\s+/g, ' ').trim();
 };
 
 /**
  * 프로필 아이콘 생성
- * @param {Object} personality - 성향 데이터 { time, feeling, place }
+ * @param {Object} personality - 성향 데이터 { time, feeling, place, animal, superpower, snack }
  * @returns {Promise<{ success: boolean, imageData?: string, prompt?: string, error?: string }>}
  */
 export const generateProfileIcon = async (personality) => {
@@ -63,10 +95,10 @@ export const generateProfileIcon = async (personality) => {
             body: JSON.stringify({
                 inputs: prompt,
                 parameters: {
-                    // 강화된 negative prompt - 깨진 이미지와 비인물 요소 방지
-                    negative_prompt: 'abstract, icon, logo, text, watermark, multiple people, group, animal, monster, robot, alien, deformed face, ugly, distorted, blurry, low quality, bad anatomy, disfigured, mutated, extra limbs, missing limbs, floating limbs, disconnected limbs, malformed hands, extra fingers, fused fingers, too many fingers, long neck, mutation, poorly drawn face, cloned face, gross proportions, missing arms, missing legs, extra arms, extra legs, fused bodies, glitchy, grainy, pixelated, jpeg artifacts',
-                    num_inference_steps: 35,
-                    guidance_scale: 8.5,
+                    // 그리드, 콜라주, 여러 인물을 방지하는 문구들을 대폭 강화
+                    negative_prompt: 'grid, collage, mosaic, split screen, multiple images, four panels, two panels, 2x2, duplicate, several people, group of people, more than one person, crowd, couple, family, friends, animals, objects only, low quality, blurry, text, logo, bad anatomy, deformed face, two faces, multiple views, character sheet, watermark, signature',
+                    num_inference_steps: 40, // 퀄리티를 위해 스텝 수 약간 증가
+                    guidance_scale: 8.0,
                     width: 512,
                     height: 512
                 }

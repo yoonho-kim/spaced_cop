@@ -13,7 +13,12 @@
 .supplies-header h2 {
     font-size: 24px;
     font-weight: 700;
-    color: var(--color-text-main);
+    color: #9333ea;
+    /* Fallback for gradient */
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin: 0 0 4px 0;
 }
 

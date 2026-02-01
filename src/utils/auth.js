@@ -67,6 +67,33 @@ export const register = async (userData) => {
 };
 
 /**
+ * 닉네임 중복 체크
+ */
+export const checkNicknameAvailability = async (nickname) => {
+    try {
+        const { data: existingUser, error } = await supabase
+            .from('users')
+            .select('id')
+            .eq('nickname', nickname)
+            .single();
+
+        if (error && error.code === 'PGRST116') {
+            // No rows found - nickname is available
+            return { success: true, available: true };
+        }
+
+        if (existingUser) {
+            return { success: true, available: false };
+        }
+
+        return { success: true, available: true };
+    } catch (error) {
+        console.error('Check nickname error:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+/**
  * DB 인증 로그인
  */
 export const loginWithPassword = async (nickname, password) => {
@@ -116,7 +143,9 @@ export const changePassword = async (nickname, currentPassword, newPassword) => 
     try {
         // 현재 비밀번호 확인
         const currentHash = await hashPassword(currentPassword);
+        const newHash = await hashPassword(newPassword);
 
+        // 1. 현재 비밀번호가 맞는지 조회
         const { data: user, error: fetchError } = await supabase
             .from('users')
             .select('id, password_hash')
@@ -131,16 +160,26 @@ export const changePassword = async (nickname, currentPassword, newPassword) => 
             return { success: false, error: '현재 비밀번호가 일치하지 않습니다.' };
         }
 
-        // 새 비밀번호로 업데이트
-        const newHash = await hashPassword(newPassword);
-
-        const { error: updateError } = await supabase
+        // 2. 새 비밀번호로 업데이트 시도 (select: 'minimal'로 실제 수정 여부 확인)
+        const { data, error: updateError, count } = await supabase
             .from('users')
             .update({ password_hash: newHash })
-            .eq('id', user.id);
+            .eq('id', user.id)
+            .select();
 
+        // Supabase update error 체크
         if (updateError) {
-            return { success: false, error: '비밀번호 변경에 실패했습니다.' };
+            console.error('Update operation error:', updateError);
+            return { success: false, error: '비밀번호 변경 중 데이터베이스 오류가 발생했습니다.' };
+        }
+
+        // 업데이트된 행이 없는 경우 (주로 RLS 정책에 의해 차단됨)
+        if (!data || data.length === 0) {
+            console.warn('No rows updated. Connection successful but update failed. This usually means Supabase RLS policy blocks UPDATE for "anon" role on "users" table.');
+            return {
+                success: false,
+                error: '비밀번호 변경 권한이 제한되었습니다. Supabase RLS 정책을 확인하거나 관리자에게 문의하세요.'
+            };
         }
 
         return { success: true };

@@ -76,11 +76,29 @@ export const getPosts = async () => {
     return [];
   }
 
+  // Get all unique author nicknames to fetch their profile icons
+  const authorNicknames = [...new Set(data.map(post => post.author_nickname))];
+
+  // Fetch user profile icons
+  const { data: usersData } = await supabase
+    .from('users')
+    .select('nickname, profile_icon_url')
+    .in('nickname', authorNicknames);
+
+  // Create a map of nickname to profile icon URL
+  const userIconMap = {};
+  if (usersData) {
+    usersData.forEach(user => {
+      userIconMap[user.nickname] = user.profile_icon_url;
+    });
+  }
+
   // Transform data to match existing structure
   return data.map(post => ({
     id: post.id,
     content: post.content,
     author: post.author_nickname,
+    authorIconUrl: userIconMap[post.author_nickname] || null,
     isAdmin: post.is_admin,
     postType: post.post_type || 'normal',
     timestamp: post.created_at,
@@ -773,6 +791,148 @@ export const getActivityParticipants = async (activityId) => {
     recognizedHours: reg.recognized_hours || 0,
     registeredAt: reg.created_at
   }));
+};
+
+// ============================================
+// RECURRING RESERVATIONS
+// ============================================
+
+export const getRecurringRules = async () => {
+  const { data, error } = await supabase
+    .from('meeting_recurring_rules')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching recurring rules:', error);
+    return [];
+  }
+
+  return data.map(rule => ({
+    id: rule.id,
+    roomId: rule.room_id,
+    roomName: rule.room_name,
+    ruleType: rule.rule_type,
+    dayOfWeek: rule.day_of_week,
+    weekOfMonth: rule.week_of_month,
+    startTime: rule.start_time,
+    endTime: rule.end_time,
+    department: rule.department,
+    purpose: rule.purpose,
+    createdAt: rule.created_at
+  }));
+};
+
+export const addRecurringRule = async (rule) => {
+  // 1. 규칙 저장
+  const { data, error } = await supabase
+    .from('meeting_recurring_rules')
+    .insert([{
+      room_id: rule.roomId,
+      room_name: rule.roomName,
+      rule_type: rule.ruleType,
+      day_of_week: rule.dayOfWeek,
+      week_of_month: rule.weekOfMonth,
+      start_time: rule.startTime,
+      end_time: rule.endTime,
+      department: rule.department,
+      purpose: rule.purpose
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding recurring rule:', error);
+    throw error;
+  }
+
+  // 2. 예약 확장 (1년치 생성)
+  await expandRecurringReservations(data);
+
+  return data;
+};
+
+export const deleteRecurringRule = async (ruleId) => {
+  // ON DELETE CASCADE 설정으로 인해 규칙 삭제 시 관련 예약들도 자동 삭제됨 (DB 레벨)
+  const { error } = await supabase
+    .from('meeting_recurring_rules')
+    .delete()
+    .match({ id: ruleId });
+
+  if (error) {
+    console.error('Error deleting recurring rule:', error);
+    throw error;
+  }
+};
+
+// Helper to expand rules into actual reservations
+const expandRecurringReservations = async (rule) => {
+  const reservations = [];
+  const startDate = new Date();
+  const endDate = new Date();
+  endDate.setFullYear(startDate.getFullYear() + 1); // 1년치
+
+  let currentDate = new Date(startDate);
+
+  while (currentDate <= endDate) {
+    let match = false;
+
+    if (rule.rule_type === 'weekly') {
+      if (currentDate.getDay() === rule.day_of_week) {
+        match = true;
+      }
+    } else if (rule.rule_type === 'monthly') {
+      // 매월 N째주 X요일
+      if (currentDate.getDay() === rule.day_of_week) {
+        const weekNum = Math.ceil(currentDate.getDate() / 7);
+        if (weekNum === rule.week_of_month) {
+          match = true;
+        }
+      }
+    }
+
+    if (match) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      reservations.push({
+        room_id: rule.room_id,
+        room_name: rule.room_name,
+        user_nickname: '시스템(반복예약)',
+        date: dateStr,
+        start_time: rule.start_time,
+        end_time: rule.end_time,
+        department: rule.department,
+        purpose: rule.purpose,
+        recurring_rule_id: rule.id
+      });
+    }
+
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  // 일괄 삽입 시 중복 체크
+  // 성능을 위해 먼저 기존 등록된 예약들을 조회
+  const { data: existingReservations } = await supabase
+    .from('meeting_reservations')
+    .select('room_id, date, start_time');
+
+  const existingMap = new Set(
+    existingReservations?.map(r => `${r.room_id}_${r.date}_${r.start_time}`) || []
+  );
+
+  // 중복되지 않은 예약들만 필터링
+  const newReservations = reservations.filter(res =>
+    !existingMap.has(`${res.room_id}_${res.date}_${res.start_time}`)
+  );
+
+  if (newReservations.length > 0) {
+    const { error } = await supabase
+      .from('meeting_reservations')
+      .insert(newReservations);
+
+    if (error) {
+      console.error('Error expanding recurring reservations:', error);
+    }
+  }
 };
 
 // 관리자가 참가자 추가

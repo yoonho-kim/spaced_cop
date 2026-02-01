@@ -16,6 +16,8 @@
     margin-bottom: 4px;
     font-size: 24px;
     font-weight: 700;
+    color: #9333ea;
+    /* Fallback for gradient */
     /* Purple gradient text like login */
     background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
     -webkit-background-clip: text;
@@ -282,4 +284,89 @@
         flex-direction: column;
         align-items: stretch;
     }
+}
+
+/* Recurring Reservation Styles */
+.admin-item-card {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border-radius: 24px;
+    overflow: hidden;
+}
+
+.admin-item-card .admin-item {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.item-details {
+    padding: 0 16px 16px 16px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.details-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(147, 51, 234, 0.1);
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+}
+
+.detail-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.detail-time {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.detail-purpose {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.detail-delete-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.detail-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.badge-info {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
 }

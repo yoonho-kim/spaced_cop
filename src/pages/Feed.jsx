@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getPosts, addPost, addLike, removeLike, addComment, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations, getTop3Volunteers } from '../utils/storage';
+import { getPosts, addPost, addLike, removeLike, addComment, deletePost, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations, getTop3Volunteers } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
@@ -140,6 +140,13 @@ const Feed = ({ user, onNavigateToTab }) => {
             await addLike(postId, user.nickname);
         }
         loadPosts();
+    };
+
+    const handleDeletePost = async (postId) => {
+        if (window.confirm('정말로 이 게시물을 삭제하시겠습니까?')) {
+            await deletePost(postId);
+            loadPosts();
+        }
     };
 
     const toggleComments = (postId) => {
@@ -293,10 +300,18 @@ const Feed = ({ user, onNavigateToTab }) => {
                                 <div key={post.id} className="post-item animate-fade-in">
                                     <div className="post-content">
                                         <div className="post-header">
-                                            <div className="avatar-placeholder">
-                                                <span className="material-symbols-outlined">person</span>
-                                            </div>
-                                            <div>
+                                            {post.authorIconUrl ? (
+                                                <img
+                                                    src={post.authorIconUrl}
+                                                    alt={post.author}
+                                                    className="avatar-image"
+                                                />
+                                            ) : (
+                                                <div className="avatar-placeholder">
+                                                    <span className="material-symbols-outlined">person</span>
+                                                </div>
+                                            )}
+                                            <div className="post-header-info">
                                                 <p className="post-author">
                                                     {getVolunteerRankBadge(post.author) && (
                                                         <span className="badge badge-volunteer-rank" title="봉사활동 Top 3">
@@ -312,6 +327,18 @@ const Feed = ({ user, onNavigateToTab }) => {
                                                     {formatTimestamp(post.timestamp)}
                                                 </p>
                                             </div>
+                                            {isAdmin() && (
+                                                <button
+                                                    className="delete-post-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeletePost(post.id);
+                                                    }}
+                                                    title="게시물 삭제"
+                                                >
+                                                    <span className="material-symbols-outlined">delete</span>
+                                                </button>
+                                            )}
                                         </div>
                                         <p className="post-text">{post.content}</p>
 
