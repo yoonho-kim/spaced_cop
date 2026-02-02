@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     getActivityParticipants,
     addParticipantByAdmin,
-    updateParticipantHours,
+    updateParticipantDetails,
     deleteVolunteerRegistration
 } from '../utils/storage';
 import './ParticipantListModal.css';
@@ -22,6 +22,7 @@ const ParticipantListModal = ({ activity, onClose, onUpdate }) => {
     // Edit state
     const [editHours, setEditHours] = useState('');
     const [editName, setEditName] = useState('');
+    const [editEmployeeId, setEditEmployeeId] = useState('');
 
     useEffect(() => {
         if (activity?.id) {
@@ -62,14 +63,15 @@ const ParticipantListModal = ({ activity, onClose, onUpdate }) => {
         setEditingId(participant.id);
         setEditHours(participant.recognizedHours.toString());
         setEditName(participant.employeeName || '');
+        setEditEmployeeId(participant.employeeId || '');
     };
 
     const handleUpdateParticipant = async (participantId) => {
-        const success = await updateParticipantHours(
-            participantId,
-            parseFloat(editHours) || 0,
-            editName
-        );
+        const success = await updateParticipantDetails(participantId, {
+            hours: parseFloat(editHours) || 0,
+            employeeName: editName,
+            employeeId: editEmployeeId // Assuming you'll add this state
+        });
 
         if (success) {
             setEditingId(null);
@@ -185,6 +187,12 @@ const ParticipantListModal = ({ activity, onClose, onUpdate }) => {
                                                 value={editName}
                                                 onChange={(e) => setEditName(e.target.value)}
                                                 placeholder="성명"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={editEmployeeId}
+                                                onChange={(e) => setEditEmployeeId(e.target.value)}
+                                                placeholder="사번"
                                             />
                                             <input
                                                 type="number"

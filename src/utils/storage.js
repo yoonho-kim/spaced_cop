@@ -358,6 +358,7 @@ export const getVolunteerActivities = async () => {
     isPublished: activity.is_published,
     publishedAt: activity.published_at,
     publishDuration: activity.publish_duration,
+    recognitionHours: activity.recognition_hours,
     createdAt: activity.created_at,
   }));
 };
@@ -374,6 +375,7 @@ export const addVolunteerActivity = async (activity) => {
         max_participants: activity.maxParticipants,
         location: activity.location || null,
         image_url: activity.imageUrl || null,
+        recognition_hours: activity.recognitionHours || 0,
         status: 'open',
         is_published: false,
         published_at: null,
@@ -401,6 +403,7 @@ export const addVolunteerActivity = async (activity) => {
     isPublished: data.is_published,
     publishedAt: data.published_at,
     publishDuration: data.publish_duration,
+    recognitionHours: data.recognition_hours,
     createdAt: data.created_at,
   };
 };
@@ -967,14 +970,16 @@ export const addParticipantByAdmin = async (activityId, activityTitle, employeeI
   return data;
 };
 
-// 참가자 인정시간 수정
-export const updateParticipantHours = async (registrationId, hours, employeeName) => {
-  const updates = { recognized_hours: hours };
-  if (employeeName) updates.employee_name = employeeName;
+// 참가자 정보 수정 (인정시간, 이름, 사번)
+export const updateParticipantDetails = async (registrationId, updates) => {
+  const dbUpdates = {};
+  if (updates.hours !== undefined) dbUpdates.recognized_hours = updates.hours;
+  if (updates.employeeName) dbUpdates.employee_name = updates.employeeName;
+  if (updates.employeeId) dbUpdates.employee_id = updates.employeeId;
 
   const { error } = await supabase
     .from('volunteer_registrations')
-    .update(updates)
+    .update(dbUpdates)
     .match({ id: registrationId });
 
   if (error) {

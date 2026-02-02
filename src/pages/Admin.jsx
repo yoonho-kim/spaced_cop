@@ -575,6 +575,17 @@ const Admin = () => {
                                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                 />
                             </div>
+                            <div className="form-group">
+                                <label>인정 시간 (시간/회)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.5"
+                                    value={formData.recognitionHours || ''}
+                                    onChange={(e) => setFormData({ ...formData, recognitionHours: parseFloat(e.target.value) })}
+                                    required
+                                />
+                            </div>
                         </>
                     )}
 

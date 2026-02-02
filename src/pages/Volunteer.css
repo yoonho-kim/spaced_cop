@@ -76,7 +76,8 @@
 .activity-header h4 {
     font-size: 16px;
     font-weight: 700;
-    color: var(--color-text-main);
+    color: #1f2937;
+    /* Darker color for visibility */
     margin: 0;
     flex: 1;
 }
@@ -102,10 +103,13 @@
     display: flex;
     gap: 8px;
     font-size: 14px;
+    color: #374151;
+    /* Dark text */
 }
 
 .meta-label {
-    color: var(--color-text-secondary);
+    color: #4b5563;
+    /* Gray-600 */
     font-weight: 600;
     min-width: 60px;
 }

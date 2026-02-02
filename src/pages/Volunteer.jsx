@@ -7,6 +7,7 @@ import {
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import ParticipantListModal from '../components/ParticipantListModal';
+import VolunteerDetailModal from '../components/VolunteerDetailModal';
 import './Volunteer.css';
 
 const Volunteer = ({ user }) => {
@@ -15,6 +16,7 @@ const Volunteer = ({ user }) => {
     const [activeTab, setActiveTab] = useState('ranking'); // 'ranking' or 'myStatus'
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [showParticipantModal, setShowParticipantModal] = useState(false);
+    const [showDetailModal, setShowDetailModal] = useState(false);
 
     const loadData = async () => {
         const activitiesData = await getVolunteerActivities();
@@ -164,12 +166,19 @@ const Volunteer = ({ user }) => {
                             const isRegistered = myRegistrations.some(r => r.activityId === activity.id);
 
                             return (
-                                <div key={activity.id} className="activity-card">
+                                <div
+                                    key={activity.id}
+                                    className="activity-card"
+                                    onClick={() => {
+                                        setSelectedActivity(activity);
+                                        setShowDetailModal(true);
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                >
                                     <div className="activity-header">
                                         <h4>{activity.title}</h4>
                                         <span className="badge badge-success">모집중</span>
                                     </div>
-                                    <p className="activity-description">{activity.description}</p>
                                     <div className="activity-meta">
                                         <div className="meta-item">
                                             <span className="meta-label">날짜:</span>
@@ -179,22 +188,7 @@ const Volunteer = ({ user }) => {
                                             <span className="meta-label">정원:</span>
                                             <span>{activity.maxParticipants}명</span>
                                         </div>
-                                        {activity.location && (
-                                            <div className="meta-item">
-                                                <span className="meta-label">장소:</span>
-                                                <span>{activity.location}</span>
-                                            </div>
-                                        )}
                                     </div>
-                                    <Button
-                                        variant={isRegistered ? 'secondary' : 'primary'}
-                                        size="sm"
-                                        fullWidth
-                                        onClick={() => handleRegister(activity)}
-                                        disabled={isRegistered}
-                                    >
-                                        {isRegistered ? '등록 완료' : '등록하기'}
-                                    </Button>
                                 </div>
                             );
                         })}
@@ -299,6 +293,22 @@ const Volunteer = ({ user }) => {
                     activity={selectedActivity}
                     onClose={() => { setShowParticipantModal(false); setSelectedActivity(null); }}
                     onUpdate={loadData}
+                />
+            )}
+
+            {/* Volunteer Detail Modal (General User) */}
+            {showDetailModal && selectedActivity && (
+                <VolunteerDetailModal
+                    activity={selectedActivity}
+                    user={{
+                        ...user,
+                        isRegistered: myRegistrations.some(r => r.activityId === selectedActivity.id)
+                    }}
+                    onClose={() => { setShowDetailModal(false); setSelectedActivity(null); }}
+                    onRegister={() => {
+                        handleRegister(selectedActivity);
+                        setShowDetailModal(false);
+                    }}
                 />
             )}
         </div>
