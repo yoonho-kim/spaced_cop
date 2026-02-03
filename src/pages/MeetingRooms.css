@@ -14,12 +14,7 @@
 .meetings-header h2 {
     font-size: 24px;
     font-weight: 700;
-    color: #9333ea;
-    /* Fallback for gradient */
-    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--color-text-primary);
     margin: 0 0 4px 0;
 }
 
@@ -39,18 +34,16 @@
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    border-radius: 24px;
-    transition: all 0.3s ease;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .room-card:hover {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    transform: scale(1.01);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+    transform: translateY(-2px);
 }
 
 .room-icon {
@@ -85,13 +78,13 @@
 }
 
 .room-status.available {
-    background-color: rgba(34, 197, 94, 0.2);
-    color: #22c55e;
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #16a34a;
 }
 
 .room-status.occupied {
-    background-color: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #dc2626;
 }
 
 .today-reservations {
@@ -132,12 +125,10 @@
     align-items: flex-start;
     gap: 12px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    border-radius: 24px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
 }
 
 .reservation-info {
@@ -222,12 +213,10 @@
 .date-selector {
     margin: 24px 16px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    background: var(--color-bg-secondary);
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
 }
 
 .date-selector label {
@@ -261,13 +250,11 @@
 
 .room-section {
     margin-bottom: 24px;
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-radius: 24px;
+    background: var(--color-bg-secondary);
+    border-radius: 16px;
     padding: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
 }
 
 .room-header {

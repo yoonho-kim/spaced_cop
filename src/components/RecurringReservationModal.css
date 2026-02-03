@@ -38,7 +38,7 @@
 .recurring-form input[type="time"] {
     width: 100%;
     padding: 10px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.35);
     border-radius: 8px;
     font-size: 14px;
     background-color: white;
@@ -48,7 +48,7 @@
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: #4b5563;
+    color: var(--color-text-secondary);
     margin-bottom: 6px;
 }
 
@@ -58,5 +58,5 @@
     gap: 10px;
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
 }

@@ -10,7 +10,7 @@ import {
 } from '../utils/storage';
 import './AdminVolunteerStats.css';
 
-const COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'];
+const COLORS = ['#2952cc', '#3b82f6', '#60a5fa', '#0ea5b7', '#14b8a6'];
 
 const AdminVolunteerStats = () => {
     const [userStats, setUserStats] = useState([]);

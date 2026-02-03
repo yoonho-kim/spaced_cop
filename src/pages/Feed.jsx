@@ -199,7 +199,6 @@ const Feed = ({ user, onNavigateToTab }) => {
                 <section className="volunteer-section">
                     <div className="section-header">
                         <h3>봉사활동 신청 결과</h3>
-                        <button className="view-all-link" onClick={() => onNavigateToTab && onNavigateToTab('volunteer')}>전체보기</button>
                     </div>
                     <div className="volunteer-cards-scroll no-scrollbar">
                         {publishedActivities.map(activity => (
@@ -207,10 +206,12 @@ const Feed = ({ user, onNavigateToTab }) => {
                                 <div className="volunteer-card-content">
                                     <div className="volunteer-card-header">
                                         <h4>{activity.title}</h4>
-                                        <div className={`status-badge ${activity.winners.length > 0 ? 'status-approved' : 'status-pending'}`}>
-                                            <div className="status-dot"></div>
-                                            <span>{activity.winners.length > 0 ? '승인됨' : '대기중'}</span>
-                                        </div>
+                                        {activity.winners.length === 0 && (
+                                            <div className="status-badge status-pending">
+                                                <div className="status-dot"></div>
+                                                <span>대기중</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="volunteer-card-meta">
                                         <span className="material-symbols-outlined">calendar_today</span>
@@ -229,7 +230,6 @@ const Feed = ({ user, onNavigateToTab }) => {
                 <section className="meeting-section">
                     <div className="section-header">
                         <h3>회의실 현황</h3>
-                        <button className="view-all-link" onClick={() => onNavigateToTab && onNavigateToTab('meetings')}>전체보기</button>
                     </div>
                     <div className="meeting-cards">
                         <div className="meeting-card-new" onClick={() => onNavigateToTab && onNavigateToTab('meetings')}>

@@ -16,17 +16,11 @@
     margin-bottom: 4px;
     font-size: 24px;
     font-weight: 700;
-    color: #9333ea;
-    /* Fallback for gradient */
-    /* Purple gradient text like login */
-    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--color-text-primary);
 }
 
 .admin-header p {
-    color: #6b7280;
+    color: var(--color-text-secondary);
     font-size: 14px;
     margin: 0;
 }
@@ -42,12 +36,10 @@
 
 .admin-tab {
     padding: 10px 20px;
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
     border-radius: 9999px;
-    color: #6b7280;
+    color: var(--color-text-secondary);
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
@@ -56,15 +48,15 @@
 }
 
 .admin-tab:hover {
-    background: rgba(255, 255, 255, 0.8);
-    color: #1a1a2e;
+    background: #ffffff;
+    color: var(--color-text-primary);
 }
 
 .admin-tab.active {
-    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    background: linear-gradient(135deg, #2952cc 0%, #1d4ed8 100%);
     color: #ffffff;
     border-color: transparent;
-    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
+    box-shadow: 0 6px 14px rgba(41, 82, 204, 0.3);
 }
 
 .admin-content {
@@ -100,7 +92,7 @@
 .section-header h3 {
     font-size: 18px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--color-text-primary);
 }
 
 .items-list {
@@ -115,19 +107,16 @@
     align-items: flex-start;
     gap: 16px;
     padding: 16px;
-    /* Glass morphism like login card */
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    border-radius: 24px;
-    transition: all 0.3s ease;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .admin-item:hover {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
-    transform: scale(1.01);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+    transform: translateY(-2px);
 }
 
 .item-info {
@@ -139,18 +128,18 @@
     margin-bottom: 4px;
     font-size: 16px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--color-text-primary);
 }
 
 .item-info p {
-    color: #6b7280;
+    color: var(--color-text-secondary);
     font-size: 14px;
     margin: 0;
 }
 
 .item-reason {
     margin-top: 8px;
-    color: #1a1a2e;
+    color: var(--color-text-primary);
     font-size: 14px;
     font-style: italic;
 }
@@ -173,23 +162,21 @@
     align-items: center;
     gap: 16px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    border-radius: 24px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
 }
 
 .setting-info h4 {
     margin-bottom: 4px;
     font-size: 16px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--color-text-primary);
 }
 
 .setting-info p {
-    color: #6b7280;
+    color: var(--color-text-secondary);
     font-size: 14px;
     margin: 0;
 }
@@ -209,7 +196,7 @@
 .form-group label {
     font-size: 14px;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--color-text-secondary);
 }
 
 .form-group input,
@@ -217,11 +204,11 @@
 .form-group select {
     width: 100%;
     padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(147, 51, 234, 0.2);
-    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 12px;
     font-size: 16px;
-    color: #1a1a2e;
+    color: var(--color-text-primary);
     transition: all 0.2s ease;
 }
 
@@ -229,8 +216,8 @@
 .form-group textarea:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #a855f7;
-    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+    border-color: rgba(41, 82, 204, 0.5);
+    box-shadow: 0 0 0 3px rgba(41, 82, 204, 0.12);
 }
 
 .form-group input::placeholder,
@@ -252,11 +239,10 @@
     justify-content: center;
     padding: 48px 24px;
     text-align: center;
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: var(--color-bg-secondary);
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
 }
 
 .empty-state .empty-icon {
@@ -265,7 +251,7 @@
 }
 
 .empty-state p {
-    color: #6b7280;
+    color: var(--color-text-secondary);
     margin: 4px 0;
 }
 
@@ -288,12 +274,10 @@
 
 /* Recurring Reservation Styles */
 .admin-item-card {
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    border-radius: 24px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
     overflow: hidden;
 }
 
@@ -305,18 +289,18 @@
 
 .item-details {
     padding: 0 16px 16px 16px;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(15, 23, 42, 0.02);
 }
 
 .details-header {
     font-size: 11px;
     font-weight: 700;
-    color: #94a3b8;
+    color: var(--color-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 8px;
     padding-top: 8px;
-    border-top: 1px solid rgba(147, 51, 234, 0.1);
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .detail-row {
@@ -336,12 +320,12 @@
 .detail-time {
     font-size: 13px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--color-text-primary);
 }
 
 .detail-purpose {
     font-size: 13px;
-    color: #64748b;
+    color: var(--color-text-secondary);
 }
 
 .detail-delete-btn {

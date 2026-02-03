@@ -2,7 +2,7 @@
 .winners-modal-overlay {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: rgba(15, 23, 42, 0.45);
     backdrop-filter: blur(2px);
     z-index: var(--z-modal);
     display: flex;
@@ -17,8 +17,9 @@
     background-color: white;
     width: 100%;
     max-width: 448px;
-    border-radius: 24px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-radius: 20px;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2);
     overflow: hidden;
     position: relative;
     animation: slideUp 0.3s ease-out;
@@ -30,8 +31,8 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 128px;
-    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+    height: 120px;
+    background: linear-gradient(135deg, rgba(41, 82, 204, 0.16) 0%, rgba(14, 116, 144, 0.12) 100%);
     z-index: -1;
     border-radius: 24px 24px 0 0;
 }
@@ -46,7 +47,7 @@
     border-radius: 50%;
     background: none;
     border: none;
-    color: #9ca3af;
+    color: var(--color-text-tertiary);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -56,8 +57,8 @@
 }
 
 .winners-modal-close:hover {
-    color: #6b7280;
-    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--color-text-secondary);
+    background-color: rgba(15, 23, 42, 0.06);
 }
 
 .winners-modal-close .material-symbols-outlined {
@@ -76,7 +77,7 @@
     width: 64px;
     height: 64px;
     margin: 0 auto 16px;
-    background-color: rgba(145, 23, 207, 0.1);
+    background-color: rgba(41, 82, 204, 0.12);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -120,7 +121,7 @@
     width: 48px;
     height: 48px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #e9d5ff 0%, #f0eff1 100%);
+    background: linear-gradient(135deg, rgba(41, 82, 204, 0.14) 0%, rgba(15, 23, 42, 0.04) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -200,7 +201,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: #faf5ff;
+    background-color: rgba(15, 23, 42, 0.04);
     padding: 6px;
     border-radius: 8px;
 }
@@ -209,7 +210,7 @@
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background-color: #e9d5ff;
+    background-color: rgba(41, 82, 204, 0.18);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -276,7 +277,7 @@
 .winners-btn-primary {
     background-color: var(--color-primary);
     color: white;
-    box-shadow: 0 0 15px rgba(145, 23, 207, 0.3);
+    box-shadow: 0 10px 18px rgba(41, 82, 204, 0.3);
 }
 
 .winners-btn-primary:hover {

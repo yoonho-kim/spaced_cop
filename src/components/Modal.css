@@ -1,4 +1,4 @@
-/* Modal Styles - Matching Login Screen Design */
+/* Modal Styles - Modern Business */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -16,16 +16,13 @@
 }
 
 .modal-content {
-    /* Glass morphism like login card */
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: 32px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 20px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
 }
 
 .modal-header {
@@ -33,25 +30,20 @@
     align-items: center;
     justify-content: space-between;
     padding: 20px 24px;
-    border-bottom: 1px solid rgba(147, 51, 234, 0.1);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .modal-header h3 {
     margin: 0;
     font-size: 20px;
     font-weight: 700;
-    color: #9333ea;
-    /* Fallback for gradient */
-    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #0f172a;
 }
 
 .modal-close {
-    background: rgba(147, 51, 234, 0.1);
+    background: rgba(15, 23, 42, 0.06);
     border: none;
-    color: #9333ea;
+    color: #1f2937;
     font-size: 16px;
     cursor: pointer;
     padding: 0;
@@ -65,8 +57,8 @@
 }
 
 .modal-close:hover {
-    background-color: rgba(147, 51, 234, 0.2);
-    color: #7e22ce;
+    background-color: rgba(15, 23, 42, 0.1);
+    color: #0f172a;
 }
 
 .modal-body {

@@ -14,12 +14,7 @@
 .volunteer-header h2 {
     font-size: 24px;
     font-weight: 700;
-    color: #9333ea;
-    /* Fallback for gradient */
-    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--color-text-primary);
     margin: 0 0 4px 0;
 }
 
@@ -51,18 +46,16 @@
 
 .activity-card {
     padding: 16px;
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    border-radius: 24px;
-    transition: all 0.3s ease;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .activity-card:hover {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    transform: scale(1.01);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+    transform: translateY(-2px);
 }
 
 .activity-header {
@@ -76,7 +69,7 @@
 .activity-header h4 {
     font-size: 16px;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--color-text-primary);
     /* Darker color for visibility */
     margin: 0;
     flex: 1;
@@ -95,7 +88,7 @@
     gap: 4px;
     margin-bottom: 12px;
     padding: 8px;
-    background-color: var(--color-bg-primary);
+    background-color: var(--color-bg-tertiary);
     border-radius: 8px;
 }
 
@@ -103,13 +96,11 @@
     display: flex;
     gap: 8px;
     font-size: 14px;
-    color: #374151;
-    /* Dark text */
+    color: var(--color-text-secondary);
 }
 
 .meta-label {
-    color: #4b5563;
-    /* Gray-600 */
+    color: var(--color-text-secondary);
     font-weight: 600;
     min-width: 60px;
 }
@@ -120,12 +111,10 @@
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    border-radius: 24px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
 }
 
 .registration-info {
@@ -218,21 +207,19 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: 16px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
     transition: all 0.2s ease;
 }
 
 .ranking-item.top-rank {
-    background-color: rgba(255, 215, 0, 0.05);
-    border-color: rgba(255, 215, 0, 0.3);
+    background-color: rgba(234, 179, 8, 0.08);
+    border-color: rgba(234, 179, 8, 0.3);
 }
 
 .ranking-item:hover {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
 }
 
 .rank-badge {
@@ -264,7 +251,7 @@
     font-weight: 700;
     color: var(--color-primary);
     padding: 4px 10px;
-    background-color: rgba(98, 0, 234, 0.1);
+    background-color: rgba(41, 82, 204, 0.12);
     border-radius: 12px;
 }
 

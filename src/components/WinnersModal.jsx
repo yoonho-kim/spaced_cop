@@ -27,9 +27,9 @@ const WinnersModal = ({ isOpen, onClose, activity }) => {
 
         // Draw scratch coating with gradient
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, '#a855f7');
-        gradient.addColorStop(0.5, '#c084fc');
-        gradient.addColorStop(1, '#e9d5ff');
+        gradient.addColorStop(0, '#2952cc');
+        gradient.addColorStop(0.5, '#60a5fa');
+        gradient.addColorStop(1, '#dbeafe');
 
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);

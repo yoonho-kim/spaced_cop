@@ -82,7 +82,7 @@ export const usePullToRefresh = (onRefresh, containerSelector = '.main-content')
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'linear-gradient(to bottom, rgba(145, 23, 207, 0.1), transparent)',
+                    background: 'linear-gradient(to bottom, rgba(41, 82, 204, 0.12), transparent)',
                     transition: pullDistance === 0 ? 'height 0.3s ease' : 'none',
                     zIndex: 10,
                 }}
@@ -94,7 +94,7 @@ export const usePullToRefresh = (onRefresh, containerSelector = '.main-content')
                 }}>
                     <span className="material-symbols-outlined" style={{
                         fontSize: '32px',
-                        color: pullDistance > 80 ? '#9117cf' : '#666'
+                        color: pullDistance > 80 ? '#2952cc' : '#64748b'
                     }}>
                         refresh
                     </span>

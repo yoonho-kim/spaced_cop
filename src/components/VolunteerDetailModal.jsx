@@ -25,39 +25,39 @@ const VolunteerDetailModal = ({ activity, user, onClose, onRegister }) => {
                 </div>
 
                 <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                    <h2 style={{ fontSize: '1.5rem', marginBottom: '10px', color: '#1f2937' }}>{activity.title}</h2>
+                    <h2 style={{ fontSize: '1.5rem', marginBottom: '10px', color: 'var(--color-text-primary)' }}>{activity.title}</h2>
 
-                    <div className="detail-meta" style={{ display: 'grid', gap: '12px', marginBottom: '20px', color: '#4b5563' }}>
+                    <div className="detail-meta" style={{ display: 'grid', gap: '12px', marginBottom: '20px', color: 'var(--color-text-secondary)' }}>
                         <div className="meta-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className="material-symbols-outlined" style={{ color: '#9333ea' }}>calendar_today</span>
+                            <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }}>calendar_today</span>
                             <span>{formatDate(activity.date)}</span>
                         </div>
                         {activity.location && (
                             <div className="meta-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span className="material-symbols-outlined" style={{ color: '#9333ea' }}>location_on</span>
+                                <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }}>location_on</span>
                                 <span>{activity.location}</span>
                             </div>
                         )}
                         <div className="meta-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className="material-symbols-outlined" style={{ color: '#9333ea' }}>schedule</span>
+                            <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }}>schedule</span>
                             <span>인정 시간: {activity.recognitionHours || 0}시간</span>
                         </div>
                         <div className="meta-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className="material-symbols-outlined" style={{ color: '#9333ea' }}>group</span>
+                            <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }}>group</span>
                             <span>모집 인원: {activity.maxParticipants}명</span>
                         </div>
                     </div>
 
                     <div className="detail-description" style={{
-                        backgroundColor: 'rgba(147, 51, 234, 0.05)',
+                        backgroundColor: 'rgba(41, 82, 204, 0.08)',
                         padding: '16px',
                         borderRadius: '12px',
                         marginBottom: '24px',
                         lineHeight: '1.6',
-                        color: '#4b5563',
-                        border: '1px solid rgba(147, 51, 234, 0.1)'
+                        color: 'var(--color-text-secondary)',
+                        border: '1px solid rgba(41, 82, 204, 0.15)'
                     }}>
-                        <h4 style={{ marginBottom: '8px', fontSize: '14px', color: '#9333ea', textTransform: 'uppercase' }}>활동 내용</h4>
+                        <h4 style={{ marginBottom: '8px', fontSize: '14px', color: 'var(--color-primary)', textTransform: 'uppercase' }}>활동 내용</h4>
                         {activity.description}
                     </div>
 

@@ -16,12 +16,7 @@
     gap: 8px;
     font-size: 1.25rem;
     font-weight: 700;
-    color: #9333ea;
-    /* Fallback for gradient */
-    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--color-text-primary);
     margin: 0;
 }
 
@@ -29,8 +24,8 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    background: rgba(138, 43, 226, 0.15);
-    border: 1px solid rgba(138, 43, 226, 0.4);
+    background: rgba(41, 82, 204, 0.12);
+    border: 1px solid rgba(41, 82, 204, 0.35);
     color: var(--color-primary);
     padding: 8px 16px;
     border-radius: 8px;
@@ -40,7 +35,7 @@
 }
 
 .refresh-btn:hover {
-    background: rgba(138, 43, 226, 0.25);
+    background: rgba(41, 82, 204, 0.18);
 }
 
 /* Tabs */
@@ -75,7 +70,7 @@
 }
 
 .admin-volunteer-stats .tab-btn.active {
-    background: linear-gradient(135deg, var(--color-primary), #b84ddf);
+    background: linear-gradient(135deg, #2952cc, #1d4ed8);
     color: white;
 }
 
@@ -167,7 +162,7 @@
 }
 
 .stats-table th {
-    background: linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(184, 77, 223, 0.1));
+    background: rgba(41, 82, 204, 0.08);
     color: var(--color-primary);
     font-weight: 600;
     position: sticky;
