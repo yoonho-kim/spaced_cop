@@ -53,26 +53,28 @@ const PERSONALITY_MAPPINGS = {
 
 /**
  * 성향 데이터를 기반으로 AI 프롬프트 생성
- * 항상 사람 캐릭터가 나오도록 강화된 프롬프트
- * 유저의 요구사항: "무조건 한 명"의 사람만 나오도록 함
+ * 증명사진 스타일: 상반신부터 머리까지 보이는 포트레이트
+ * 무조건 사람으로 생성되도록 강화된 프롬프트
  */
-export const generatePrompt = (personality) => {
+export const generatePrompt = (personality, gender) => {
     const p = personality;
     const t = PERSONALITY_MAPPINGS.time[p.time] || PERSONALITY_MAPPINGS.time.morning;
     const f = PERSONALITY_MAPPINGS.feeling[p.feeling] || PERSONALITY_MAPPINGS.feeling.citrus;
-    const pl = PERSONALITY_MAPPINGS.place[p.place] || PERSONALITY_MAPPINGS.place.city;
     const a = PERSONALITY_MAPPINGS.animal[p.animal] || PERSONALITY_MAPPINGS.animal.cat;
     const s = PERSONALITY_MAPPINGS.superpower[p.superpower] || PERSONALITY_MAPPINGS.superpower.teleport;
     const sn = PERSONALITY_MAPPINGS.snack[p.snack] || PERSONALITY_MAPPINGS.snack.coffee;
 
-    // "SINGLE CHARACTER"와 "SOLO"를 매우 강력하게 강조. 그리드 방지 문구 포함.
-    const prompt = `One single 3d cartoon character, only one person visible. 
-    A solo portrait of a young adult, centered, directly facing camera. 
-    human face, expressive eyes, ${a.trait}, ${sn.detail}.
-    style: pixar disney animation style, ${f.style}, ${s.effect}, ${sn.finish}.
-    colors: ${t.colors} palette, ${t.mood} atmosphere.
-    background: single ${pl.background} background.
-    no grid, no collage, no split screen, no multiple views, no frames, no boarders, only one person.`;
+    // 성별에 따른 인물 묘사
+    const genderDesc = gender === 'female' ? 'a young woman' : gender === 'male' ? 'a young man' : 'a young person';
+
+    // 증명사진 스타일: 상반신 포트레이트, 실제 사람, 깔끔한 배경
+    const prompt = `Professional ID photo portrait of ${genderDesc}, head and upper body visible,
+    centered composition, facing camera directly, shoulders visible, chest up framing.
+    real human person, photorealistic, natural skin texture, ${a.trait}, ${sn.detail}.
+    soft studio lighting, ${f.style}, ${t.mood} atmosphere.
+    wearing neat professional attire, ${s.effect}.
+    clean solid ${t.colors} background, studio photo quality, sharp focus, high detail.
+    single person only, no grid, no collage, no split screen, no multiple views.`;
 
     return prompt.replace(/\s+/g, ' ').trim();
 };
@@ -80,11 +82,12 @@ export const generatePrompt = (personality) => {
 /**
  * 프로필 아이콘 생성
  * @param {Object} personality - 성향 데이터 { time, feeling, place, animal, superpower, snack }
+ * @param {string} gender - 성별 ('male', 'female', 'other' 또는 빈 값)
  * @returns {Promise<{ success: boolean, imageData?: string, prompt?: string, error?: string }>}
  */
-export const generateProfileIcon = async (personality) => {
+export const generateProfileIcon = async (personality, gender) => {
     try {
-        const prompt = generatePrompt(personality);
+        const prompt = generatePrompt(personality, gender);
 
         const response = await fetch(MODEL_URL, {
             method: 'POST',
@@ -95,8 +98,8 @@ export const generateProfileIcon = async (personality) => {
             body: JSON.stringify({
                 inputs: prompt,
                 parameters: {
-                    // 그리드, 콜라주, 여러 인물을 방지하는 문구들을 대폭 강화
-                    negative_prompt: 'grid, collage, mosaic, split screen, multiple images, four panels, two panels, 2x2, duplicate, several people, group of people, more than one person, crowd, couple, family, friends, animals, objects only, low quality, blurry, text, logo, bad anatomy, deformed face, two faces, multiple views, character sheet, watermark, signature',
+                    // 카툰/동물 방지, 증명사진 품질 확보를 위한 네거티브 프롬프트
+                    negative_prompt: 'cartoon, anime, 3d render, pixar, disney, illustration, drawing, painting, sketch, comic, caricature, animal, cat, dog, owl, dolphin, creature, monster, robot, toy, figurine, doll, grid, collage, mosaic, split screen, multiple images, four panels, two panels, 2x2, duplicate, several people, group of people, more than one person, crowd, couple, family, friends, objects only, low quality, blurry, text, logo, bad anatomy, deformed face, two faces, multiple views, character sheet, watermark, signature, full body, legs visible, feet visible',
                     num_inference_steps: 40, // 퀄리티를 위해 스텝 수 약간 증가
                     guidance_scale: 8.0,
                     width: 512,
@@ -161,9 +164,9 @@ const blobToBase64 = (blob) => {
  * 재시도 로직이 포함된 아이콘 생성
  * 모델 로딩 시간을 고려하여 최대 3회 재시도
  */
-export const generateProfileIconWithRetry = async (personality, maxRetries = 3) => {
+export const generateProfileIconWithRetry = async (personality, gender, maxRetries = 3) => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const result = await generateProfileIcon(personality);
+        const result = await generateProfileIcon(personality, gender);
 
         if (result.success) {
             return result;
