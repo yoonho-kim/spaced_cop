@@ -233,8 +233,8 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
         setError('');
 
         try {
-            // AI 아이콘 생성
-            const iconResult = await generateProfileIconWithRetry(personality);
+            // AI 아이콘 생성 (성별 정보 함께 전달)
+            const iconResult = await generateProfileIconWithRetry(personality, gender);
 
             let profileIconUrl = null;
             let profileIconPrompt = null;
