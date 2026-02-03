@@ -562,6 +562,8 @@
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 0.025em;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 /* Post Actions */
