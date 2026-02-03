@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { logout, isAdmin } from '../utils/auth';
-import { addPost } from '../utils/storage';
+import { addPost, getEventSettings } from '../utils/storage';
 import { generatePostFromImage } from '../utils/openaiService';
 import Feed from './Feed';
 import MeetingRooms from './MeetingRooms';
@@ -26,6 +26,10 @@ const MainLayout = ({ user, onLogout }) => {
     const [imagePreview, setImagePreview] = useState(null);
     const fileInputRef = useRef(null);
 
+    const [eventPopup, setEventPopup] = useState(null);
+    const [showEventPopup, setShowEventPopup] = useState(false);
+    const [eventSeenKey, setEventSeenKey] = useState('');
+
     const [isNavVisible, setIsNavVisible] = useState(true);
     const lastScrollY = useRef(0);
     const mainContentRef = useRef(null);
@@ -37,6 +41,10 @@ const MainLayout = ({ user, onLogout }) => {
             mainContentRef.current.scrollTop = 0;
         }
     }, [activeTab]);
+
+    useEffect(() => {
+        loadEventPopup();
+    }, []);
 
     useEffect(() => {
         let scrollTimeout;
@@ -115,6 +123,33 @@ const MainLayout = ({ user, onLogout }) => {
     const handleLogout = () => {
         logout();
         onLogout();
+    };
+
+    const loadEventPopup = async () => {
+        const eventSettings = await getEventSettings();
+        if (!eventSettings || !eventSettings.isActive) return;
+
+        const key = `spaced_event_seen_${eventSettings.updatedAt || eventSettings.id || 'default'}`;
+        try {
+            if (sessionStorage.getItem(key)) return;
+        } catch (error) {
+            // ignore sessionStorage errors
+        }
+
+        setEventPopup(eventSettings);
+        setEventSeenKey(key);
+        setShowEventPopup(true);
+    };
+
+    const closeEventPopup = () => {
+        try {
+            if (eventSeenKey) {
+                sessionStorage.setItem(eventSeenKey, '1');
+            }
+        } catch (error) {
+            // ignore sessionStorage errors
+        }
+        setShowEventPopup(false);
     };
 
     // Handle image selection and AI post generation
@@ -447,6 +482,41 @@ const MainLayout = ({ user, onLogout }) => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Event Popup */}
+            {showEventPopup && eventPopup && (
+                <Modal
+                    isOpen={showEventPopup}
+                    onClose={closeEventPopup}
+                    title={eventPopup.pamphletTitle || '이벤트 안내'}
+                >
+                    <div className="event-popup">
+                        <div className="event-hero">
+                            <span className="event-chip">EVENT</span>
+                            <h4 className="event-title">{eventPopup.pamphletTitle || '사내 이벤트'}</h4>
+                            {eventPopup.pamphletSubtitle && (
+                                <p className="event-subtitle">{eventPopup.pamphletSubtitle}</p>
+                            )}
+                        </div>
+                        {eventPopup.pamphletBody && (
+                            <ul className="event-points">
+                                {eventPopup.pamphletBody
+                                    .split('\n')
+                                    .filter(Boolean)
+                                    .map((line, idx) => (
+                                        <li key={`${idx}-${line}`}>{line.replace(/^-\\s*/, '')}</li>
+                                    ))}
+                            </ul>
+                        )}
+                        {!eventPopup.pamphletBody && eventPopup.description && (
+                            <p className="event-fallback">{eventPopup.description}</p>
+                        )}
+                        {eventPopup.pamphletCta && (
+                            <div className="event-cta">{eventPopup.pamphletCta}</div>
+                        )}
+                    </div>
+                </Modal>
+            )}
 
             {/* Statistics Modal */}
             {showStatistics && (

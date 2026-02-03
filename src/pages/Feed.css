@@ -611,6 +611,8 @@
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 /* Post Actions */
@@ -710,6 +712,8 @@
     color: var(--color-text-main);
     line-height: 1.45;
     margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .comment-input-wrapper {

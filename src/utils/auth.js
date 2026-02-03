@@ -307,6 +307,103 @@ export const getAdminPassword = () => {
     return null;
 };
 
+// ==============================
+// Admin User Management
+// ==============================
+
+export const adminGetUsers = async () => {
+    if (!isAdmin()) {
+        return { success: false, error: '권한이 없습니다.' };
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select('id, nickname, employee_id, gender, is_admin, created_at')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Admin get users error:', error);
+            return { success: false, error: '사용자 목록을 불러올 수 없습니다.' };
+        }
+
+        const users = (data || []).map(u => ({
+            id: u.id,
+            nickname: u.nickname,
+            employeeId: u.employee_id,
+            gender: u.gender,
+            isAdmin: u.is_admin,
+            createdAt: u.created_at,
+        }));
+
+        return { success: true, users };
+    } catch (error) {
+        console.error('Admin get users error:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const adminUpdateUserBasicInfo = async (userId, updates) => {
+    if (!isAdmin()) {
+        return { success: false, error: '권한이 없습니다.' };
+    }
+
+    try {
+        const dbUpdates = {};
+        if ('employeeId' in updates) dbUpdates.employee_id = updates.employeeId || null;
+        if ('gender' in updates) dbUpdates.gender = updates.gender || null;
+
+        const { data, error } = await supabase
+            .from('users')
+            .update(dbUpdates)
+            .eq('id', userId)
+            .select();
+
+        if (error) {
+            console.error('Admin update user error:', error);
+            return { success: false, error: '사용자 정보를 업데이트할 수 없습니다.' };
+        }
+
+        if (!data || data.length === 0) {
+            return { success: false, error: '업데이트 권한이 없습니다. RLS 정책을 확인하세요.' };
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('Admin update user error:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const adminResetUserPassword = async (userId, newPassword) => {
+    if (!isAdmin()) {
+        return { success: false, error: '권한이 없습니다.' };
+    }
+
+    try {
+        const newHash = await hashPassword(newPassword);
+        const { data, error } = await supabase
+            .from('users')
+            .update({ password_hash: newHash })
+            .eq('id', userId)
+            .select();
+
+        if (error) {
+            console.error('Admin reset password error:', error);
+            return { success: false, error: '비밀번호를 초기화할 수 없습니다.' };
+        }
+
+        if (!data || data.length === 0) {
+            return { success: false, error: '비밀번호 변경 권한이 없습니다. RLS 정책을 확인하세요.' };
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('Admin reset password error:', error);
+        return { success: false, error: error.message };
+    }
+};
+
 // Get remaining session time in minutes
 export const getSessionRemainingTime = () => {
     const user = getItem(STORAGE_KEYS.USER);

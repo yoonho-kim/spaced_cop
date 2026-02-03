@@ -58,6 +58,73 @@ export const removeItem = (key) => {
 };
 
 // ============================================
+// EVENT SETTINGS
+// ============================================
+
+export const getEventSettings = async () => {
+  const { data, error } = await supabase
+    .from('app_event_settings')
+    .select('*')
+    .eq('id', 1)
+    .single();
+
+  if (error) {
+    // No rows found
+    if (error.code === 'PGRST116') {
+      return {
+        id: 1,
+        isActive: false,
+        description: '',
+        pamphletTitle: '',
+        pamphletSubtitle: '',
+        pamphletBody: '',
+        pamphletCta: '',
+        updatedAt: null,
+      };
+    }
+    console.error('Error fetching event settings:', error);
+    return null;
+  }
+
+  return {
+    id: data.id,
+    isActive: data.is_active,
+    description: data.description || '',
+    pamphletTitle: data.pamphlet_title || '',
+    pamphletSubtitle: data.pamphlet_subtitle || '',
+    pamphletBody: data.pamphlet_body || '',
+    pamphletCta: data.pamphlet_cta || '',
+    updatedAt: data.updated_at || data.created_at || null,
+  };
+};
+
+export const upsertEventSettings = async (settings) => {
+  const payload = {
+    id: 1,
+    is_active: !!settings.isActive,
+    description: settings.description || '',
+    pamphlet_title: settings.pamphletTitle || '',
+    pamphlet_subtitle: settings.pamphletSubtitle || '',
+    pamphlet_body: settings.pamphletBody || '',
+    pamphlet_cta: settings.pamphletCta || '',
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from('app_event_settings')
+    .upsert([payload])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating event settings:', error);
+    return { success: false, error: '이벤트 설정을 저장할 수 없습니다.' };
+  }
+
+  return { success: true, data };
+};
+
+// ============================================
 // POSTS
 // ============================================
 

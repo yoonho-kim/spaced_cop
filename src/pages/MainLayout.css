@@ -20,6 +20,7 @@
     --color-accent-light: rgba(41, 82, 204, 0.12);
     --color-admin: #1d4ed8;
     --color-admin-light: rgba(29, 78, 216, 0.12);
+    --bottom-nav-space: 140px;
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -240,7 +241,7 @@
     background: transparent;
     -webkit-overflow-scrolling: touch;
     /* Enable momentum scrolling on iOS */
-    padding-bottom: 120px;
+    padding-bottom: calc(var(--bottom-nav-space) + env(safe-area-inset-bottom));
 }
 
 /* Bottom Navigation - Apple Frosted Glass Style */
@@ -630,6 +631,70 @@
     justify-content: center;
     border-radius: 12px;
     z-index: 10;
+}
+
+/* Event Popup */
+.event-popup {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.event-hero {
+    border-radius: 14px;
+    padding: 14px;
+    background: linear-gradient(135deg, rgba(41, 82, 204, 0.14), rgba(14, 116, 144, 0.12));
+    border: 1px solid rgba(41, 82, 204, 0.18);
+}
+
+.event-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffffff;
+    background: #2952cc;
+    margin-bottom: 8px;
+}
+
+.event-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.event-subtitle {
+    margin: 6px 0 0 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.event-points {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.event-points li {
+    margin-bottom: 6px;
+}
+
+.event-fallback {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.event-cta {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-align: right;
 }
 
 .ai-generating-content {

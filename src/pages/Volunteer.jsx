@@ -43,9 +43,13 @@ const Volunteer = ({ user }) => {
             return;
         }
 
-        // Prompt for employee ID
-        const employeeId = prompt('신청자 사번을 입력해주세요:');
-        if (!employeeId || !employeeId.trim()) {
+        // Prompt for employee ID (prefill if available)
+        const defaultEmployeeId = user?.employeeId ? String(user.employeeId) : '';
+        const employeeId = prompt('신청자 사번을 입력해주세요:', defaultEmployeeId);
+        if (employeeId === null) {
+            return;
+        }
+        if (!employeeId.trim()) {
             alert('사번을 입력해야 등록할 수 있습니다');
             return;
         }

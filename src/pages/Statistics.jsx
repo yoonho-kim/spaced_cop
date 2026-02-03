@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getReservations, getVolunteerRegistrations, getVolunteerActivities } from '../utils/storage';
+import { getReservations } from '../utils/storage';
 import AdminVolunteerStats from './AdminVolunteerStats';
 import './Statistics.css';
 
 const Statistics = ({ onClose }) => {
     const [activeTab, setActiveTab] = useState('meeting');
     const [reservations, setReservations] = useState([]);
-    const [volunteerRegistrations, setVolunteerRegistrations] = useState([]);
-    const [volunteerActivities, setVolunteerActivities] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -17,14 +15,10 @@ const Statistics = ({ onClose }) => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [resData, regData, actData] = await Promise.all([
+            const [resData] = await Promise.all([
                 getReservations(),
-                getVolunteerRegistrations(),
-                getVolunteerActivities()
             ]);
             setReservations(resData);
-            setVolunteerRegistrations(regData);
-            setVolunteerActivities(actData);
         } catch (error) {
             console.error('Error loading statistics data:', error);
         }
@@ -67,64 +61,8 @@ const Statistics = ({ onClose }) => {
         return Math.max(...data.map(d => d[1])) || 1;
     };
 
-    // ==================== 봉사활동 통계 ====================
-    const getEmployeeStats = () => {
-        const stats = {};
-        volunteerRegistrations.forEach(reg => {
-            const empId = reg.employeeId || '미지정';
-            if (!stats[empId]) {
-                stats[empId] = { total: 0, confirmed: 0, pending: 0, rejected: 0 };
-            }
-            stats[empId].total++;
-            if (reg.status === 'confirmed') stats[empId].confirmed++;
-            else if (reg.status === 'pending') stats[empId].pending++;
-            else if (reg.status === 'rejected') stats[empId].rejected++;
-        });
-        return Object.entries(stats)
-            .map(([id, data]) => ({ employeeId: id, ...data }))
-            .sort((a, b) => b.confirmed - a.confirmed);
-    };
-
-    const getStatusStats = () => {
-        const stats = { confirmed: 0, pending: 0, rejected: 0 };
-        volunteerRegistrations.forEach(reg => {
-            if (reg.status === 'confirmed') stats.confirmed++;
-            else if (reg.status === 'pending') stats.pending++;
-            else if (reg.status === 'rejected') stats.rejected++;
-        });
-        return stats;
-    };
-
-    const getMonthlyStats = () => {
-        const currentYear = new Date().getFullYear();
-        const months = {};
-
-        // Initialize months
-        for (let i = 1; i <= 12; i++) {
-            months[i] = 0;
-        }
-
-        volunteerRegistrations.forEach(reg => {
-            if (reg.registeredAt) {
-                const date = new Date(reg.registeredAt);
-                if (date.getFullYear() === currentYear) {
-                    months[date.getMonth() + 1]++;
-                }
-            }
-        });
-
-        return Object.entries(months).map(([month, count]) => ({
-            month: `${month}월`,
-            count
-        }));
-    };
-
     const departmentStats = getDepartmentStats();
     const timeSlotStats = getTimeSlotStats();
-    const employeeStats = getEmployeeStats();
-    const statusStats = getStatusStats();
-    const monthlyStats = getMonthlyStats();
-    const totalStatus = statusStats.confirmed + statusStats.pending + statusStats.rejected || 1;
 
     if (loading) {
         return (

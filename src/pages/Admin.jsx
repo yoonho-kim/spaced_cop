@@ -12,10 +12,11 @@ import {
     deleteVolunteerActivity,
     getVolunteerRegistrations,
     updateVolunteerRegistration,
-    getSupplyRequests,
-    updateSupplyRequest,
+    getEventSettings,
+    upsertEventSettings,
 } from '../utils/storage';
-import { updateAdminPassword } from '../utils/auth';
+import { updateAdminPassword, adminGetUsers, adminUpdateUserBasicInfo, adminResetUserPassword } from '../utils/auth';
+import { generateEventPamphlet } from '../utils/openaiService';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import RecurringReservationModal from '../components/RecurringReservationModal';
@@ -28,13 +29,27 @@ const Admin = () => {
     const [recurringRules, setRecurringRules] = useState([]);
     const [activities, setActivities] = useState([]);
     const [registrations, setRegistrations] = useState([]);
-    const [supplyRequests, setSupplyRequests] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [userSearch, setUserSearch] = useState('');
+    const [visibleUserCount, setVisibleUserCount] = useState(20);
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [userForm, setUserForm] = useState({ employeeId: '', gender: '' });
     const [showModal, setShowModal] = useState(false);
     const [showRecurringModal, setShowRecurringModal] = useState(false);
     const [modalType, setModalType] = useState('');
     const [formData, setFormData] = useState({});
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [showParticipantModal, setShowParticipantModal] = useState(false);
+    const [eventSettings, setEventSettings] = useState({
+        isActive: false,
+        description: '',
+        pamphletTitle: '',
+        pamphletSubtitle: '',
+        pamphletBody: '',
+        pamphletCta: ''
+    });
+    const [isSavingEvent, setIsSavingEvent] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -45,12 +60,24 @@ const Admin = () => {
         const recurringData = await getRecurringRules();
         const activitiesData = await getVolunteerActivities();
         const registrationsData = await getVolunteerRegistrations();
-        const supplyRequestsData = await getSupplyRequests();
+        const userResult = await adminGetUsers();
+        const eventData = await getEventSettings();
         setRooms(roomsData);
         setRecurringRules(recurringData);
         setActivities(activitiesData);
         setRegistrations(registrationsData);
-        setSupplyRequests(supplyRequestsData);
+        setUsers(userResult.success ? userResult.users : []);
+        if (eventData) {
+            setEventSettings({
+                isActive: eventData.isActive,
+                description: eventData.description,
+                pamphletTitle: eventData.pamphletTitle,
+                pamphletSubtitle: eventData.pamphletSubtitle,
+                pamphletBody: eventData.pamphletBody,
+                pamphletCta: eventData.pamphletCta
+            });
+        }
+        setVisibleUserCount(20);
     };
 
     // Meeting Rooms Management
@@ -197,18 +224,6 @@ const Admin = () => {
         loadData();
     };
 
-    // Supply Requests Management
-    const handleApproveSupply = async (requestId) => {
-        await updateSupplyRequest(requestId, { status: 'approved' });
-        loadData();
-    };
-
-    const handleRejectSupply = async (requestId, note) => {
-        const adminNote = prompt('거부 사유 (선택사항):');
-        await updateSupplyRequest(requestId, { status: 'rejected', adminNote });
-        loadData();
-    };
-
     // Password Management
     const handleChangePassword = async () => {
         const newPassword = prompt('새 관리자 비밀번호를 입력하세요:');
@@ -219,6 +234,130 @@ const Admin = () => {
             } else {
                 alert(`비밀번호 변경 실패: ${result.error}`);
             }
+        }
+    };
+
+    const filteredUsers = users.filter(u => {
+        const term = userSearch.trim().toLowerCase();
+        if (!term) return true;
+        return (
+            (u.nickname || '').toLowerCase().includes(term) ||
+            String(u.employeeId || '').toLowerCase().includes(term)
+        );
+    });
+
+    const visibleUsers = filteredUsers.slice(0, visibleUserCount);
+
+    const handleUsersScroll = (e) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+        if (scrollTop + clientHeight >= scrollHeight - 20) {
+            setVisibleUserCount(prev => Math.min(prev + 20, filteredUsers.length));
+        }
+    };
+
+    const openUserEdit = (user) => {
+        setSelectedUser(user);
+        setUserForm({
+            employeeId: user.employeeId || '',
+            gender: user.gender || ''
+        });
+        setShowUserModal(true);
+    };
+
+    const handleSaveUser = async (e) => {
+        e.preventDefault();
+        if (!selectedUser) return;
+
+        const result = await adminUpdateUserBasicInfo(selectedUser.id, {
+            employeeId: userForm.employeeId,
+            gender: userForm.gender
+        });
+
+        if (result.success) {
+            alert('사용자 정보가 업데이트되었습니다.');
+            setShowUserModal(false);
+            setSelectedUser(null);
+            loadData();
+        } else {
+            alert(result.error || '사용자 정보 업데이트에 실패했습니다.');
+        }
+    };
+
+    const handleResetUserPassword = async (user) => {
+        const confirmed = confirm(`${user.nickname} 사용자의 비밀번호를 초기화하시겠습니까?`);
+        if (!confirmed) return;
+
+        const input = prompt('새 비밀번호를 입력하세요. 비워두면 0000으로 초기화됩니다.');
+        if (input === null) return;
+        const newPassword = input.trim() || '0000';
+
+        const result = await adminResetUserPassword(user.id, newPassword);
+        if (result.success) {
+            alert(`비밀번호가 "${newPassword}" 로 초기화되었습니다.`);
+        } else {
+            alert(result.error || '비밀번호 초기화에 실패했습니다.');
+        }
+    };
+
+    const isQuotaExceeded = (error) => {
+        const status = error?.status;
+        const message = String(error?.message || '').toLowerCase();
+        return (
+            status === 429 ||
+            message.includes('quota') ||
+            message.includes('rate limit') ||
+            message.includes('limit') && message.includes('requests')
+        );
+    };
+
+    const handleSaveEventSettings = async () => {
+        if (!eventSettings.description.trim() && eventSettings.isActive) {
+            alert('이벤트 내용을 입력해주세요.');
+            return;
+        }
+
+        setIsSavingEvent(true);
+        try {
+            let nextSettings = { ...eventSettings };
+            if (eventSettings.isActive) {
+                const pamphlet = await generateEventPamphlet(eventSettings.description);
+                nextSettings = {
+                    ...nextSettings,
+                    pamphletTitle: pamphlet.title,
+                    pamphletSubtitle: pamphlet.subtitle,
+                    pamphletBody: (pamphlet.bullets || []).join('\n'),
+                    pamphletCta: pamphlet.cta
+                };
+            }
+
+            const result = await upsertEventSettings(nextSettings);
+            if (!result.success) {
+                alert(result.error || '이벤트 설정 저장에 실패했습니다.');
+            } else {
+                setEventSettings(nextSettings);
+                alert('이벤트 설정이 저장되었습니다.');
+            }
+        } catch (error) {
+            if (isQuotaExceeded(error)) {
+                const fallbackSettings = {
+                    ...eventSettings,
+                    pamphletTitle: '',
+                    pamphletSubtitle: '',
+                    pamphletBody: '',
+                    pamphletCta: ''
+                };
+                const result = await upsertEventSettings(fallbackSettings);
+                if (result.success) {
+                    setEventSettings(fallbackSettings);
+                    alert('AI 사용량이 초과되어 팜플렛 생성 없이 저장했습니다. 이벤트 팝업은 입력한 문구로 노출됩니다.');
+                } else {
+                    alert(result.error || '이벤트 설정 저장에 실패했습니다.');
+                }
+            } else {
+                alert(error.message || '이벤트 팜플렛 생성에 실패했습니다.');
+            }
+        } finally {
+            setIsSavingEvent(false);
         }
     };
 
@@ -254,13 +393,11 @@ const Admin = () => {
         loadData();
     };
 
-    const pendingSupplyRequests = supplyRequests.filter(r => r.status === 'pending');
-
     return (
         <div className="admin-container">
             <div className="admin-header">
                 <h2>관리자 패널</h2>
-                <p className="text-secondary">사무실 자원 및 요청 관리</p>
+                <p className="text-secondary">자원 · 활동 · 사용자 관리</p>
             </div>
 
             <div className="admin-tabs">
@@ -277,10 +414,10 @@ const Admin = () => {
                     봉사활동
                 </button>
                 <button
-                    className={`admin-tab ${activeSection === 'supplies' ? 'active' : ''}`}
-                    onClick={() => setActiveSection('supplies')}
+                    className={`admin-tab ${activeSection === 'users' ? 'active' : ''}`}
+                    onClick={() => setActiveSection('users')}
                 >
-                    비품
+                    사용자
                 </button>
                 <button
                     className={`admin-tab ${activeSection === 'settings' ? 'active' : ''}`}
@@ -425,34 +562,48 @@ const Admin = () => {
                     </div>
                 )}
 
-                {/* Supply Requests Section */}
-                {activeSection === 'supplies' && (
+                {/* Users Section */}
+                {activeSection === 'users' && (
                     <div className="admin-section">
                         <div className="section-header">
-                            <h3>비품 신청</h3>
-                            <span className="badge badge-warning">{pendingSupplyRequests.length}건 대기중</span>
+                            <h3>사용자 관리</h3>
+                            <div className="user-search">
+                                <span className="material-symbols-outlined">search</span>
+                                <input
+                                    type="text"
+                                    placeholder="아이디 또는 사번 검색"
+                                    value={userSearch}
+                                    onChange={(e) => {
+                                        setUserSearch(e.target.value);
+                                        setVisibleUserCount(20);
+                                    }}
+                                />
+                            </div>
                         </div>
-                        <div className="items-list">
-                            {pendingSupplyRequests.length === 0 ? (
+                        <div className="users-list" onScroll={handleUsersScroll}>
+                            {filteredUsers.length === 0 ? (
                                 <div className="empty-state">
-                                    <p className="text-secondary">대기 중인 요청이 없습니다</p>
+                                    <p className="text-secondary">검색 결과가 없습니다</p>
                                 </div>
                             ) : (
-                                pendingSupplyRequests.map(request => (
-                                    <div key={request.id} className="admin-item">
-                                        <div className="item-info">
-                                            <h4>{request.itemName}</h4>
-                                            <p className="text-secondary">
-                                                {request.userName}님 신청 · 수량: {request.quantity}
-                                            </p>
-                                            {request.reason && <p className="item-reason">{request.reason}</p>}
+                                visibleUsers.map(user => (
+                                    <div key={user.id} className="user-item">
+                                        <div className="user-info">
+                                            <div className="user-title">
+                                                <span className="user-nickname">{user.nickname}</span>
+                                                {user.isAdmin && <span className="badge badge-info">관리자</span>}
+                                            </div>
+                                            <div className="user-meta">
+                                                <span>사번: {user.employeeId || '-'}</span>
+                                                <span>성별: {user.gender || '-'}</span>
+                                            </div>
                                         </div>
-                                        <div className="item-actions">
-                                            <Button variant="success" size="sm" onClick={() => handleApproveSupply(request.id)}>
-                                                승인
+                                        <div className="user-actions">
+                                            <Button variant="secondary" size="sm" onClick={() => openUserEdit(user)}>
+                                                기본정보 수정
                                             </Button>
-                                            <Button variant="danger" size="sm" onClick={() => handleRejectSupply(request.id)}>
-                                                거부
+                                            <Button variant="danger" size="sm" onClick={() => handleResetUserPassword(user)}>
+                                                비밀번호 초기화
                                             </Button>
                                         </div>
                                     </div>
@@ -477,6 +628,63 @@ const Admin = () => {
                                 <Button variant="admin" size="sm" onClick={handleChangePassword}>
                                     비밀번호 변경
                                 </Button>
+                            </div>
+
+                            <div className="setting-item event-setting">
+                                <div className="setting-info">
+                                    <h4>이벤트 팝업</h4>
+                                    <p className="text-secondary">로그인 시 이벤트 팝업 노출</p>
+                                </div>
+                                <label className="toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={eventSettings.isActive}
+                                        onChange={(e) => setEventSettings(prev => ({ ...prev, isActive: e.target.checked }))}
+                                    />
+                                    <span className="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="event-config">
+                                <label>이벤트 문구</label>
+                                <textarea
+                                    rows="3"
+                                    value={eventSettings.description}
+                                    onChange={(e) => setEventSettings(prev => ({ ...prev, description: e.target.value }))}
+                                    placeholder="예) 3월 봉사활동 이벤트: 참여자 전원 기념 굿즈 증정"
+                                />
+                                <div className="event-actions">
+                                    <Button
+                                        variant="admin"
+                                        size="sm"
+                                        onClick={handleSaveEventSettings}
+                                        disabled={isSavingEvent}
+                                    >
+                                        {eventSettings.isActive ? 'AI 팜플렛 생성/저장' : '저장'}
+                                    </Button>
+                                </div>
+                                {(eventSettings.pamphletTitle || eventSettings.pamphletBody) && (
+                                    <div className="event-preview">
+                                        <div className="event-preview-title">미리보기</div>
+                                        <div className="event-preview-card">
+                                            <h5>{eventSettings.pamphletTitle || '이벤트 안내'}</h5>
+                                            {eventSettings.pamphletSubtitle && (
+                                                <p className="event-preview-sub">{eventSettings.pamphletSubtitle}</p>
+                                            )}
+                                            <ul>
+                                                {eventSettings.pamphletBody
+                                                    .split('\n')
+                                                    .filter(Boolean)
+                                                    .map((line, idx) => (
+                                                        <li key={`${idx}-${line}`}>{line.replace(/^-\\s*/, '')}</li>
+                                                    ))}
+                                            </ul>
+                                            {eventSettings.pamphletCta && (
+                                                <div className="event-preview-cta">{eventSettings.pamphletCta}</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -617,6 +825,49 @@ const Admin = () => {
                     onUpdate={loadData}
                 />
             )}
+
+            {/* User Edit Modal */}
+            <Modal
+                isOpen={showUserModal}
+                onClose={() => { setShowUserModal(false); setSelectedUser(null); }}
+                title="사용자 기본정보 수정"
+            >
+                <form onSubmit={handleSaveUser} className="admin-form">
+                    <div className="form-group">
+                        <label>아이디(닉네임)</label>
+                        <input type="text" value={selectedUser?.nickname || ''} disabled />
+                    </div>
+                    <div className="form-group">
+                        <label>사번</label>
+                        <input
+                            type="text"
+                            value={userForm.employeeId}
+                            onChange={(e) => setUserForm({ ...userForm, employeeId: e.target.value })}
+                            placeholder="사번 입력"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>성별</label>
+                        <select
+                            value={userForm.gender}
+                            onChange={(e) => setUserForm({ ...userForm, gender: e.target.value })}
+                        >
+                            <option value="">선택 안함</option>
+                            <option value="male">남성</option>
+                            <option value="female">여성</option>
+                            <option value="other">기타</option>
+                        </select>
+                    </div>
+                    <div className="form-actions">
+                        <Button type="button" variant="secondary" onClick={() => setShowUserModal(false)}>
+                            취소
+                        </Button>
+                        <Button type="submit" variant="admin">
+                            저장
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 };

@@ -126,6 +126,7 @@
     flex: 1;
     overflow-y: auto;
     padding: 20px;
+    padding-bottom: calc(var(--bottom-nav-space, 140px) + env(safe-area-inset-bottom));
     background: var(--color-bg-tertiary);
 }
 
