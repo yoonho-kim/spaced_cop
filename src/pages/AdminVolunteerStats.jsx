@@ -4,7 +4,24 @@ import {
     getVolunteerStatsByActivity,
     getMonthlyVolunteerStats
 } from '../utils/storage';
-import './AdminVolunteerStats.css';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardContent
+} from '@/components/ui/card';
+import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableHead,
+    TableCell
+} from '@/components/ui/table';
 
 const AdminVolunteerStats = () => {
     const [userStats, setUserStats] = useState([]);
@@ -79,140 +96,221 @@ const AdminVolunteerStats = () => {
 
     if (loading) {
         return (
-            <div className="stats-loading">
-                <div className="loading"></div>
-                <p>통계 데이터 로딩 중...</p>
+            <div className="space-y-4 bg-background px-4 pb-6 text-foreground">
+                <div className="flex flex-col items-center gap-3 py-10 text-muted-foreground">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+                    <p className="text-sm">통계 데이터 로딩 중...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="admin-volunteer-stats">
-            <div className="stats-header">
-                <h2>
-                    <span className="material-symbols-outlined">analytics</span>
-                    봉사활동 통계
-                </h2>
-                <button className="refresh-btn" onClick={loadStats}>
-                    <span className="material-symbols-outlined">refresh</span>
+        <div className="space-y-4 bg-background px-4 pb-6 text-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-1">
+                    <h2 className="flex items-center gap-2 text-lg font-semibold">
+                        <span className="material-symbols-outlined text-primary">analytics</span>
+                        봉사활동 통계
+                    </h2>
+                    <p className="text-sm text-muted-foreground">최신 확정 데이터 기준 요약</p>
+                </div>
+                <Button variant="secondary" size="sm" onClick={loadStats}>
+                    <span className="material-symbols-outlined text-[18px]">refresh</span>
                     새로고침
-                </button>
-            </div>
-            <div className="stats-summary-grid">
-                <div className="summary-card">
-                    <span className="summary-label">총 참여 건수</span>
-                    <span className="summary-value">{summary.totalParticipations}</span>
-                    <span className="summary-sub">확정 기준</span>
-                </div>
-                <div className="summary-card">
-                    <span className="summary-label">고유 참여자</span>
-                    <span className="summary-value">{summary.totalParticipants}</span>
-                    <span className="summary-sub">사번 기준</span>
-                </div>
-                <div className="summary-card">
-                    <span className="summary-label">누적 시간</span>
-                    <span className="summary-value">{summary.totalHours}h</span>
-                    <span className="summary-sub">인정 시간 합계</span>
-                </div>
-                <div className="summary-card">
-                    <span className="summary-label">총 활동 수</span>
-                    <span className="summary-value">{summary.totalActivities}</span>
-                    <span className="summary-sub">등록된 활동</span>
-                </div>
+                </Button>
             </div>
 
-            <div className="stats-panel">
-                <div className="panel-header">
-                    <h3>상위 참여자</h3>
-                    <div className="search-box">
-                        <span className="material-symbols-outlined">search</span>
-                        <input
-                            type="text"
-                            placeholder="사번 또는 이름 검색..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+            <div className="grid grid-cols-2 gap-3">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>총 참여 건수</CardDescription>
+                        <CardTitle className="text-2xl">{summary.totalParticipations}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-xs text-muted-foreground">확정 기준</CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>고유 참여자</CardDescription>
+                        <CardTitle className="text-2xl">{summary.totalParticipants}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-xs text-muted-foreground">사번 기준</CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>누적 시간</CardDescription>
+                        <CardTitle className="text-2xl">{summary.totalHours}h</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-xs text-muted-foreground">인정 시간 합계</CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>총 활동 수</CardDescription>
+                        <CardTitle className="text-2xl">{summary.totalActivities}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-xs text-muted-foreground">등록된 활동</CardContent>
+                </Card>
+            </div>
+
+            <Card>
+                <CardHeader className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <CardTitle className="text-base">상위 참여자</CardTitle>
+                            <CardDescription>사번/이름 기준 상위 10명</CardDescription>
+                        </div>
+                        <div className="w-full sm:w-64">
+                            <Input
+                                type="text"
+                                placeholder="사번 또는 이름 검색..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
-                </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>사번/이름</TableHead>
+                                <TableHead className="text-right">참여</TableHead>
+                                <TableHead className="text-right">시간</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {topUsers.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                                        데이터가 없습니다
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                topUsers.map(user => (
+                                    <TableRow key={user.employeeId}>
+                                        <TableCell>
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium text-foreground">
+                                                    {user.employeeId} · {user.employeeName}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    누적 {user.totalParticipations}회
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right text-sm">
+                                            {user.totalParticipations}회
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="space-y-2">
+                                                <Badge variant="secondary">{user.totalHours}h</Badge>
+                                                <div className="h-2 w-full rounded-full bg-muted">
+                                                    <div
+                                                        className="h-2 rounded-full bg-primary"
+                                                        style={{
+                                                            width: `${Math.round(
+                                                                (user.totalHours / maxUserHours) * 100
+                                                            )}%`,
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
-                {topUsers.length === 0 ? (
-                    <p className="no-data">데이터가 없습니다</p>
-                ) : (
-                    <div className="simple-list">
-                        {topUsers.map(user => (
-                            <div key={user.employeeId} className="list-row">
-                                <div className="row-main">
-                                    <div className="row-title">{user.employeeId} · {user.employeeName}</div>
-                                    <div className="row-sub">{user.totalParticipations}회 참여 · {user.totalHours}시간</div>
-                                </div>
-                                <div className="row-bar">
-                                    <div className="bar-track">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">활동별 모집률</CardTitle>
+                    <CardDescription>가장 많은 참여를 얻은 활동</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>활동명</TableHead>
+                                <TableHead className="text-right">참여/정원</TableHead>
+                                <TableHead className="text-right">모집률</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {topActivities.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                                        데이터가 없습니다
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                topActivities.map(act => (
+                                    <TableRow key={act.id}>
+                                        <TableCell>
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium text-foreground">{act.title}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {act.participantCount}/{act.maxParticipants || '∞'}명
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right text-sm">
+                                            {act.participantCount}/{act.maxParticipants || '∞'}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="space-y-2">
+                                                <Badge variant="outline">{act.fillRate}%</Badge>
+                                                <div className="h-2 w-full rounded-full bg-muted">
+                                                    <div
+                                                        className="h-2 rounded-full bg-primary"
+                                                        style={{ width: `${Math.min(act.fillRate, 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">월별 참여 추이</CardTitle>
+                    <CardDescription>최근 6개월</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {recentMonths.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">데이터가 없습니다</p>
+                    ) : (
+                        <div className="grid grid-cols-6 items-end gap-2">
+                            {recentMonths.map(m => (
+                                <div key={m.month} className="flex flex-col items-center gap-2">
+                                    <div className="flex h-28 w-full items-end">
                                         <div
-                                            className="bar-fill"
-                                            style={{ width: `${Math.round((user.totalHours / maxUserHours) * 100)}%` }}
+                                            className="w-full rounded-md bg-primary/90"
+                                            style={{
+                                                height: `${Math.round((m.participantCount / maxMonthly) * 100)}%`,
+                                                minHeight: '8px',
+                                            }}
                                         />
                                     </div>
-                                    <span className="bar-value">{user.totalHours}h</span>
+                                    <span className="text-[11px] text-muted-foreground">
+                                        {formatMonth(m.month)}
+                                    </span>
+                                    <span className="text-[11px] text-muted-foreground">
+                                        {m.participantCount}
+                                    </span>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            <div className="stats-panel">
-                <div className="panel-header">
-                    <h3>활동별 모집률</h3>
-                </div>
-
-                {topActivities.length === 0 ? (
-                    <p className="no-data">데이터가 없습니다</p>
-                ) : (
-                    <div className="simple-list">
-                        {topActivities.map(act => (
-                            <div key={act.id} className="list-row">
-                                <div className="row-main">
-                                    <div className="row-title">{act.title}</div>
-                                    <div className="row-sub">{act.participantCount}/{act.maxParticipants || '∞'}명</div>
-                                </div>
-                                <div className="row-bar">
-                                    <div className="bar-track">
-                                        <div
-                                            className="bar-fill"
-                                            style={{ width: `${Math.min(act.fillRate, 100)}%` }}
-                                        />
-                                    </div>
-                                    <span className="bar-value">{act.fillRate}%</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            <div className="stats-panel">
-                <div className="panel-header">
-                    <h3>월별 참여 추이</h3>
-                    <span className="panel-caption">최근 6개월</span>
-                </div>
-
-                {recentMonths.length === 0 ? (
-                    <p className="no-data">데이터가 없습니다</p>
-                ) : (
-                    <div className="mini-bars">
-                        {recentMonths.map(m => (
-                            <div key={m.month} className="mini-bar-item">
-                                <div
-                                    className="mini-bar"
-                                    style={{ height: `${Math.round((m.participantCount / maxMonthly) * 100)}%` }}
-                                />
-                                <span className="mini-bar-label">{formatMonth(m.month)}</span>
-                                <span className="mini-bar-value">{m.participantCount}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 };

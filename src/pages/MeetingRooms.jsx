@@ -13,6 +13,7 @@ const MeetingRooms = ({ user }) => {
     const [selectedReservation, setSelectedReservation] = useState(null);
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [selectedDate, setSelectedDate] = useState('');
+    const [showDateModal, setShowDateModal] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
     const [formData, setFormData] = useState({
         department: '',
@@ -32,11 +33,63 @@ const MeetingRooms = ({ user }) => {
     // Pull-to-refresh 기능
     const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(loadData);
 
+    const isBusinessDay = (date) => {
+        const day = date.getDay();
+        return day !== 0 && day !== 6;
+    };
+
+    const normalizeDate = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const formatISODate = (date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
+
+    const parseISODate = (value) => {
+        if (!value) return null;
+        const [y, m, d] = value.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    };
+
+    const getNextBusinessDay = (date) => {
+        const next = new Date(date);
+        do {
+            next.setDate(next.getDate() + 1);
+        } while (!isBusinessDay(next));
+        return next;
+    };
+
+    const getPrevBusinessDay = (date) => {
+        const prev = new Date(date);
+        do {
+            prev.setDate(prev.getDate() - 1);
+        } while (!isBusinessDay(prev));
+        return prev;
+    };
+
+    const getQuickDates = (centerDate) => {
+        const dates = [];
+        let cursor = new Date(centerDate);
+        for (let i = 0; i < 2; i++) {
+            cursor = getPrevBusinessDay(cursor);
+            dates.unshift(new Date(cursor));
+        }
+        dates.push(new Date(centerDate));
+        cursor = new Date(centerDate);
+        for (let i = 0; i < 2; i++) {
+            cursor = getNextBusinessDay(cursor);
+            dates.push(new Date(cursor));
+        }
+        return dates;
+    };
+
     useEffect(() => {
         loadData();
-        // Set default date to today
-        const today = new Date().toISOString().split('T')[0];
-        setSelectedDate(today);
+        const today = normalizeDate(new Date());
+        const initialDate = isBusinessDay(today) ? today : getNextBusinessDay(today);
+        setSelectedDate(formatISODate(initialDate));
     }, []);
 
     const handleTimeSlotClick = (room, hour) => {
@@ -109,13 +162,39 @@ const MeetingRooms = ({ user }) => {
 
             {/* Date Selector */}
             <div className="date-selector">
-                <label>날짜 선택</label>
-                <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="date-input"
-                />
+                <div className="date-header">
+                    <div>
+                        <label>날짜 선택</label>
+                        {selectedDate && (
+                            <div className="date-selected">
+                                {parseISODate(selectedDate)?.toLocaleDateString('ko-KR', {
+                                    month: 'long',
+                                    day: 'numeric',
+                                    weekday: 'short'
+                                })}
+                            </div>
+                        )}
+                    </div>
+                    <button className="date-picker-button" onClick={() => setShowDateModal(true)}>
+                        전체 날짜
+                    </button>
+                </div>
+                <div className="date-quick-list">
+                    {getQuickDates(isBusinessDay(new Date()) ? normalizeDate(new Date()) : getNextBusinessDay(normalizeDate(new Date()))).map(date => {
+                        const iso = formatISODate(date);
+                        const isActive = selectedDate === iso;
+                        return (
+                            <button
+                                key={iso}
+                                className={`date-quick-btn ${isActive ? 'active' : ''}`}
+                                onClick={() => setSelectedDate(iso)}
+                            >
+                                <span className="date-quick-day">{date.toLocaleDateString('ko-KR', { weekday: 'short' })}</span>
+                                <span className="date-quick-date">{date.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}</span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Rooms with Time Slots */}
@@ -235,6 +314,26 @@ const MeetingRooms = ({ user }) => {
                         </Button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Full Date Picker Modal */}
+            <Modal isOpen={showDateModal} onClose={() => setShowDateModal(false)} title="날짜 선택">
+                <div className="date-picker-modal">
+                    <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="date-input"
+                    />
+                    <div className="form-actions">
+                        <Button type="button" variant="secondary" onClick={() => setShowDateModal(false)}>
+                            닫기
+                        </Button>
+                        <Button type="button" variant="primary" onClick={() => setShowDateModal(false)}>
+                            확인
+                        </Button>
+                    </div>
+                </div>
             </Modal>
 
             {/* Reservation Info Modal */}

@@ -219,12 +219,87 @@
     box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
 }
 
+.date-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
 .date-selector label {
     display: block;
     font-size: 14px;
     font-weight: 600;
     color: var(--color-text-main);
-    margin-bottom: 8px;
+    margin-bottom: 4px;
+}
+
+.date-selected {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.date-picker-button {
+    padding: 6px 12px;
+    border-radius: 9999px;
+    border: 1px solid rgba(41, 82, 204, 0.2);
+    background: var(--color-bg-tertiary);
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.date-picker-button:hover {
+    background: rgba(41, 82, 204, 0.12);
+}
+
+.date-quick-list {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.date-quick-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 6px;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    background: #ffffff;
+    color: var(--color-text-primary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.date-quick-btn:hover {
+    background: rgba(41, 82, 204, 0.08);
+}
+
+.date-quick-btn.active {
+    background: rgba(41, 82, 204, 0.12);
+    border-color: rgba(41, 82, 204, 0.4);
+    color: var(--color-primary);
+    box-shadow: 0 8px 16px rgba(41, 82, 204, 0.2);
+}
+
+.date-quick-day {
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+}
+
+.date-quick-btn.active .date-quick-day {
+    color: var(--color-primary);
+}
+
+.date-quick-date {
+    font-size: 12px;
 }
 
 .date-input {
@@ -241,6 +316,18 @@
 .date-input:focus {
     outline: none;
     border-color: var(--color-primary);
+}
+
+.date-picker-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+@media (max-width: 480px) {
+    .date-quick-btn {
+        padding: 7px 4px;
+    }
 }
 
 /* Rooms List with Time Slots */
