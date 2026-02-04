@@ -488,31 +488,20 @@ const MainLayout = ({ user, onLogout }) => {
                 <Modal
                     isOpen={showEventPopup}
                     onClose={closeEventPopup}
-                    title={eventPopup.pamphletTitle || '이벤트 안내'}
+                    title="이벤트 안내"
                 >
                     <div className="event-popup">
+                        {eventPopup.imageUrl && (
+                            <div className="event-image">
+                                <img src={eventPopup.imageUrl} alt="이벤트 이미지" />
+                            </div>
+                        )}
                         <div className="event-hero">
                             <span className="event-chip">EVENT</span>
-                            <h4 className="event-title">{eventPopup.pamphletTitle || '사내 이벤트'}</h4>
-                            {eventPopup.pamphletSubtitle && (
-                                <p className="event-subtitle">{eventPopup.pamphletSubtitle}</p>
-                            )}
+                            <h4 className="event-title">사내 이벤트</h4>
                         </div>
-                        {eventPopup.pamphletBody && (
-                            <ul className="event-points">
-                                {eventPopup.pamphletBody
-                                    .split('\n')
-                                    .filter(Boolean)
-                                    .map((line, idx) => (
-                                        <li key={`${idx}-${line}`}>{line.replace(/^-\\s*/, '')}</li>
-                                    ))}
-                            </ul>
-                        )}
-                        {!eventPopup.pamphletBody && eventPopup.description && (
+                        {eventPopup.description && (
                             <p className="event-fallback">{eventPopup.description}</p>
-                        )}
-                        {eventPopup.pamphletCta && (
-                            <div className="event-cta">{eventPopup.pamphletCta}</div>
                         )}
                     </div>
                 </Modal>

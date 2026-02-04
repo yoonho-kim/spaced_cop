@@ -75,10 +75,8 @@ export const getEventSettings = async () => {
         id: 1,
         isActive: false,
         description: '',
-        pamphletTitle: '',
-        pamphletSubtitle: '',
-        pamphletBody: '',
-        pamphletCta: '',
+        imageUrl: '',
+        imagePath: '',
         updatedAt: null,
       };
     }
@@ -90,10 +88,8 @@ export const getEventSettings = async () => {
     id: data.id,
     isActive: data.is_active,
     description: data.description || '',
-    pamphletTitle: data.pamphlet_title || '',
-    pamphletSubtitle: data.pamphlet_subtitle || '',
-    pamphletBody: data.pamphlet_body || '',
-    pamphletCta: data.pamphlet_cta || '',
+    imageUrl: data.image_url || '',
+    imagePath: data.image_path || '',
     updatedAt: data.updated_at || data.created_at || null,
   };
 };
@@ -103,10 +99,8 @@ export const upsertEventSettings = async (settings) => {
     id: 1,
     is_active: !!settings.isActive,
     description: settings.description || '',
-    pamphlet_title: settings.pamphletTitle || '',
-    pamphlet_subtitle: settings.pamphletSubtitle || '',
-    pamphlet_body: settings.pamphletBody || '',
-    pamphlet_cta: settings.pamphletCta || '',
+    image_url: settings.imageUrl || '',
+    image_path: settings.imagePath || '',
     updated_at: new Date().toISOString(),
   };
 
@@ -122,6 +116,43 @@ export const upsertEventSettings = async (settings) => {
   }
 
   return { success: true, data };
+};
+
+export const uploadEventImage = async (file) => {
+  if (!file) {
+    return { success: false, error: '이미지 파일이 없습니다.' };
+  }
+
+  const safeName = file.name.replace(/[^\w.-]+/g, '-');
+  const path = `events/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+
+  const { error } = await supabase.storage
+    .from('event-img')
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: file.type,
+    });
+
+  if (error) {
+    console.error('Error uploading event image:', error);
+    return { success: false, error: '이미지 업로드에 실패했습니다.' };
+  }
+
+  const { data } = supabase.storage.from('event-img').getPublicUrl(path);
+  return { success: true, publicUrl: data.publicUrl, path };
+};
+
+export const deleteEventImage = async (path) => {
+  if (!path) return { success: true };
+
+  const { error } = await supabase.storage.from('event-img').remove([path]);
+  if (error) {
+    console.error('Error deleting event image:', error);
+    return { success: false, error: '이미지 삭제에 실패했습니다.' };
+  }
+
+  return { success: true };
 };
 
 // ============================================

@@ -598,6 +598,20 @@
     gap: 12px;
 }
 
+.event-image {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: #ffffff;
+}
+
+.event-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
 .event-hero {
     border-radius: 14px;
     padding: 14px;

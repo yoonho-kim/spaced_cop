@@ -14,9 +14,10 @@ import {
     updateVolunteerRegistration,
     getEventSettings,
     upsertEventSettings,
+    uploadEventImage,
+    deleteEventImage,
 } from '../utils/storage';
 import { updateAdminPassword, adminGetUsers, adminUpdateUserBasicInfo, adminResetUserPassword } from '../utils/auth';
-import { generateEventPamphlet } from '../utils/openaiService';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import RecurringReservationModal from '../components/RecurringReservationModal';
@@ -44,12 +45,13 @@ const Admin = () => {
     const [eventSettings, setEventSettings] = useState({
         isActive: false,
         description: '',
-        pamphletTitle: '',
-        pamphletSubtitle: '',
-        pamphletBody: '',
-        pamphletCta: ''
+        imageUrl: '',
+        imagePath: ''
     });
     const [isSavingEvent, setIsSavingEvent] = useState(false);
+    const [eventImageFile, setEventImageFile] = useState(null);
+    const [eventImagePreview, setEventImagePreview] = useState('');
+    const [eventImageRemovePath, setEventImageRemovePath] = useState('');
 
     useEffect(() => {
         loadData();
@@ -71,12 +73,11 @@ const Admin = () => {
             setEventSettings({
                 isActive: eventData.isActive,
                 description: eventData.description,
-                pamphletTitle: eventData.pamphletTitle,
-                pamphletSubtitle: eventData.pamphletSubtitle,
-                pamphletBody: eventData.pamphletBody,
-                pamphletCta: eventData.pamphletCta
+                imageUrl: eventData.imageUrl,
+                imagePath: eventData.imagePath
             });
         }
+        setEventImageRemovePath('');
         setVisibleUserCount(20);
     };
 
@@ -299,34 +300,31 @@ const Admin = () => {
         }
     };
 
-    const isQuotaExceeded = (error) => {
-        const status = error?.status;
-        const message = String(error?.message || '').toLowerCase();
-        return (
-            status === 429 ||
-            message.includes('quota') ||
-            message.includes('rate limit') ||
-            message.includes('limit') && message.includes('requests')
-        );
-    };
-
     const handleSaveEventSettings = async () => {
         if (!eventSettings.description.trim() && eventSettings.isActive) {
             alert('이벤트 내용을 입력해주세요.');
             return;
         }
 
+        if (eventSettings.isActive && !eventSettings.imageUrl && !eventImageFile) {
+            alert('이벤트 이미지를 업로드해주세요.');
+            return;
+        }
+
         setIsSavingEvent(true);
         try {
             let nextSettings = { ...eventSettings };
-            if (eventSettings.isActive) {
-                const pamphlet = await generateEventPamphlet(eventSettings.description);
+
+            if (eventImageFile) {
+                const uploadResult = await uploadEventImage(eventImageFile);
+                if (!uploadResult.success) {
+                    alert(uploadResult.error || '이미지 업로드에 실패했습니다.');
+                    return;
+                }
                 nextSettings = {
                     ...nextSettings,
-                    pamphletTitle: pamphlet.title,
-                    pamphletSubtitle: pamphlet.subtitle,
-                    pamphletBody: (pamphlet.bullets || []).join('\n'),
-                    pamphletCta: pamphlet.cta
+                    imageUrl: uploadResult.publicUrl,
+                    imagePath: uploadResult.path
                 };
             }
 
@@ -334,31 +332,47 @@ const Admin = () => {
             if (!result.success) {
                 alert(result.error || '이벤트 설정 저장에 실패했습니다.');
             } else {
+                if (eventImageFile && eventSettings.imagePath && eventSettings.imagePath !== nextSettings.imagePath) {
+                    await deleteEventImage(eventSettings.imagePath);
+                }
+                if (eventImageRemovePath) {
+                    await deleteEventImage(eventImageRemovePath);
+                    setEventImageRemovePath('');
+                }
                 setEventSettings(nextSettings);
+                setEventImageFile(null);
+                setEventImagePreview('');
                 alert('이벤트 설정이 저장되었습니다.');
             }
         } catch (error) {
-            if (isQuotaExceeded(error)) {
-                const fallbackSettings = {
-                    ...eventSettings,
-                    pamphletTitle: '',
-                    pamphletSubtitle: '',
-                    pamphletBody: '',
-                    pamphletCta: ''
-                };
-                const result = await upsertEventSettings(fallbackSettings);
-                if (result.success) {
-                    setEventSettings(fallbackSettings);
-                    alert('AI 사용량이 초과되어 팜플렛 생성 없이 저장했습니다. 이벤트 팝업은 입력한 문구로 노출됩니다.');
-                } else {
-                    alert(result.error || '이벤트 설정 저장에 실패했습니다.');
-                }
-            } else {
-                alert(error.message || '이벤트 팜플렛 생성에 실패했습니다.');
-            }
+            alert(error.message || '이벤트 설정 저장에 실패했습니다.');
         } finally {
             setIsSavingEvent(false);
         }
+    };
+
+    const handleEventImageChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            alert('이미지 파일만 업로드할 수 있습니다.');
+            return;
+        }
+        setEventImageFile(file);
+        setEventImagePreview(URL.createObjectURL(file));
+    };
+
+    const handleRemoveEventImage = () => {
+        setEventImageFile(null);
+        setEventImagePreview('');
+        if (eventSettings.imagePath) {
+            setEventImageRemovePath(eventSettings.imagePath);
+        }
+        setEventSettings(prev => ({
+            ...prev,
+            imageUrl: '',
+            imagePath: ''
+        }));
     };
 
     const handleSubmitForm = async (e) => {
@@ -653,6 +667,29 @@ const Admin = () => {
                                     onChange={(e) => setEventSettings(prev => ({ ...prev, description: e.target.value }))}
                                     placeholder="예) 3월 봉사활동 이벤트: 참여자 전원 기념 굿즈 증정"
                                 />
+                                <label>이벤트 이미지</label>
+                                <div className="event-image-uploader">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleEventImageChange}
+                                    />
+                                    {(eventImagePreview || eventSettings.imageUrl) && (
+                                        <div className="event-image-preview">
+                                            <img
+                                                src={eventImagePreview || eventSettings.imageUrl}
+                                                alt="이벤트 이미지 미리보기"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="event-image-remove"
+                                                onClick={handleRemoveEventImage}
+                                            >
+                                                이미지 제거
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                                 <div className="event-actions">
                                     <Button
                                         variant="admin"
@@ -660,31 +697,9 @@ const Admin = () => {
                                         onClick={handleSaveEventSettings}
                                         disabled={isSavingEvent}
                                     >
-                                        {eventSettings.isActive ? 'AI 팜플렛 생성/저장' : '저장'}
+                                        저장
                                     </Button>
                                 </div>
-                                {(eventSettings.pamphletTitle || eventSettings.pamphletBody) && (
-                                    <div className="event-preview">
-                                        <div className="event-preview-title">미리보기</div>
-                                        <div className="event-preview-card">
-                                            <h5>{eventSettings.pamphletTitle || '이벤트 안내'}</h5>
-                                            {eventSettings.pamphletSubtitle && (
-                                                <p className="event-preview-sub">{eventSettings.pamphletSubtitle}</p>
-                                            )}
-                                            <ul>
-                                                {eventSettings.pamphletBody
-                                                    .split('\n')
-                                                    .filter(Boolean)
-                                                    .map((line, idx) => (
-                                                        <li key={`${idx}-${line}`}>{line.replace(/^-\\s*/, '')}</li>
-                                                    ))}
-                                            </ul>
-                                            {eventSettings.pamphletCta && (
-                                                <div className="event-preview-cta">{eventSettings.pamphletCta}</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>
