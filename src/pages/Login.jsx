@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { login, loginWithPassword } from '../utils/auth';
 import SignUpModal from '../components/SignUpModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -10,19 +10,9 @@ const Login = ({ onLogin }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordText, setShowPasswordText] = useState(false);
     const [error, setError] = useState('');
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [showSignUpModal, setShowSignUpModal] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    // Handle dark mode toggle
-    useEffect(() => {
-        if (isDarkMode) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, [isDarkMode]);
 
     const handleNicknameChange = (e) => {
         const value = e.target.value;
@@ -177,17 +167,6 @@ const Login = ({ onLogin }) => {
                 {/* Home Indicator */}
                 <div className="login-home-indicator"></div>
             </main>
-
-            {/* Dark Mode Toggle */}
-            <button
-                className="dark-mode-toggle"
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                aria-label="다크 모드 전환"
-            >
-                <span className="material-icons-outlined">
-                    {isDarkMode ? 'light_mode' : 'dark_mode'}
-                </span>
-            </button>
 
             {/* Sign Up Modal */}
             <SignUpModal

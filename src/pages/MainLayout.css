@@ -385,48 +385,6 @@
     }
 }
 
-/* Dark Mode Support (Optional) */
-@media (prefers-color-scheme: dark) {
-    .main-header {
-        background-color: rgba(15, 23, 42, 0.92);
-        border-bottom-color: rgba(255, 255, 255, 0.08);
-    }
-
-    .icon-button {
-        color: white;
-    }
-
-    .icon-button:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .header-menu {
-        background-color: #0f172a;
-        border-color: rgba(255, 255, 255, 0.08);
-    }
-
-    .menu-item {
-        color: white;
-    }
-
-    .menu-item:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .bottom-nav {
-        background-color: rgba(15, 23, 42, 0.95);
-        border-top-color: rgba(255, 255, 255, 0.08);
-    }
-
-    .nav-item {
-        color: rgba(255, 255, 255, 0.6);
-    }
-
-    .nav-item.active {
-        color: var(--color-primary);
-    }
-}
-
 /* Post Creation Modal */
 .post-modal-content {
     padding: 16px 0;
