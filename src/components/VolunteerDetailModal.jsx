@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from './Button';
 import './Modal.css'; // Inherit basic modal styles
 
-const VolunteerDetailModal = ({ activity, user, onClose, onRegister }) => {
+const VolunteerDetailModal = ({ activity, user, onClose, onRegister, currentApplicants }) => {
     if (!activity) return null;
 
     const formatDate = (dateString) => {
@@ -32,6 +32,12 @@ const VolunteerDetailModal = ({ activity, user, onClose, onRegister }) => {
                             <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }}>calendar_today</span>
                             <span>{formatDate(activity.date)}</span>
                         </div>
+                        {typeof currentApplicants === 'number' && typeof onRegister === 'function' && (
+                            <div className="meta-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }}>group</span>
+                                <span>현재 신청자: {currentApplicants}명</span>
+                            </div>
+                        )}
                         {activity.location && (
                             <div className="meta-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }}>location_on</span>

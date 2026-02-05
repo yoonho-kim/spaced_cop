@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { getPosts, addPost, addLike, removeLike, addComment, deletePost, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations, getTop3Volunteers } from '../utils/storage';
+import React, { useEffect, useRef, useState } from 'react';
+import { getPostsPage, addPost, addLike, removeLike, addComment, deletePost, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations, getTop3Volunteers } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
@@ -8,6 +8,9 @@ import './Feed.css';
 
 const Feed = ({ user, onNavigateToTab }) => {
     const [posts, setPosts] = useState([]);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [newPost, setNewPost] = useState('');
     const [publishedActivities, setPublishedActivities] = useState([]);
     const [topMeetingRoom, setTopMeetingRoom] = useState(null);
@@ -17,19 +20,77 @@ const Feed = ({ user, onNavigateToTab }) => {
     const [commentInputs, setCommentInputs] = useState({});
     const [feedCategory, setFeedCategory] = useState('all'); // 'all', 'notice', 'volunteer'
     const [top3Volunteers, setTop3Volunteers] = useState([]);
+    const loadMoreRef = useRef(null);
+    const observerRef = useRef(null);
+    const PAGE_SIZE = 10;
 
     useEffect(() => {
-        loadPosts();
+        loadInitialPosts();
         loadPublishedActivities();
         loadTopMeetingRoom();
         loadTop3Volunteers();
     }, []);
 
+    useEffect(() => {
+        const root = document.querySelector('.main-content');
+        const target = loadMoreRef.current;
 
+        if (!root || !target) return;
 
-    const loadPosts = async () => {
-        const allPosts = await getPosts();
-        setPosts(allPosts);
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+        }
+
+        observerRef.current = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting && hasMore && !isLoadingMore) {
+                    loadPostsPage(page, false);
+                }
+            },
+            { root, rootMargin: '200px 0px' }
+        );
+
+        observerRef.current.observe(target);
+
+        return () => {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+            }
+        };
+    }, [hasMore, isLoadingMore, page]);
+
+    const loadPostsPage = async (pageIndex, reset) => {
+        if (isLoadingMore) return;
+        setIsLoadingMore(true);
+
+        const { posts: newPosts, hasMore: more } = await getPostsPage({
+            limit: PAGE_SIZE,
+            offset: pageIndex * PAGE_SIZE,
+        });
+
+        setPosts(prev => (reset ? newPosts : [...prev, ...newPosts]));
+        setHasMore(more);
+        setPage(pageIndex + 1);
+        setIsLoadingMore(false);
+    };
+
+    const loadInitialPosts = async () => {
+        setPage(0);
+        setHasMore(true);
+        await loadPostsPage(0, true);
+    };
+
+    const refreshPosts = async () => {
+        const loadedCount = Math.max(page, 1) * PAGE_SIZE;
+        setIsLoadingMore(true);
+        const { posts: newPosts, hasMore: more } = await getPostsPage({
+            limit: loadedCount,
+            offset: 0,
+        });
+        setPosts(newPosts);
+        setHasMore(more);
+        setPage(Math.ceil(newPosts.length / PAGE_SIZE));
+        setIsLoadingMore(false);
     };
 
     const loadTop3Volunteers = async () => {
@@ -107,7 +168,7 @@ const Feed = ({ user, onNavigateToTab }) => {
         });
 
         setNewPost('');
-        loadPosts();
+        loadInitialPosts();
     };
 
     const formatTimestamp = (timestamp) => {
@@ -139,13 +200,13 @@ const Feed = ({ user, onNavigateToTab }) => {
         } else {
             await addLike(postId, user.nickname);
         }
-        loadPosts();
+        refreshPosts();
     };
 
     const handleDeletePost = async (postId) => {
         if (window.confirm('정말로 이 게시물을 삭제하시겠습니까?')) {
             await deletePost(postId);
-            loadPosts();
+            refreshPosts();
         }
     };
 
@@ -171,7 +232,7 @@ const Feed = ({ user, onNavigateToTab }) => {
 
         await addComment(postId, user.nickname, content.trim());
         setCommentInputs(prev => ({ ...prev, [postId]: '' }));
-        loadPosts();
+        refreshPosts();
     };
 
     // Filter posts based on selected category
@@ -184,7 +245,7 @@ const Feed = ({ user, onNavigateToTab }) => {
 
     // Pull-to-refresh 기능
     const handleRefresh = () => {
-        loadPosts();
+        loadInitialPosts();
         loadPublishedActivities();
         loadTopMeetingRoom();
     };
@@ -414,6 +475,12 @@ const Feed = ({ user, onNavigateToTab }) => {
                                 </div>
                             );
                         })
+                    )}
+                </div>
+                <div ref={loadMoreRef} className="feed-sentinel">
+                    {isLoadingMore && <span>게시물을 불러오는 중...</span>}
+                    {!isLoadingMore && !hasMore && posts.length > 0 && (
+                        <span>모든 게시물을 불러왔어요</span>
                     )}
                 </div>
             </section>

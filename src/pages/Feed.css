@@ -474,6 +474,14 @@
     gap: 12px;
 }
 
+.feed-sentinel {
+    margin-top: 14px;
+    padding: 12px 0 20px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
 .post-item {
     display: flex;
     padding: 16px;

@@ -114,6 +114,9 @@ const Volunteer = ({ user }) => {
     };
 
     const ranking = calculateRanking();
+    const selectedApplicantsCount = selectedActivity
+        ? registrations.filter(r => r.activityId === selectedActivity.id).length
+        : 0;
 
     const getStatusBadge = (status) => {
         const badges = {
@@ -308,6 +311,7 @@ const Volunteer = ({ user }) => {
                         ...user,
                         isRegistered: myRegistrations.some(r => r.activityId === selectedActivity.id)
                     }}
+                    currentApplicants={selectedApplicantsCount}
                     onClose={() => { setShowDetailModal(false); setSelectedActivity(null); }}
                     onRegister={() => {
                         handleRegister(selectedActivity);

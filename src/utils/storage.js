@@ -241,40 +241,33 @@ export const addEventEntry = async (entry) => {
 // POSTS
 // ============================================
 
-export const getPosts = async () => {
-  const { data, error } = await supabase
-    .from('posts')
-    .select(`
-      *,
-      post_likes(user_nickname),
-      post_comments(*)
-    `)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching posts:', error);
-    return [];
-  }
+const buildPosts = async (data) => {
+  const safeData = data || [];
+  if (safeData.length === 0) return [];
 
   // Get all unique author nicknames to fetch their profile icons
-  const authorNicknames = [...new Set(data.map(post => post.author_nickname))];
+  const authorNicknames = [
+    ...new Set(safeData.map(post => post.author_nickname).filter(Boolean))
+  ];
 
   // Fetch user profile icons
-  const { data: usersData } = await supabase
-    .from('users')
-    .select('nickname, profile_icon_url')
-    .in('nickname', authorNicknames);
+  let usersData = [];
+  if (authorNicknames.length > 0) {
+    const { data: fetchedUsers } = await supabase
+      .from('users')
+      .select('nickname, profile_icon_url')
+      .in('nickname', authorNicknames);
+    usersData = fetchedUsers || [];
+  }
 
   // Create a map of nickname to profile icon URL
   const userIconMap = {};
-  if (usersData) {
-    usersData.forEach(user => {
-      userIconMap[user.nickname] = user.profile_icon_url;
-    });
-  }
+  usersData.forEach(user => {
+    userIconMap[user.nickname] = user.profile_icon_url;
+  });
 
   // Transform data to match existing structure
-  return data.map(post => ({
+  return safeData.map(post => ({
     id: post.id,
     content: post.content,
     author: post.author_nickname,
@@ -290,6 +283,48 @@ export const getPosts = async () => {
       timestamp: comment.created_at,
     })) || [],
   }));
+};
+
+export const getPosts = async () => {
+  const { data, error } = await supabase
+    .from('posts')
+    .select(`
+      *,
+      post_likes(user_nickname),
+      post_comments(*)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching posts:', error);
+    return [];
+  }
+
+  return await buildPosts(data);
+};
+
+export const getPostsPage = async ({ limit = 10, offset = 0 } = {}) => {
+  const fetchLimit = limit + 1;
+  const { data, error } = await supabase
+    .from('posts')
+    .select(`
+      *,
+      post_likes(user_nickname),
+      post_comments(*)
+    `)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + fetchLimit - 1);
+
+  if (error) {
+    console.error('Error fetching paged posts:', error);
+    return { posts: [], hasMore: false };
+  }
+
+  const hasMore = (data || []).length > limit;
+  const pageData = hasMore ? data.slice(0, limit) : data;
+  const posts = await buildPosts(pageData);
+
+  return { posts, hasMore };
 };
 
 export const addPost = async (post) => {
