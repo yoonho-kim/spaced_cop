@@ -6,6 +6,7 @@ import Feed from './Feed';
 import MeetingRooms from './MeetingRooms';
 import Volunteer from './Volunteer';
 import News from './News';
+import Event from './Event';
 import Admin from './Admin';
 import Statistics from './Statistics';
 import Modal from '../components/Modal';
@@ -28,7 +29,7 @@ const MainLayout = ({ user, onLogout }) => {
 
     const [eventPopup, setEventPopup] = useState(null);
     const [showEventPopup, setShowEventPopup] = useState(false);
-    const [eventSeenKey, setEventSeenKey] = useState('');
+    const [previousTab, setPreviousTab] = useState('feed');
 
     const [isNavVisible, setIsNavVisible] = useState(true);
     const lastScrollY = useRef(0);
@@ -126,30 +127,37 @@ const MainLayout = ({ user, onLogout }) => {
     };
 
     const loadEventPopup = async () => {
-        const eventSettings = await getEventSettings();
-        if (!eventSettings || !eventSettings.isActive) return;
-
-        const key = `spaced_event_seen_${eventSettings.updatedAt || eventSettings.id || 'default'}`;
+        let shouldShow = false;
         try {
-            if (sessionStorage.getItem(key)) return;
-        } catch (error) {
-            // ignore sessionStorage errors
-        }
-
-        setEventPopup(eventSettings);
-        setEventSeenKey(key);
-        setShowEventPopup(true);
-    };
-
-    const closeEventPopup = () => {
-        try {
-            if (eventSeenKey) {
-                sessionStorage.setItem(eventSeenKey, '1');
+            shouldShow = sessionStorage.getItem('spaced_show_event_popup') === '1';
+            if (shouldShow) {
+                sessionStorage.removeItem('spaced_show_event_popup');
             }
         } catch (error) {
             // ignore sessionStorage errors
         }
+
+        if (!shouldShow) return;
+
+        const eventSettings = await getEventSettings();
+        if (!eventSettings || !eventSettings.isActive || !eventSettings.imageUrl) return;
+
+        setEventPopup(eventSettings);
+        setShowEventPopup(true);
+    };
+
+    const closeEventPopup = () => {
         setShowEventPopup(false);
+    };
+
+    const openEventPage = () => {
+        setPreviousTab(activeTab);
+        setActiveTab('event');
+    };
+
+    const handleEventClick = () => {
+        closeEventPopup();
+        openEventPage();
     };
 
     // Handle image selection and AI post generation
@@ -214,6 +222,7 @@ const MainLayout = ({ user, onLogout }) => {
         { id: 'meetings', label: '회의실', icon: 'meeting_room', component: MeetingRooms },
         { id: 'volunteer', label: '봉사활동', icon: 'volunteer_activism', component: Volunteer },
         { id: 'news', label: 'AI동향', icon: 'newspaper', component: News },
+        { id: 'event', label: '이벤트', icon: 'celebration', component: Event },
     ];
 
     if (userIsAdmin) {
@@ -221,6 +230,7 @@ const MainLayout = ({ user, onLogout }) => {
     }
 
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
+    const isEventPage = activeTab === 'event';
 
     // Get greeting based on time of day
     const getGreeting = () => {
@@ -275,6 +285,23 @@ const MainLayout = ({ user, onLogout }) => {
                 {/* Dropdown Menu */}
                 {showMenu && (
                     <div className="header-menu">
+                        <button
+                            className="menu-item"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                openEventPage();
+                                setShowMenu(false);
+                            }}
+                            onTouchEnd={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openEventPage();
+                                setShowMenu(false);
+                            }}
+                        >
+                            <span className="material-symbols-outlined">celebration</span>
+                            <span>이벤트</span>
+                        </button>
                         <button className="menu-item" onClick={(e) => {
                             e.stopPropagation();
                             handleLogout();
@@ -330,10 +357,17 @@ const MainLayout = ({ user, onLogout }) => {
             </header>
 
             <main className="main-content" ref={mainContentRef}>
-                {ActiveComponent && <ActiveComponent user={user} onNavigateToTab={setActiveTab} />}
+                {ActiveComponent && (
+                    <ActiveComponent
+                        user={user}
+                        onNavigateToTab={setActiveTab}
+                        onBack={() => setActiveTab(previousTab)}
+                        eventData={eventPopup}
+                    />
+                )}
             </main>
 
-            <nav className={`bottom-nav ${isNavVisible ? '' : 'hidden'}`}>
+            <nav className={`bottom-nav ${isNavVisible && !isEventPage ? '' : 'hidden'}`}>
                 <div className="nav-container">
                     {tabs.slice(0, 2).map(tab => (
                         <button
@@ -488,20 +522,23 @@ const MainLayout = ({ user, onLogout }) => {
                 <Modal
                     isOpen={showEventPopup}
                     onClose={closeEventPopup}
-                    title="이벤트 안내"
+                    showHeader={false}
+                    maxWidth="66.666vw"
+                    contentClassName="event-modal-content"
+                    bodyClassName="event-modal-body"
                 >
-                    <div className="event-popup">
-                        {eventPopup.imageUrl && (
-                            <div className="event-image">
+                    <div className="event-popup event-popup--compact">
+                        {eventPopup.imageUrl ? (
+                            <button
+                                type="button"
+                                className="event-image-button"
+                                onClick={handleEventClick}
+                                aria-label="이벤트 페이지로 이동"
+                            >
                                 <img src={eventPopup.imageUrl} alt="이벤트 이미지" />
-                            </div>
-                        )}
-                        <div className="event-hero">
-                            <span className="event-chip">EVENT</span>
-                            <h4 className="event-title">사내 이벤트</h4>
-                        </div>
-                        {eventPopup.description && (
-                            <p className="event-fallback">{eventPopup.description}</p>
+                            </button>
+                        ) : (
+                            <div className="event-placeholder">이벤트 이미지가 준비 중입니다</div>
                         )}
                     </div>
                 </Modal>

@@ -593,80 +593,54 @@
 
 /* Event Popup */
 .event-popup {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    justify-content: center;
 }
 
-.event-image {
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    background: #ffffff;
+.event-popup--compact {
+    padding: 2px;
 }
 
-.event-image img {
+.event-modal-body {
+    padding: 4px;
+}
+
+.event-modal-content {
+    width: 66.666vw;
+    max-width: 66.666vw;
+}
+
+.event-image-button {
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    width: 66.666vw;
+    max-width: 66.666vw;
+}
+
+.event-image-button img {
     width: 100%;
     height: auto;
+    max-height: 66.666vh;
     display: block;
-    object-fit: cover;
+    object-fit: contain;
+    border-radius: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: #ffffff;
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.16);
 }
 
-.event-hero {
+.event-placeholder {
+    padding: 24px 18px;
     border-radius: 14px;
-    padding: 14px;
-    background: linear-gradient(135deg, rgba(41, 82, 204, 0.14), rgba(14, 116, 144, 0.12));
-    border: 1px solid rgba(41, 82, 204, 0.18);
-}
-
-.event-chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    border-radius: 9999px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #ffffff;
-    background: #2952cc;
-    margin-bottom: 8px;
-}
-
-.event-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--color-text-primary);
-}
-
-.event-subtitle {
-    margin: 6px 0 0 0;
+    border: 1px dashed rgba(15, 23, 42, 0.2);
+    background: rgba(255, 255, 255, 0.8);
     font-size: 13px;
     color: var(--color-text-secondary);
-}
-
-.event-points {
-    margin: 0;
-    padding-left: 18px;
-    color: var(--color-text-secondary);
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-.event-points li {
-    margin-bottom: 6px;
-}
-
-.event-fallback {
-    font-size: 13px;
-    color: var(--color-text-secondary);
-    line-height: 1.5;
-}
-
-.event-cta {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--color-primary);
-    text-align: right;
+    text-align: center;
 }
 
 .ai-generating-content {

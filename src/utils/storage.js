@@ -155,6 +155,88 @@ export const deleteEventImage = async (path) => {
   return { success: true };
 };
 
+export const getEventKey = (eventSettings) => {
+  if (!eventSettings) return 'default';
+  return eventSettings.updatedAt || eventSettings.id || 'default';
+};
+
+// ============================================
+// EVENT ENTRIES
+// ============================================
+
+const mapEventEntry = (entry) => ({
+  id: entry.id,
+  eventKey: entry.event_key,
+  employeeId: entry.employee_id,
+  nickname: entry.nickname,
+  result: entry.result,
+  isWinner: entry.is_winner,
+  boxIndex: entry.box_index,
+  createdAt: entry.created_at,
+});
+
+export const getEventEntryForEmployee = async (eventKey, employeeId) => {
+  if (!eventKey || !employeeId) return null;
+
+  const { data, error } = await supabase
+    .from('app_event_entries')
+    .select('*')
+    .eq('event_key', eventKey)
+    .eq('employee_id', employeeId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    console.error('Error fetching event entry:', error);
+    return null;
+  }
+
+  return mapEventEntry(data);
+};
+
+export const getEventEntries = async (eventKey) => {
+  if (!eventKey) return [];
+
+  const { data, error } = await supabase
+    .from('app_event_entries')
+    .select('*')
+    .eq('event_key', eventKey)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching event entries:', error);
+    return [];
+  }
+
+  return (data || []).map(mapEventEntry);
+};
+
+export const addEventEntry = async (entry) => {
+  const { data, error } = await supabase
+    .from('app_event_entries')
+    .insert([
+      {
+        event_key: entry.eventKey,
+        employee_id: entry.employeeId,
+        nickname: entry.nickname || null,
+        result: entry.result,
+        is_winner: !!entry.isWinner,
+        box_index: entry.boxIndex ?? null,
+      }
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding event entry:', error);
+    return { success: false, error };
+  }
+
+  return { success: true, entry: mapEventEntry(data) };
+};
+
 // ============================================
 // POSTS
 // ============================================

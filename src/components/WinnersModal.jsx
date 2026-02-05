@@ -4,6 +4,7 @@ import './WinnersModal.css';
 const WinnersModal = ({ isOpen, onClose, activity }) => {
     const [isScratched, setIsScratched] = useState(false);
     const [isDrawing, setIsDrawing] = useState(false);
+    const [showDetail, setShowDetail] = useState(false);
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -130,7 +131,18 @@ const WinnersModal = ({ isOpen, onClose, activity }) => {
     const handleClose = () => {
         setIsScratched(false);
         setIsDrawing(false);
+        setShowDetail(false);
         onClose();
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        return new Date(dateString).toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'long',
+        });
     };
 
     if (!isOpen || !activity) return null;
@@ -215,10 +227,59 @@ const WinnersModal = ({ isOpen, onClose, activity }) => {
                     <button className="winners-btn winners-btn-secondary" onClick={handleClose}>
                         닫기
                     </button>
-                    <button className="winners-btn winners-btn-primary">
+                    <button
+                        className="winners-btn winners-btn-primary"
+                        onClick={() => setShowDetail(true)}
+                    >
                         자세히 보기
                     </button>
                 </div>
+
+                {showDetail && (
+                    <div className="winners-detail-overlay" onClick={() => setShowDetail(false)}>
+                        <div className="winners-detail-card" onClick={(e) => e.stopPropagation()}>
+                            <div className="winners-detail-header">
+                                <h3>봉사활동 상세</h3>
+                                <button
+                                    type="button"
+                                    className="winners-detail-close"
+                                    onClick={() => setShowDetail(false)}
+                                >
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+
+                            <div className="winners-detail-body">
+                                <h4>{activity.title}</h4>
+                                <div className="winners-detail-meta">
+                                    <div className="detail-row">
+                                        <span className="material-symbols-outlined">calendar_today</span>
+                                        <span>{formatDate(activity.date)}</span>
+                                    </div>
+                                    {activity.location && (
+                                        <div className="detail-row">
+                                            <span className="material-symbols-outlined">location_on</span>
+                                            <span>{activity.location}</span>
+                                        </div>
+                                    )}
+                                    <div className="detail-row">
+                                        <span className="material-symbols-outlined">schedule</span>
+                                        <span>인정 시간: {activity.recognitionHours || 0}시간</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="material-symbols-outlined">group</span>
+                                        <span>모집 인원: {activity.maxParticipants}명</span>
+                                    </div>
+                                </div>
+
+                                <div className="winners-detail-description">
+                                    <span>활동 내용</span>
+                                    <p>{activity.description || '설명이 없습니다.'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

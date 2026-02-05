@@ -46,6 +46,11 @@ function App() {
     pendingUserRef.current = userData;
     // Show loading page
     setShowLoadingPage(true);
+    try {
+      sessionStorage.setItem('spaced_show_event_popup', '1');
+    } catch (error) {
+      // ignore sessionStorage errors
+    }
   };
 
   const handleLoadingComplete = () => {

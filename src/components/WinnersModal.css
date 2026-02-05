@@ -284,6 +284,113 @@
     background-color: var(--color-accent-hover);
 }
 
+/* Detail Modal */
+.winners-detail-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 60;
+}
+
+.winners-detail-card {
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: 0 20px 36px rgba(15, 23, 42, 0.2);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.winners-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.winners-detail-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.winners-detail-close {
+    background: rgba(15, 23, 42, 0.06);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+}
+
+.winners-detail-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+}
+
+.winners-detail-body h4 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--color-text-main);
+}
+
+.winners-detail-meta {
+    display: grid;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.winners-detail-meta .detail-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-start;
+}
+
+.winners-detail-meta .material-symbols-outlined {
+    font-size: 16px;
+    color: var(--color-primary);
+}
+
+.winners-detail-description {
+    background: rgba(41, 82, 204, 0.08);
+    border: 1px solid rgba(41, 82, 204, 0.16);
+    border-radius: 12px;
+    padding: 12px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+}
+
+.winners-detail-description span {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.winners-detail-description p {
+    margin: 0;
+    font-size: 13px;
+}
+
 /* Animations */
 @keyframes fadeIn {
     from {
