@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Badge } from '../components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import {
     Table,
     TableBody,
@@ -73,13 +73,16 @@ const Statistics = ({ onClose }) => {
         return Object.entries(slots);
     };
 
-    const getMaxCount = (data) => {
-        if (data.length === 0) return 1;
-        return Math.max(...data.map(d => d[1])) || 1;
-    };
-
     const departmentStats = getDepartmentStats();
     const timeSlotStats = getTimeSlotStats();
+    const maxDepartmentCount = departmentStats.length > 0
+        ? Math.max(...departmentStats.map(([, count]) => count))
+        : 1;
+    const maxTimeSlotCount = timeSlotStats.length > 0
+        ? Math.max(...timeSlotStats.map(([, count]) => count))
+        : 1;
+    const peakDepartment = departmentStats[0] || null;
+    const peakTimeSlot = timeSlotStats.reduce((acc, item) => (item[1] > acc[1] ? item : acc), ['-', 0]);
     const totalEntries = eventEntries.length;
     const winners = eventEntries.filter(entry => entry.isWinner).length;
     const winRate = totalEntries ? ((winners / totalEntries) * 100).toFixed(1) : '0.0';
@@ -139,65 +142,130 @@ const Statistics = ({ onClose }) => {
             <div className="statistics-content">
                 {activeTab === 'meeting' && (
                     <div className="tab-content meeting-stats">
-                        {/* Department Stats */}
-                        <div className="stat-card">
-                            <h3>
-                                <span className="material-symbols-outlined">domain</span>
-                                부서별 예약 현황
-                            </h3>
-                            <div className="bar-chart">
-                                {departmentStats.length === 0 ? (
-                                    <p className="no-data">예약 데이터가 없습니다</p>
-                                ) : (
-                                    departmentStats.map(([dept, count]) => (
-                                        <div key={dept} className="bar-item">
-                                            <span className="bar-label">{dept}</span>
-                                            <div className="bar-wrapper">
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardDescription>총 예약 건수</CardDescription>
+                                    <CardTitle className="text-3xl">{reservations.length}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Badge variant="secondary">회의실 전체 이용</Badge>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardDescription>참여 부서 수</CardDescription>
+                                    <CardTitle className="text-3xl">{departmentStats.length}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Badge variant="secondary">최근 누적 기준</Badge>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardDescription>최다 예약 부서</CardDescription>
+                                    <CardTitle className="text-xl">{peakDepartment ? peakDepartment[0] : '-'}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Badge>{peakDepartment ? `${peakDepartment[1]}건` : '데이터 없음'}</Badge>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardDescription>피크 시간대</CardDescription>
+                                    <CardTitle className="text-xl">{peakTimeSlot[0]}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Badge>{peakTimeSlot[1]}건</Badge>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="grid gap-4 xl:grid-cols-5">
+                            <Card className="xl:col-span-3">
+                                <CardHeader>
+                                    <CardTitle>부서별 예약 현황</CardTitle>
+                                    <CardDescription>예약 많은 순 상위 10개 부서</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {departmentStats.length === 0 ? (
+                                        <p className="no-data">예약 데이터가 없습니다</p>
+                                    ) : (
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-14">순위</TableHead>
+                                                    <TableHead>부서</TableHead>
+                                                    <TableHead className="text-right">예약 건수</TableHead>
+                                                    <TableHead className="text-right">점유율</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {departmentStats.map(([dept, count], index) => (
+                                                    <TableRow key={dept}>
+                                                        <TableCell className="font-medium">{index + 1}</TableCell>
+                                                        <TableCell className="font-medium">{dept}</TableCell>
+                                                        <TableCell className="text-right">{count}건</TableCell>
+                                                        <TableCell className="text-right">
+                                                            {((count / reservations.length) * 100).toFixed(1)}%
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            <Card className="xl:col-span-2">
+                                <CardHeader>
+                                    <CardTitle>시간대별 예약 현황</CardTitle>
+                                    <CardDescription>업무시간(09-18시) 시간대 비교</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {timeSlotStats.map(([time, count]) => (
+                                        <div key={time} className="space-y-1.5">
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="font-medium">{time}</span>
+                                                <span className="text-muted-foreground">{count}건</span>
+                                            </div>
+                                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                                                 <div
-                                                    className="bar"
-                                                    style={{ width: `${(count / getMaxCount(departmentStats)) * 100}%` }}
-                                                >
-                                                    <span className="bar-value">{count}건</span>
-                                                </div>
+                                                    className="h-full rounded-full bg-primary transition-all"
+                                                    style={{ width: `${(count / maxTimeSlotCount) * 100}%` }}
+                                                />
                                             </div>
                                         </div>
-                                    ))
-                                )}
-                            </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
                         </div>
 
-                        {/* Time Slot Stats */}
-                        <div className="stat-card">
-                            <h3>
-                                <span className="material-symbols-outlined">schedule</span>
-                                시간대별 예약 현황
-                            </h3>
-                            <div className="time-chart">
-                                {timeSlotStats.map(([time, count]) => (
-                                    <div key={time} className="time-bar-container">
-                                        <div
-                                            className="time-bar"
-                                            style={{ height: `${(count / getMaxCount(timeSlotStats)) * 100}%` }}
-                                        >
-                                            {count > 0 && <span className="time-bar-value">{count}</span>}
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle>이용 집중도</CardTitle>
+                                <CardDescription>상위 부서 예약 집중도를 확인할 수 있습니다.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {departmentStats.slice(0, 3).map(([dept, count]) => (
+                                    <div key={dept} className="space-y-1.5">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="font-medium">{dept}</span>
+                                            <span className="text-muted-foreground">{count}건</span>
                                         </div>
-                                        <span className="time-label">{time.split(':')[0]}</span>
+                                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                            <div
+                                                className="h-full rounded-full bg-primary/80 transition-all"
+                                                style={{ width: `${(count / maxDepartmentCount) * 100}%` }}
+                                            />
+                                        </div>
                                     </div>
                                 ))}
-                            </div>
-                        </div>
-
-                        {/* Summary */}
-                        <div className="stat-card summary-card">
-                            <div className="summary-item">
-                                <span className="summary-value">{reservations.length}</span>
-                                <span className="summary-label">총 예약 건수</span>
-                            </div>
-                            <div className="summary-item">
-                                <span className="summary-value">{departmentStats.length}</span>
-                                <span className="summary-label">참여 부서 수</span>
-                            </div>
-                        </div>
+                                {departmentStats.length === 0 && (
+                                    <p className="no-data">예약 데이터가 없습니다</p>
+                                )}
+                            </CardContent>
+                        </Card>
                     </div>
                 )}
 

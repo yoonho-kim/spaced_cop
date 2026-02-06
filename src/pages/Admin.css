@@ -437,6 +437,56 @@
     flex-shrink: 0;
 }
 
+.honorific-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 34px;
+    align-items: center;
+}
+
+.honorific-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 9999px;
+    background: rgba(41, 82, 204, 0.12);
+    color: #1d4ed8;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.honorific-remove {
+    border: none;
+    background: transparent;
+    color: #1d4ed8;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+
+.honorific-empty {
+    font-size: 13px;
+    color: var(--color-text-tertiary);
+}
+
+.honorific-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.honorific-input-row input {
+    flex: 1;
+}
+
+.honorific-input-row .btn {
+    min-width: 64px;
+}
+
 @media (max-width: 480px) {
     .users-list {
         max-height: 420px;

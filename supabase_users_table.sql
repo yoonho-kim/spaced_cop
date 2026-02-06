@@ -26,6 +26,23 @@ ADD COLUMN IF NOT EXISTS employee_id VARCHAR(20);
 ALTER TABLE users 
 ADD COLUMN IF NOT EXISTS gender VARCHAR(10);
 
+-- 6. 사용자 호칭 컬럼 추가 (없는 경우, 최대 2개)
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS honorifics TEXT[] DEFAULT '{}'::text[];
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'users_honorifics_max_two'
+  ) THEN
+    ALTER TABLE users
+    ADD CONSTRAINT users_honorifics_max_two
+    CHECK (cardinality(honorifics) <= 2);
+  END IF;
+END $$;
+
 -- ============================================
 -- 기존 테이블 구조 확인용 쿼리
 -- ============================================

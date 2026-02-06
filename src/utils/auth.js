@@ -3,6 +3,37 @@ import { supabase } from './supabase';
 
 // Session expires after 10 hours (in milliseconds)
 const SESSION_DURATION = 10 * 60 * 60 * 1000;
+const HONORIFIC_REGEX = /^[가-힣]{1,4}$/;
+
+const normalizeHonorifics = (value) => {
+    if (!Array.isArray(value)) return [];
+    return value
+        .map((item) => (typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean)
+        .slice(0, 2);
+};
+
+const validateHonorifics = (value) => {
+    if (value == null) return { valid: true, normalized: [] };
+    if (!Array.isArray(value)) {
+        return { valid: false, error: '호칭 형식이 올바르지 않습니다.' };
+    }
+    if (value.length > 2) {
+        return { valid: false, error: '호칭은 최대 2개까지 설정할 수 있습니다.' };
+    }
+    if (value.some((item) => typeof item !== 'string')) {
+        return { valid: false, error: '호칭 형식이 올바르지 않습니다.' };
+    }
+    if (value.some((item) => !item.trim())) {
+        return { valid: false, error: '호칭 형식이 올바르지 않습니다.' };
+    }
+
+    const normalized = normalizeHonorifics(value);
+    if (normalized.some((title) => !HONORIFIC_REGEX.test(title))) {
+        return { valid: false, error: '호칭은 한글 1~4글자만 입력할 수 있습니다.' };
+    }
+    return { valid: true, normalized };
+};
 
 /**
  * 비밀번호 해시 생성 (간단한 해시 - 프로덕션에서는 bcrypt 사용 권장)
@@ -317,10 +348,19 @@ export const adminGetUsers = async () => {
     }
 
     try {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
             .from('users')
-            .select('id, nickname, employee_id, gender, is_admin, created_at')
+            .select('id, nickname, employee_id, gender, honorifics, is_admin, created_at')
             .order('created_at', { ascending: false });
+
+        if (error && String(error.message || '').includes('honorifics')) {
+            const fallbackResult = await supabase
+                .from('users')
+                .select('id, nickname, employee_id, gender, is_admin, created_at')
+                .order('created_at', { ascending: false });
+            data = fallbackResult.data;
+            error = fallbackResult.error;
+        }
 
         if (error) {
             console.error('Admin get users error:', error);
@@ -332,6 +372,7 @@ export const adminGetUsers = async () => {
             nickname: u.nickname,
             employeeId: u.employee_id,
             gender: u.gender,
+            honorifics: normalizeHonorifics(u.honorifics),
             isAdmin: u.is_admin,
             createdAt: u.created_at,
         }));
@@ -352,6 +393,17 @@ export const adminUpdateUserBasicInfo = async (userId, updates) => {
         const dbUpdates = {};
         if ('employeeId' in updates) dbUpdates.employee_id = updates.employeeId || null;
         if ('gender' in updates) dbUpdates.gender = updates.gender || null;
+        if ('honorifics' in updates) {
+            const validated = validateHonorifics(updates.honorifics);
+            if (!validated.valid) {
+                return { success: false, error: validated.error };
+            }
+            dbUpdates.honorifics = validated.normalized;
+        }
+
+        if (Object.keys(dbUpdates).length === 0) {
+            return { success: true };
+        }
 
         const { data, error } = await supabase
             .from('users')
@@ -361,6 +413,9 @@ export const adminUpdateUserBasicInfo = async (userId, updates) => {
 
         if (error) {
             console.error('Admin update user error:', error);
+            if (String(error.message || '').includes('honorifics')) {
+                return { success: false, error: 'DB에 honorifics 컬럼이 없습니다. SQL 마이그레이션을 먼저 실행해주세요.' };
+            }
             return { success: false, error: '사용자 정보를 업데이트할 수 없습니다.' };
         }
 

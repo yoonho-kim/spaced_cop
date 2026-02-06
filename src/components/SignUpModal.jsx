@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { register, checkNicknameAvailability } from '../utils/auth';
 import { generateProfileIconWithRetry } from '../utils/huggingfaceService';
-import './SignUpModal.css';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { cn } from '@/lib/utils';
 
-// 성향 질문 데이터
 const PERSONALITY_QUESTIONS = [
     {
         id: 'time',
@@ -66,19 +68,24 @@ const PERSONALITY_QUESTIONS = [
     }
 ];
 
+const STEP_TITLES = {
+    1: '회원가입',
+    2: '나를 알아가기',
+    3: '아이콘 생성 중',
+    4: '가입 완료!',
+};
+
 const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
-    const [step, setStep] = useState(1); // 1: 기본정보, 2: 성향질문, 3: 로딩, 4: 완료
+    const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // 기본 정보
     const [nickname, setNickname] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [employeeId, setEmployeeId] = useState('');
     const [gender, setGender] = useState('');
 
-    // 성향 질문
     const [personality, setPersonality] = useState({
         time: '',
         feeling: '',
@@ -88,12 +95,9 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
         snack: ''
     });
 
-    // 닉네임 중복 체크 상태
     const [nicknameChecked, setNicknameChecked] = useState(false);
     const [nicknameAvailable, setNicknameAvailable] = useState(false);
     const [checkingNickname, setCheckingNickname] = useState(false);
-
-    // 생성된 아이콘
     const [generatedIcon, setGeneratedIcon] = useState(null);
 
     const resetForm = () => {
@@ -117,7 +121,6 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
         onClose();
     };
 
-    // 닉네임 중복 체크 핸들러
     const handleCheckNickname = async () => {
         if (!nickname.trim()) {
             setError('닉네임을 입력해주세요.');
@@ -154,7 +157,6 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
         }
     };
 
-    // 닉네임 변경 시 체크 상태 초기화
     const handleNicknameChange = (value) => {
         setNickname(value);
         setNicknameChecked(false);
@@ -162,7 +164,6 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
         setError('');
     };
 
-    // Step 1: 기본 정보 유효성 검사
     const validateStep1 = () => {
         if (!nickname.trim()) {
             setError('닉네임을 입력해주세요.');
@@ -192,10 +193,9 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
         return true;
     };
 
-    // Step 2: 성향 질문 유효성 검사
     const validateStep2 = () => {
         const requiredFields = ['time', 'feeling', 'place', 'animal', 'superpower', 'snack'];
-        const allAnswered = requiredFields.every(field => personality[field]);
+        const allAnswered = requiredFields.every((field) => personality[field]);
         if (!allAnswered) {
             setError('모든 질문에 답해주세요.');
             return false;
@@ -220,7 +220,7 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
     };
 
     const handlePersonalityChange = (questionId, value) => {
-        setPersonality(prev => ({
+        setPersonality((prev) => ({
             ...prev,
             [questionId]: value
         }));
@@ -228,12 +228,11 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
     };
 
     const handleSignUp = async () => {
-        setStep(3); // 로딩 화면
+        setStep(3);
         setIsLoading(true);
         setError('');
 
         try {
-            // AI 아이콘 생성
             const iconResult = await generateProfileIconWithRetry(personality);
 
             let profileIconUrl = null;
@@ -243,12 +242,8 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
                 profileIconUrl = iconResult.imageData;
                 profileIconPrompt = iconResult.prompt;
                 setGeneratedIcon(profileIconUrl);
-            } else {
-                console.warn('Icon generation failed:', iconResult.error);
-                // 아이콘 생성 실패해도 회원가입 진행
             }
 
-            // 회원가입 진행
             const result = await register({
                 nickname,
                 password,
@@ -260,10 +255,10 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
             });
 
             if (result.success) {
-                setStep(4); // 완료 화면
+                setStep(4);
             } else {
                 setError(result.error);
-                setStep(2); // 다시 질문 화면으로
+                setStep(2);
             }
         } catch (err) {
             console.error('Sign up error:', err);
@@ -284,224 +279,218 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="signup-modal-overlay" onClick={handleClose}>
-            <div className="signup-modal" onClick={e => e.stopPropagation()}>
-                {/* 헤더 */}
-                <div className="signup-modal-header">
-                    <h2>
-                        {step === 1 && '회원가입'}
-                        {step === 2 && '나를 알아가기'}
-                        {step === 3 && '아이콘 생성 중'}
-                        {step === 4 && '가입 완료!'}
-                    </h2>
-                    {step !== 3 && (
-                        <button className="signup-close-btn" onClick={handleClose}>
-                            <span className="material-icons-outlined">close</span>
-                        </button>
-                    )}
-                </div>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={handleClose}>
+            <Card className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <CardHeader className="border-b pb-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>{STEP_TITLES[step]}</CardTitle>
+                            {step === 1 && <CardDescription>기본 정보를 입력해주세요</CardDescription>}
+                            {step === 2 && <CardDescription>성향 기반으로 프로필 아이콘을 생성합니다</CardDescription>}
+                            {step === 3 && <CardDescription>AI 이미지 생성 중입니다</CardDescription>}
+                            {step === 4 && <CardDescription>이제 로그인해서 시작하세요</CardDescription>}
+                        </div>
+                        {step !== 3 && (
+                            <Button variant="ghost" size="icon" onClick={handleClose} aria-label="닫기">
+                                <span className="material-symbols-outlined">close</span>
+                            </Button>
+                        )}
+                    </div>
+                </CardHeader>
 
-                {/* 진행 표시 */}
                 {step < 4 && (
-                    <div className="signup-progress">
-                        <div className={`progress-dot ${step >= 1 ? 'active' : ''}`}>1</div>
-                        <div className={`progress-line ${step >= 2 ? 'active' : ''}`}></div>
-                        <div className={`progress-dot ${step >= 2 ? 'active' : ''}`}>2</div>
-                        <div className={`progress-line ${step >= 3 ? 'active' : ''}`}></div>
-                        <div className={`progress-dot ${step >= 3 ? 'active' : ''}`}>3</div>
+                    <div className="flex items-center justify-center gap-2 border-b px-6 py-3">
+                        {[1, 2, 3].map((n, idx) => (
+                            <React.Fragment key={n}>
+                                <div
+                                    className={cn(
+                                        'flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold',
+                                        step >= n ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                    )}
+                                >
+                                    {n}
+                                </div>
+                                {idx < 2 && (
+                                    <div className={cn('h-1 w-10 rounded-full', step > n ? 'bg-primary' : 'bg-muted')} />
+                                )}
+                            </React.Fragment>
+                        ))}
                     </div>
                 )}
 
-                {/* Step 1: 기본 정보 */}
-                {step === 1 && (
-                    <div className="signup-step">
-                        <p className="step-description">기본 정보를 입력해주세요</p>
-
-                        <div className="signup-form">
-                            <div className="form-group">
-                                <label>닉네임 (이름) *</label>
-                                <div className="nickname-check-wrapper">
-                                    <input
-                                        type="text"
+                <CardContent className="flex-1 overflow-y-auto p-6">
+                    {step === 1 && (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">닉네임 (이름) *</label>
+                                <div className="flex gap-2">
+                                    <Input
                                         value={nickname}
-                                        onChange={e => handleNicknameChange(e.target.value)}
+                                        onChange={(e) => handleNicknameChange(e.target.value)}
                                         placeholder="사용할 닉네임을 입력하세요"
                                         autoFocus
-                                        className={nicknameChecked ? (nicknameAvailable ? 'valid' : 'invalid') : ''}
+                                        className={cn(
+                                            nicknameChecked && nicknameAvailable && 'border-emerald-500 focus-visible:ring-emerald-500',
+                                            nicknameChecked && !nicknameAvailable && 'border-destructive focus-visible:ring-destructive'
+                                        )}
                                     />
-                                    <button
+                                    <Button
                                         type="button"
-                                        className={`nickname-check-btn ${nicknameChecked && nicknameAvailable ? 'checked' : ''}`}
+                                        variant={nicknameChecked && nicknameAvailable ? 'default' : 'outline'}
                                         onClick={handleCheckNickname}
                                         disabled={checkingNickname || !nickname.trim()}
+                                        className="min-w-[94px]"
                                     >
-                                        {checkingNickname ? (
-                                            <span className="material-icons-outlined spinning">sync</span>
-                                        ) : nicknameChecked && nicknameAvailable ? (
-                                            <span className="material-icons-outlined">check_circle</span>
-                                        ) : (
-                                            '중복확인'
-                                        )}
-                                    </button>
+                                        {checkingNickname ? '확인 중' : nicknameChecked && nicknameAvailable ? '확인됨' : '중복확인'}
+                                    </Button>
                                 </div>
                                 {nicknameChecked && nicknameAvailable && (
-                                    <p className="nickname-available">✓ 사용 가능한 닉네임입니다</p>
+                                    <p className="text-xs text-emerald-600">사용 가능한 닉네임입니다.</p>
                                 )}
                             </div>
 
-                            <div className="form-group">
-                                <label>비밀번호 *</label>
-                                <input
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">비밀번호 *</label>
+                                <Input
                                     type="password"
                                     value={password}
-                                    onChange={e => setPassword(e.target.value)}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="비밀번호를 입력하세요"
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label>비밀번호 확인 *</label>
-                                <input
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">비밀번호 확인 *</label>
+                                <Input
                                     type="password"
                                     value={passwordConfirm}
-                                    onChange={e => setPasswordConfirm(e.target.value)}
+                                    onChange={(e) => setPasswordConfirm(e.target.value)}
                                     placeholder="비밀번호를 다시 입력하세요"
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label>사번 (선택)</label>
-                                <input
-                                    type="text"
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">사번 (선택)</label>
+                                <Input
                                     value={employeeId}
-                                    onChange={e => setEmployeeId(e.target.value)}
+                                    onChange={(e) => setEmployeeId(e.target.value)}
                                     placeholder="사번을 입력하세요"
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label>성별 (선택)</label>
-                                <div className="gender-options">
-                                    <button
-                                        type="button"
-                                        className={`gender-btn ${gender === 'male' ? 'selected' : ''}`}
-                                        onClick={() => setGender('male')}
-                                    >
-                                        👨 남성
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`gender-btn ${gender === 'female' ? 'selected' : ''}`}
-                                        onClick={() => setGender('female')}
-                                    >
-                                        👩 여성
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`gender-btn ${gender === 'other' ? 'selected' : ''}`}
-                                        onClick={() => setGender('other')}
-                                    >
-                                        🙂 기타
-                                    </button>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">성별 (선택)</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { value: 'male', label: '👨 남성' },
+                                        { value: 'female', label: '👩 여성' },
+                                        { value: 'other', label: '🙂 기타' }
+                                    ].map((option) => (
+                                        <Button
+                                            key={option.value}
+                                            type="button"
+                                            variant={gender === option.value ? 'default' : 'outline'}
+                                            onClick={() => setGender(option.value)}
+                                            className="h-9"
+                                        >
+                                            {option.label}
+                                        </Button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                        {error && <div className="signup-error">{error}</div>}
-
-                        <div className="signup-actions">
-                            <button className="signup-btn primary" onClick={handleNextStep}>
-                                다음 단계
-                                <span className="material-icons-outlined">arrow_forward</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Step 2: 성향 질문 */}
-                {step === 2 && (
-                    <div className="signup-step">
-                        <p className="step-description">당신의 성향으로 특별한 아이콘을 만들어 드릴게요!</p>
-
-                        <div className="personality-questions">
-                            {PERSONALITY_QUESTIONS.map((q, index) => (
-                                <div key={q.id} className="personality-question">
-                                    <h4>Q{index + 1}. {q.question}</h4>
-                                    <div className="personality-options">
-                                        {q.options.map(option => (
-                                            <button
-                                                key={option.value}
-                                                type="button"
-                                                className={`personality-option ${personality[q.id] === option.value ? 'selected' : ''}`}
-                                                onClick={() => handlePersonalityChange(q.id, option.value)}
-                                            >
-                                                <span className="option-label">{option.label}</span>
-                                                <span className="option-desc">{option.description}</span>
-                                            </button>
-                                        ))}
+                    {step === 2 && (
+                        <div className="space-y-6">
+                            {PERSONALITY_QUESTIONS.map((question, index) => (
+                                <div key={question.id} className="space-y-2">
+                                    <h4 className="text-sm font-semibold text-foreground">
+                                        Q{index + 1}. {question.question}
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {question.options.map((option) => {
+                                            const selected = personality[question.id] === option.value;
+                                            return (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    onClick={() => handlePersonalityChange(question.id, option.value)}
+                                                    className={cn(
+                                                        'w-full rounded-md border px-3 py-2 text-left transition',
+                                                        selected
+                                                            ? 'border-primary bg-primary/10 text-primary'
+                                                            : 'border-input bg-background hover:bg-accent'
+                                                    )}
+                                                >
+                                                    <div className="text-sm font-medium">{option.label}</div>
+                                                    <div className="text-xs text-muted-foreground">{option.description}</div>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             ))}
                         </div>
+                    )}
 
-                        {error && <div className="signup-error">{error}</div>}
-
-                        <div className="signup-actions">
-                            <button className="signup-btn secondary" onClick={handlePrevStep}>
-                                <span className="material-icons-outlined">arrow_back</span>
-                                이전
-                            </button>
-                            <button className="signup-btn primary" onClick={handleNextStep}>
-                                회원가입
-                                <span className="material-icons-outlined">check</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Step 3: 로딩 */}
-                {step === 3 && (
-                    <div className="signup-step loading-step">
-                        <div className="loading-animation">
-                            <div className="loading-spinner"></div>
-                            <div className="loading-icon-preview">
-                                <span className="material-icons-outlined">auto_awesome</span>
+                    {step === 3 && (
+                        <div className="flex min-h-[340px] flex-col items-center justify-center gap-4 text-center">
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full border bg-muted">
+                                <span className="material-symbols-outlined animate-spin text-3xl text-primary">
+                                    progress_activity
+                                </span>
                             </div>
+                            <h3 className="text-lg font-semibold">가상의 인물을 생성중입니다...</h3>
+                            <p className="text-sm text-muted-foreground">
+                                성향을 분석해 프로필 아이콘을 만들고 있습니다.
+                            </p>
+                            {isLoading && <p className="text-xs text-muted-foreground">잠시만 기다려주세요.</p>}
                         </div>
-                        <h3>가상의 인물을 생성중입니다...</h3>
-                        <p>당신의 성향을 분석하여 특별한 아이콘을 만들고 있어요</p>
-                        <div className="loading-dots">
-                            <span></span>
-                            <span></span>
-                            <span></span>
+                    )}
+
+                    {step === 4 && (
+                        <div className="flex min-h-[340px] flex-col items-center justify-center gap-4 text-center">
+                            <div className="h-24 w-24 overflow-hidden rounded-full border bg-muted">
+                                {generatedIcon ? (
+                                    <img src={generatedIcon} alt="생성된 아이콘" className="h-full w-full object-cover" />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center">
+                                        <span className="material-symbols-outlined text-4xl text-muted-foreground">person</span>
+                                    </div>
+                                )}
+                            </div>
+                            <h3 className="text-lg font-semibold">환영합니다, {nickname}님!</h3>
+                            <p className="text-sm text-muted-foreground">회원가입이 완료되었습니다.</p>
                         </div>
-                    </div>
+                    )}
+
+                    {error && (
+                        <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                            {error}
+                        </div>
+                    )}
+                </CardContent>
+
+                {step === 1 && (
+                    <CardFooter className="justify-end border-t pt-4">
+                        <Button onClick={handleNextStep}>다음 단계</Button>
+                    </CardFooter>
                 )}
 
-                {/* Step 4: 완료 */}
+                {step === 2 && (
+                    <CardFooter className="justify-between border-t pt-4">
+                        <Button variant="outline" onClick={handlePrevStep}>이전</Button>
+                        <Button onClick={handleNextStep}>회원가입</Button>
+                    </CardFooter>
+                )}
+
                 {step === 4 && (
-                    <div className="signup-step complete-step">
-                        <div className="complete-icon">
-                            {generatedIcon ? (
-                                <img src={generatedIcon} alt="Generated Profile Icon" />
-                            ) : (
-                                <div className="default-icon">
-                                    <span className="material-icons-outlined">person</span>
-                                </div>
-                            )}
-                        </div>
-                        <h3>환영합니다, {nickname}님! 🎉</h3>
-                        <p>회원가입이 완료되었습니다.<br />이제 로그인하여 Space D를 이용해보세요!</p>
-
-                        <div className="signup-actions">
-                            <button className="signup-btn primary" onClick={handleComplete}>
-                                로그인하기
-                                <span className="material-icons-outlined">login</span>
-                            </button>
-                        </div>
-                    </div>
+                    <CardFooter className="justify-end border-t pt-4">
+                        <Button onClick={handleComplete}>로그인하기</Button>
+                    </CardFooter>
                 )}
-            </div>
+            </Card>
         </div>
     );
 };

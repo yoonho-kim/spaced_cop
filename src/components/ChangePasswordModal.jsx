@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { changePassword, findUserByNickname } from '../utils/auth';
-import './ChangePasswordModal.css';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 
 const ChangePasswordModal = ({ isOpen, onClose }) => {
-    const [step, setStep] = useState(1); // 1: 닉네임 입력, 2: 비밀번호 변경, 3: 완료
+    const [step, setStep] = useState(1);
     const [nickname, setNickname] = useState('');
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -47,7 +49,6 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
     };
 
     const handleChangePassword = async () => {
-        // 유효성 검사
         if (!currentPassword) {
             setError('현재 비밀번호를 입력해주세요.');
             return;
@@ -86,104 +87,76 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="password-modal-overlay" onClick={handleClose}>
-            <div className="password-modal" onClick={e => e.stopPropagation()}>
-                {/* 헤더 */}
-                <div className="password-modal-header">
-                    <h2>
-                        {step === 1 && '비밀번호 변경'}
-                        {step === 2 && '새 비밀번호 설정'}
-                        {step === 3 && '변경 완료'}
-                    </h2>
-                    <button className="password-close-btn" onClick={handleClose}>
-                        <span className="material-icons-outlined">close</span>
-                    </button>
-                </div>
-
-                {/* Step 1: 닉네임 확인 */}
-                {step === 1 && (
-                    <div className="password-step">
-                        <div className="step-icon">
-                            <span className="material-icons-outlined">person_search</span>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={handleClose}>
+            <Card className="w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <CardHeader className="border-b pb-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>
+                                {step === 1 && '비밀번호 변경'}
+                                {step === 2 && '새 비밀번호 설정'}
+                                {step === 3 && '변경 완료'}
+                            </CardTitle>
+                            <CardDescription>
+                                {step === 1 && '닉네임 확인 후 비밀번호를 변경합니다.'}
+                                {step === 2 && `${nickname}님의 새 비밀번호를 입력하세요.`}
+                                {step === 3 && '새 비밀번호로 로그인해주세요.'}
+                            </CardDescription>
                         </div>
-                        <p className="step-description">
-                            비밀번호를 변경할 닉네임을 입력해주세요
-                        </p>
-
-                        <div className="password-form">
-                            <div className="form-group">
-                                <label>닉네임</label>
-                                <input
-                                    type="text"
-                                    value={nickname}
-                                    onChange={e => {
-                                        setNickname(e.target.value);
-                                        setError('');
-                                    }}
-                                    placeholder="가입 시 사용한 닉네임"
-                                    autoFocus
-                                />
-                            </div>
-                        </div>
-
-                        {error && <div className="password-error">{error}</div>}
-
-                        <div className="password-actions">
-                            <button
-                                className="password-btn primary"
-                                onClick={handleFindUser}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? '확인 중...' : '다음'}
-                                {!isLoading && <span className="material-icons-outlined">arrow_forward</span>}
-                            </button>
-                        </div>
+                        <Button variant="ghost" size="icon" onClick={handleClose} aria-label="닫기">
+                            <span className="material-symbols-outlined">close</span>
+                        </Button>
                     </div>
-                )}
+                </CardHeader>
 
-                {/* Step 2: 비밀번호 변경 */}
-                {step === 2 && (
-                    <div className="password-step">
-                        <div className="step-icon">
-                            <span className="material-icons-outlined">lock_reset</span>
+                <CardContent className="pt-6">
+                    {step === 1 && (
+                        <div className="space-y-3">
+                            <label className="text-sm font-medium text-foreground">닉네임</label>
+                            <Input
+                                value={nickname}
+                                onChange={(e) => {
+                                    setNickname(e.target.value);
+                                    setError('');
+                                }}
+                                placeholder="가입 시 사용한 닉네임"
+                                autoFocus
+                            />
                         </div>
-                        <p className="step-description">
-                            <strong>{nickname}</strong>님의 새 비밀번호를 설정하세요
-                        </p>
+                    )}
 
-                        <div className="password-form">
-                            <div className="form-group">
-                                <label>현재 비밀번호</label>
-                                <input
+                    {step === 2 && (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">현재 비밀번호</label>
+                                <Input
                                     type="password"
                                     value={currentPassword}
-                                    onChange={e => {
+                                    onChange={(e) => {
                                         setCurrentPassword(e.target.value);
                                         setError('');
                                     }}
                                     placeholder="현재 비밀번호를 입력하세요"
                                 />
                             </div>
-
-                            <div className="form-group">
-                                <label>새 비밀번호</label>
-                                <input
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">새 비밀번호</label>
+                                <Input
                                     type="password"
                                     value={newPassword}
-                                    onChange={e => {
+                                    onChange={(e) => {
                                         setNewPassword(e.target.value);
                                         setError('');
                                     }}
                                     placeholder="새 비밀번호를 입력하세요"
                                 />
                             </div>
-
-                            <div className="form-group">
-                                <label>새 비밀번호 확인</label>
-                                <input
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">새 비밀번호 확인</label>
+                                <Input
                                     type="password"
                                     value={newPasswordConfirm}
-                                    onChange={e => {
+                                    onChange={(e) => {
                                         setNewPasswordConfirm(e.target.value);
                                         setError('');
                                     }}
@@ -191,46 +164,50 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
                                 />
                             </div>
                         </div>
+                    )}
 
-                        {error && <div className="password-error">{error}</div>}
-
-                        <div className="password-actions">
-                            <button
-                                className="password-btn secondary"
-                                onClick={() => setStep(1)}
-                            >
-                                <span className="material-icons-outlined">arrow_back</span>
-                                이전
-                            </button>
-                            <button
-                                className="password-btn primary"
-                                onClick={handleChangePassword}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? '변경 중...' : '변경하기'}
-                                {!isLoading && <span className="material-icons-outlined">check</span>}
-                            </button>
+                    {step === 3 && (
+                        <div className="flex min-h-[180px] flex-col items-center justify-center gap-3 text-center">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+                                <span className="material-symbols-outlined text-3xl text-emerald-600">check_circle</span>
+                            </div>
+                            <h3 className="text-lg font-semibold">비밀번호가 변경되었습니다</h3>
+                            <p className="text-sm text-muted-foreground">새 비밀번호로 로그인해주세요.</p>
                         </div>
-                    </div>
+                    )}
+
+                    {error && (
+                        <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                            {error}
+                        </div>
+                    )}
+                </CardContent>
+
+                {step === 1 && (
+                    <CardFooter className="justify-end border-t pt-4">
+                        <Button onClick={handleFindUser} disabled={isLoading}>
+                            {isLoading ? '확인 중...' : '다음'}
+                        </Button>
+                    </CardFooter>
                 )}
 
-                {/* Step 3: 완료 */}
+                {step === 2 && (
+                    <CardFooter className="justify-between border-t pt-4">
+                        <Button variant="outline" onClick={() => setStep(1)} disabled={isLoading}>
+                            이전
+                        </Button>
+                        <Button onClick={handleChangePassword} disabled={isLoading}>
+                            {isLoading ? '변경 중...' : '변경하기'}
+                        </Button>
+                    </CardFooter>
+                )}
+
                 {step === 3 && (
-                    <div className="password-step complete-step">
-                        <div className="complete-icon">
-                            <span className="material-icons-outlined">check_circle</span>
-                        </div>
-                        <h3>비밀번호가 변경되었습니다!</h3>
-                        <p>새 비밀번호로 로그인해주세요.</p>
-
-                        <div className="password-actions">
-                            <button className="password-btn primary" onClick={handleClose}>
-                                확인
-                            </button>
-                        </div>
-                    </div>
+                    <CardFooter className="justify-end border-t pt-4">
+                        <Button onClick={handleClose}>확인</Button>
+                    </CardFooter>
                 )}
-            </div>
+            </Card>
         </div>
     );
 };

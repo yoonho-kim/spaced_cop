@@ -24,6 +24,8 @@ import RecurringReservationModal from '../components/RecurringReservationModal';
 import ParticipantListModal from '../components/ParticipantListModal';
 import './Admin.css';
 
+const HONORIFIC_REGEX = /^[가-힣]{1,4}$/;
+
 const Admin = () => {
     const [activeSection, setActiveSection] = useState('rooms');
     const [rooms, setRooms] = useState([]);
@@ -35,7 +37,8 @@ const Admin = () => {
     const [visibleUserCount, setVisibleUserCount] = useState(20);
     const [showUserModal, setShowUserModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
-    const [userForm, setUserForm] = useState({ employeeId: '', gender: '' });
+    const [userForm, setUserForm] = useState({ employeeId: '', gender: '', honorifics: [] });
+    const [honorificInput, setHonorificInput] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [showRecurringModal, setShowRecurringModal] = useState(false);
     const [modalType, setModalType] = useState('');
@@ -260,9 +263,40 @@ const Admin = () => {
         setSelectedUser(user);
         setUserForm({
             employeeId: user.employeeId || '',
-            gender: user.gender || ''
+            gender: user.gender || '',
+            honorifics: Array.isArray(user.honorifics) ? user.honorifics.slice(0, 2) : [],
         });
+        setHonorificInput('');
         setShowUserModal(true);
+    };
+
+    const handleAddHonorific = () => {
+        const value = honorificInput.trim();
+        if (!value) return;
+        if (!HONORIFIC_REGEX.test(value)) {
+            alert('호칭은 한글 1~4글자만 입력할 수 있습니다.');
+            return;
+        }
+        if (userForm.honorifics.includes(value)) {
+            alert('이미 추가된 호칭입니다.');
+            return;
+        }
+        if (userForm.honorifics.length >= 2) {
+            alert('호칭은 최대 2개까지 설정할 수 있습니다.');
+            return;
+        }
+        setUserForm((prev) => ({
+            ...prev,
+            honorifics: [...prev.honorifics, value]
+        }));
+        setHonorificInput('');
+    };
+
+    const handleRemoveHonorific = (target) => {
+        setUserForm((prev) => ({
+            ...prev,
+            honorifics: prev.honorifics.filter((item) => item !== target)
+        }));
     };
 
     const handleSaveUser = async (e) => {
@@ -271,13 +305,15 @@ const Admin = () => {
 
         const result = await adminUpdateUserBasicInfo(selectedUser.id, {
             employeeId: userForm.employeeId,
-            gender: userForm.gender
+            gender: userForm.gender,
+            honorifics: userForm.honorifics,
         });
 
         if (result.success) {
             alert('사용자 정보가 업데이트되었습니다.');
             setShowUserModal(false);
             setSelectedUser(null);
+            setHonorificInput('');
             loadData();
         } else {
             alert(result.error || '사용자 정보 업데이트에 실패했습니다.');
@@ -848,7 +884,7 @@ const Admin = () => {
             {/* User Edit Modal */}
             <Modal
                 isOpen={showUserModal}
-                onClose={() => { setShowUserModal(false); setSelectedUser(null); }}
+                onClose={() => { setShowUserModal(false); setSelectedUser(null); setHonorificInput(''); }}
                 title="사용자 기본정보 수정"
             >
                 <form onSubmit={handleSaveUser} className="admin-form">
@@ -877,8 +913,62 @@ const Admin = () => {
                             <option value="other">기타</option>
                         </select>
                     </div>
+                    <div className="form-group">
+                        <label>호칭 (최대 2개, 한글 4글자)</label>
+                        <div className="honorific-list">
+                            {userForm.honorifics.map((title) => (
+                                <span key={title} className="honorific-chip">
+                                    {title}
+                                    <button
+                                        type="button"
+                                        className="honorific-remove"
+                                        onClick={() => handleRemoveHonorific(title)}
+                                        aria-label={`${title} 삭제`}
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                            {userForm.honorifics.length === 0 && (
+                                <span className="honorific-empty">설정된 호칭이 없습니다</span>
+                            )}
+                        </div>
+                        <div className="honorific-input-row">
+                            <input
+                                type="text"
+                                value={honorificInput}
+                                onChange={(e) => setHonorificInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddHonorific();
+                                    }
+                                }}
+                                placeholder="예) 선임"
+                                maxLength={4}
+                                disabled={userForm.honorifics.length >= 2}
+                            />
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={handleAddHonorific}
+                                disabled={userForm.honorifics.length >= 2 || !honorificInput.trim()}
+                            >
+                                추가
+                            </Button>
+                        </div>
+                    </div>
                     <div className="form-actions">
-                        <Button type="button" variant="secondary" onClick={() => setShowUserModal(false)}>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                                setShowUserModal(false);
+                                setSelectedUser(null);
+                                setHonorificInput('');
+                            }}
+                        >
                             취소
                         </Button>
                         <Button type="submit" variant="admin">

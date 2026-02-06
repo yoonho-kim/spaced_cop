@@ -290,44 +290,84 @@ const buildPosts = async (data) => {
   const safeData = data || [];
   if (safeData.length === 0) return [];
 
-  // Get all unique author nicknames to fetch their profile icons
-  const authorNicknames = [
-    ...new Set(safeData.map(post => post.author_nickname).filter(Boolean))
+  const normalizeHonorifics = (value) => {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean)
+      .slice(0, 2);
+  };
+
+  // Get all nicknames used in posts/comments to fetch profile metadata
+  const allNicknames = [
+    ...new Set([
+      ...safeData.map(post => post.author_nickname),
+      ...safeData.flatMap(post => (post.post_comments || []).map(comment => comment.user_nickname)),
+    ].filter(Boolean))
   ];
 
-  // Fetch user profile icons
+  // Fetch user profile metadata (icon + honorifics)
   let usersData = [];
-  if (authorNicknames.length > 0) {
-    const { data: fetchedUsers } = await supabase
+  if (allNicknames.length > 0) {
+    let fetchedUsers = null;
+    let fetchError = null;
+    const primaryResult = await supabase
       .from('users')
-      .select('nickname, profile_icon_url')
-      .in('nickname', authorNicknames);
+      .select('nickname, profile_icon_url, honorifics')
+      .in('nickname', allNicknames);
+    fetchedUsers = primaryResult.data;
+    fetchError = primaryResult.error;
+
+    if (fetchError && String(fetchError.message || '').includes('honorifics')) {
+      const fallbackResult = await supabase
+        .from('users')
+        .select('nickname, profile_icon_url')
+        .in('nickname', allNicknames);
+      fetchedUsers = fallbackResult.data;
+      fetchError = fallbackResult.error;
+    }
+
+    if (fetchError) {
+      console.error('Error fetching user metadata for posts:', fetchError);
+    }
+
     usersData = fetchedUsers || [];
   }
 
-  // Create a map of nickname to profile icon URL
-  const userIconMap = {};
+  // Create a map of nickname to metadata
+  const userMetaMap = {};
   usersData.forEach(user => {
-    userIconMap[user.nickname] = user.profile_icon_url;
+    userMetaMap[user.nickname] = {
+      iconUrl: user.profile_icon_url || null,
+      honorifics: normalizeHonorifics(user.honorifics),
+    };
   });
 
   // Transform data to match existing structure
-  return safeData.map(post => ({
-    id: post.id,
-    content: post.content,
-    author: post.author_nickname,
-    authorIconUrl: userIconMap[post.author_nickname] || null,
-    isAdmin: post.is_admin,
-    postType: post.post_type || 'normal',
-    timestamp: post.created_at,
-    likes: post.post_likes?.map(like => like.user_nickname) || [],
-    comments: post.post_comments?.map(comment => ({
-      id: comment.id,
-      userName: comment.user_nickname,
-      content: comment.content,
-      timestamp: comment.created_at,
-    })) || [],
-  }));
+  return safeData.map(post => {
+    const authorMeta = userMetaMap[post.author_nickname] || { iconUrl: null, honorifics: [] };
+    return {
+      id: post.id,
+      content: post.content,
+      author: post.author_nickname,
+      authorIconUrl: authorMeta.iconUrl,
+      authorHonorifics: authorMeta.honorifics,
+      isAdmin: post.is_admin,
+      postType: post.post_type || 'normal',
+      timestamp: post.created_at,
+      likes: post.post_likes?.map(like => like.user_nickname) || [],
+      comments: post.post_comments?.map(comment => {
+        const commentMeta = userMetaMap[comment.user_nickname] || { honorifics: [] };
+        return {
+          id: comment.id,
+          userName: comment.user_nickname,
+          userHonorifics: commentMeta.honorifics,
+          content: comment.content,
+          timestamp: comment.created_at,
+        };
+      }) || [],
+    };
+  });
 };
 
 export const getPosts = async () => {

@@ -380,6 +380,11 @@ const Feed = ({ user, onNavigateToTab }) => {
                                                         </span>
                                                     )}
                                                     {post.author}
+                                                    {(post.authorHonorifics || []).slice(0, 2).map((title, index) => (
+                                                        <span key={`${post.id}-author-title-${index}`} className="badge badge-honorific">
+                                                            {title}
+                                                        </span>
+                                                    ))}
                                                     {post.isAdmin && <span className="badge badge-admin">관리자</span>}
                                                     {post.postType === 'notice' && <span className="badge badge-notice">공지사항</span>}
                                                     {post.postType === 'volunteer' && <span className="badge badge-volunteer">봉사활동</span>}
@@ -439,6 +444,11 @@ const Feed = ({ user, onNavigateToTab }) => {
                                                                                 </span>
                                                                             )}
                                                                             {comment.userName}
+                                                                            {(comment.userHonorifics || []).slice(0, 2).map((title, index) => (
+                                                                                <span key={`${comment.id}-comment-title-${index}`} className="badge badge-honorific">
+                                                                                    {title}
+                                                                                </span>
+                                                                            ))}
                                                                         </span>
                                                                         <span className="comment-time">{formatTimestamp(comment.timestamp)}</span>
                                                                     </div>
