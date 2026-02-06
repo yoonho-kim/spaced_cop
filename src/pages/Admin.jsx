@@ -358,6 +358,10 @@ const Admin = () => {
             alert('이미지 파일만 업로드할 수 있습니다.');
             return;
         }
+        if (file.size > 3 * 1024 * 1024) {
+            alert('이미지 크기는 3MB 이하만 업로드할 수 있습니다.');
+            return;
+        }
         setEventImageFile(file);
         setEventImagePreview(URL.createObjectURL(file));
     };

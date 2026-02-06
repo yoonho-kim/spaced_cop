@@ -14,8 +14,15 @@ export const usePullToRefresh = (onRefresh, containerSelector = '.main-content')
     useEffect(() => {
         const container = document.querySelector(containerSelector);
         if (!container) return;
+        const INTERACTIVE_SELECTOR = 'button, a, input, textarea, select, [role="button"], [data-no-ptr]';
 
         const handleTouchStart = (e) => {
+            if (e.target.closest(INTERACTIVE_SELECTOR)) {
+                setIsPulling(false);
+                setPullDistance(0);
+                return;
+            }
+
             // Only start pull if at the top of the container
             if (container.scrollTop <= 5) {
                 setPullStartY(e.touches[0].clientY);
@@ -45,6 +52,12 @@ export const usePullToRefresh = (onRefresh, containerSelector = '.main-content')
             }
         };
 
+        const resetPullState = () => {
+            setIsPulling(false);
+            setPullDistance(0);
+            setPullStartY(0);
+        };
+
         const handleTouchEnd = () => {
             if (isPulling && pullDistance > 70) {
                 // Trigger refresh if pulled more than 70px
@@ -53,19 +66,23 @@ export const usePullToRefresh = (onRefresh, containerSelector = '.main-content')
                     onRefresh();
                 }
             }
-            setIsPulling(false);
-            setPullDistance(0);
-            setPullStartY(0);
+            resetPullState();
+        };
+
+        const handleTouchCancel = () => {
+            resetPullState();
         };
 
         container.addEventListener('touchstart', handleTouchStart, { passive: true });
         container.addEventListener('touchmove', handleTouchMove, { passive: false });
         container.addEventListener('touchend', handleTouchEnd, { passive: true });
+        container.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
         return () => {
             container.removeEventListener('touchstart', handleTouchStart);
             container.removeEventListener('touchmove', handleTouchMove);
             container.removeEventListener('touchend', handleTouchEnd);
+            container.removeEventListener('touchcancel', handleTouchCancel);
         };
     }, [isPulling, pullStartY, pullDistance, onRefresh, containerSelector]);
 
@@ -85,6 +102,7 @@ export const usePullToRefresh = (onRefresh, containerSelector = '.main-content')
                     background: 'linear-gradient(to bottom, rgba(41, 82, 204, 0.12), transparent)',
                     transition: pullDistance === 0 ? 'height 0.3s ease' : 'none',
                     zIndex: 10,
+                    pointerEvents: 'none',
                 }}
             >
                 <div style={{

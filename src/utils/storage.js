@@ -118,41 +118,86 @@ export const upsertEventSettings = async (settings) => {
   return { success: true, data };
 };
 
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = reader.result;
+    if (typeof result !== 'string') {
+      reject(new Error('이미지를 읽을 수 없습니다.'));
+      return;
+    }
+    resolve(result);
+  };
+  reader.onerror = () => reject(new Error('이미지를 읽을 수 없습니다.'));
+  reader.readAsDataURL(file);
+});
+
+const MAX_EVENT_IMAGE_BYTES = 3 * 1024 * 1024;
+
 export const uploadEventImage = async (file) => {
   if (!file) {
     return { success: false, error: '이미지 파일이 없습니다.' };
   }
+  if (file.size > MAX_EVENT_IMAGE_BYTES) {
+    return { success: false, error: '이미지 크기는 3MB 이하만 업로드할 수 있습니다.' };
+  }
 
-  const safeName = file.name.replace(/[^\w.-]+/g, '-');
-  const path = `events/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+  try {
+    const dataUrl = await fileToBase64(file);
+    const fileBase64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
 
-  const { error } = await supabase.storage
-    .from('event-img')
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: true,
-      contentType: file.type,
+    const response = await fetch('/api/event-image-upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        fileName: file.name,
+        fileType: file.type,
+        fileBase64,
+      }),
     });
 
-  if (error) {
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) {
+      console.error('Error uploading event image:', result);
+      return { success: false, error: result.error || '이미지 업로드에 실패했습니다.' };
+    }
+
+    return {
+      success: true,
+      publicUrl: result.publicUrl,
+      path: result.path,
+    };
+  } catch (error) {
     console.error('Error uploading event image:', error);
     return { success: false, error: '이미지 업로드에 실패했습니다.' };
   }
-
-  const { data } = supabase.storage.from('event-img').getPublicUrl(path);
-  return { success: true, publicUrl: data.publicUrl, path };
 };
 
 export const deleteEventImage = async (path) => {
   if (!path) return { success: true };
 
-  const { error } = await supabase.storage.from('event-img').remove([path]);
-  if (error) {
+  try {
+    const response = await fetch('/api/event-image-delete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ path }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) {
+      console.error('Error deleting event image:', result);
+      return { success: false, error: result.error || '이미지 삭제에 실패했습니다.' };
+    }
+
+    return { success: true };
+  } catch (error) {
     console.error('Error deleting event image:', error);
     return { success: false, error: '이미지 삭제에 실패했습니다.' };
   }
-
-  return { success: true };
 };
 
 export const getEventKey = (eventSettings) => {
