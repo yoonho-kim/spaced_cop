@@ -306,14 +306,14 @@ const buildPosts = async (data) => {
     ].filter(Boolean))
   ];
 
-  // Fetch user profile metadata (icon + honorifics)
+  // Fetch user profile metadata (icon + honorifics + employee id)
   let usersData = [];
   if (allNicknames.length > 0) {
     let fetchedUsers = null;
     let fetchError = null;
     const primaryResult = await supabase
       .from('users')
-      .select('nickname, profile_icon_url, honorifics')
+      .select('nickname, profile_icon_url, honorifics, employee_id')
       .in('nickname', allNicknames);
     fetchedUsers = primaryResult.data;
     fetchError = primaryResult.error;
@@ -321,7 +321,7 @@ const buildPosts = async (data) => {
     if (fetchError && String(fetchError.message || '').includes('honorifics')) {
       const fallbackResult = await supabase
         .from('users')
-        .select('nickname, profile_icon_url')
+        .select('nickname, profile_icon_url, employee_id')
         .in('nickname', allNicknames);
       fetchedUsers = fallbackResult.data;
       fetchError = fallbackResult.error;
@@ -340,28 +340,31 @@ const buildPosts = async (data) => {
     userMetaMap[user.nickname] = {
       iconUrl: user.profile_icon_url || null,
       honorifics: normalizeHonorifics(user.honorifics),
+      employeeId: user.employee_id || null,
     };
   });
 
   // Transform data to match existing structure
   return safeData.map(post => {
-    const authorMeta = userMetaMap[post.author_nickname] || { iconUrl: null, honorifics: [] };
+    const authorMeta = userMetaMap[post.author_nickname] || { iconUrl: null, honorifics: [], employeeId: null };
     return {
       id: post.id,
       content: post.content,
       author: post.author_nickname,
       authorIconUrl: authorMeta.iconUrl,
       authorHonorifics: authorMeta.honorifics,
+      authorEmployeeId: authorMeta.employeeId,
       isAdmin: post.is_admin,
       postType: post.post_type || 'normal',
       timestamp: post.created_at,
       likes: post.post_likes?.map(like => like.user_nickname) || [],
       comments: post.post_comments?.map(comment => {
-        const commentMeta = userMetaMap[comment.user_nickname] || { honorifics: [] };
+        const commentMeta = userMetaMap[comment.user_nickname] || { honorifics: [], employeeId: null };
         return {
           id: comment.id,
           userName: comment.user_nickname,
           userHonorifics: commentMeta.honorifics,
+          userEmployeeId: commentMeta.employeeId,
           content: comment.content,
           timestamp: comment.created_at,
         };

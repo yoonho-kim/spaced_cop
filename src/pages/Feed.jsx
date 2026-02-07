@@ -16,13 +16,24 @@ const Feed = ({ user, onNavigateToTab }) => {
     const [topMeetingRoom, setTopMeetingRoom] = useState(null);
     const [showWinnersModal, setShowWinnersModal] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState(null);
+    const [selectedProfile, setSelectedProfile] = useState(null);
     const [expandedComments, setExpandedComments] = useState(new Set());
     const [commentInputs, setCommentInputs] = useState({});
-    const [feedCategory, setFeedCategory] = useState('all'); // 'all', 'notice', 'volunteer'
     const [top3Volunteers, setTop3Volunteers] = useState([]);
     const loadMoreRef = useRef(null);
     const observerRef = useRef(null);
+    const loadingRef = useRef(false);
+    const requestedPagesRef = useRef(new Set());
     const PAGE_SIZE = 10;
+
+    const uniqueById = (items) => {
+        const seen = new Set();
+        return items.filter((item) => {
+            if (!item?.id || seen.has(item.id)) return false;
+            seen.add(item.id);
+            return true;
+        });
+    };
 
     useEffect(() => {
         loadInitialPosts();
@@ -60,21 +71,32 @@ const Feed = ({ user, onNavigateToTab }) => {
     }, [hasMore, isLoadingMore, page]);
 
     const loadPostsPage = async (pageIndex, reset) => {
-        if (isLoadingMore) return;
+        if (loadingRef.current) return;
+        if (!reset && requestedPagesRef.current.has(pageIndex)) return;
+
+        loadingRef.current = true;
+        if (!reset) {
+            requestedPagesRef.current.add(pageIndex);
+        }
         setIsLoadingMore(true);
 
-        const { posts: newPosts, hasMore: more } = await getPostsPage({
-            limit: PAGE_SIZE,
-            offset: pageIndex * PAGE_SIZE,
-        });
+        try {
+            const { posts: newPosts, hasMore: more } = await getPostsPage({
+                limit: PAGE_SIZE,
+                offset: pageIndex * PAGE_SIZE,
+            });
 
-        setPosts(prev => (reset ? newPosts : [...prev, ...newPosts]));
-        setHasMore(more);
-        setPage(pageIndex + 1);
-        setIsLoadingMore(false);
+            setPosts(prev => uniqueById(reset ? newPosts : [...prev, ...newPosts]));
+            setHasMore(more);
+            setPage(pageIndex + 1);
+        } finally {
+            loadingRef.current = false;
+            setIsLoadingMore(false);
+        }
     };
 
     const loadInitialPosts = async () => {
+        requestedPagesRef.current.clear();
         setPage(0);
         setHasMore(true);
         await loadPostsPage(0, true);
@@ -82,15 +104,24 @@ const Feed = ({ user, onNavigateToTab }) => {
 
     const refreshPosts = async () => {
         const loadedCount = Math.max(page, 1) * PAGE_SIZE;
+        loadingRef.current = true;
         setIsLoadingMore(true);
-        const { posts: newPosts, hasMore: more } = await getPostsPage({
-            limit: loadedCount,
-            offset: 0,
-        });
-        setPosts(newPosts);
-        setHasMore(more);
-        setPage(Math.ceil(newPosts.length / PAGE_SIZE));
-        setIsLoadingMore(false);
+        try {
+            const { posts: newPosts, hasMore: more } = await getPostsPage({
+                limit: loadedCount,
+                offset: 0,
+            });
+            const uniquePosts = uniqueById(newPosts);
+            setPosts(uniquePosts);
+            setHasMore(more);
+            setPage(Math.ceil(uniquePosts.length / PAGE_SIZE));
+            requestedPagesRef.current = new Set(
+                Array.from({ length: Math.ceil(uniquePosts.length / PAGE_SIZE) }, (_, i) => i)
+            );
+        } finally {
+            loadingRef.current = false;
+            setIsLoadingMore(false);
+        }
     };
 
     const loadTop3Volunteers = async () => {
@@ -235,14 +266,6 @@ const Feed = ({ user, onNavigateToTab }) => {
         refreshPosts();
     };
 
-    // Filter posts based on selected category
-    const filteredPosts = posts.filter(post => {
-        if (feedCategory === 'all') return true;
-        if (feedCategory === 'notice') return post.postType === 'notice';
-        if (feedCategory === 'volunteer') return post.postType === 'volunteer';
-        return true;
-    });
-
     // Pull-to-refresh 기능
     const handleRefresh = () => {
         loadInitialPosts();
@@ -317,41 +340,17 @@ const Feed = ({ user, onNavigateToTab }) => {
                 </section>
             )}
 
-            {/* Feed Category Tabs */}
-            <section className="feed-categories">
-                <div className="category-tabs">
-                    <button
-                        className={`category-tab ${feedCategory === 'all' ? 'active' : ''}`}
-                        onClick={() => setFeedCategory('all')}
-                    >
-                        전체
-                    </button>
-                    <button
-                        className={`category-tab ${feedCategory === 'notice' ? 'active' : ''}`}
-                        onClick={() => setFeedCategory('notice')}
-                    >
-                        공지사항
-                    </button>
-                    <button
-                        className={`category-tab ${feedCategory === 'volunteer' ? 'active' : ''}`}
-                        onClick={() => setFeedCategory('volunteer')}
-                    >
-                        봉사활동
-                    </button>
-                </div>
-            </section>
-
             {/* Posts Feed */}
             <section className="posts-section">
                 <div className="posts-list">
-                    {filteredPosts.length === 0 ? (
+                    {posts.length === 0 ? (
                         <div className="empty-state">
                             <div className="empty-icon">📝</div>
                             <p>아직 게시물이 없습니다</p>
                             <p className="text-secondary">첫 번째로 무언가를 공유해보세요!</p>
                         </div>
                     ) : (
-                        filteredPosts.map(post => {
+                        posts.map(post => {
                             const likes = post.likes || [];
                             const comments = post.comments || [];
                             const isLiked = likes.includes(user.nickname);
@@ -361,17 +360,30 @@ const Feed = ({ user, onNavigateToTab }) => {
                                 <div key={post.id} className="post-item animate-fade-in">
                                     <div className="post-content">
                                         <div className="post-header">
-                                            {post.authorIconUrl ? (
-                                                <img
-                                                    src={post.authorIconUrl}
-                                                    alt={post.author}
-                                                    className="avatar-image"
-                                                />
-                                            ) : (
-                                                <div className="avatar-placeholder">
-                                                    <span className="material-symbols-outlined">person</span>
-                                                </div>
-                                            )}
+                                            <button
+                                                type="button"
+                                                className="avatar-button"
+                                                onClick={() => {
+                                                    setSelectedProfile({
+                                                        nickname: post.author,
+                                                        employeeId: post.authorEmployeeId || null,
+                                                        iconUrl: post.authorIconUrl || null
+                                                    });
+                                                }}
+                                                aria-label={`${post.author} 프로필 크게 보기`}
+                                            >
+                                                {post.authorIconUrl ? (
+                                                    <img
+                                                        src={post.authorIconUrl}
+                                                        alt={post.author}
+                                                        className="avatar-image"
+                                                    />
+                                                ) : (
+                                                    <div className="avatar-placeholder">
+                                                        <span className="material-symbols-outlined">person</span>
+                                                    </div>
+                                                )}
+                                            </button>
                                             <div className="post-header-info">
                                                 <p className="post-author">
                                                     {getVolunteerRankBadge(post.author) && (
@@ -494,6 +506,46 @@ const Feed = ({ user, onNavigateToTab }) => {
                     )}
                 </div>
             </section>
+
+            {selectedProfile && (
+                <div
+                    className="profile-preview-backdrop"
+                    onClick={() => setSelectedProfile(null)}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="프로필 이미지 팝업"
+                >
+                    <div className="profile-preview-modal" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            type="button"
+                            className="profile-preview-close"
+                            onClick={() => setSelectedProfile(null)}
+                            aria-label="닫기"
+                        >
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
+
+                        <div className="profile-preview-image-wrap">
+                            {selectedProfile.iconUrl ? (
+                                <img
+                                    src={selectedProfile.iconUrl}
+                                    alt={`${selectedProfile.nickname} 프로필`}
+                                    className="profile-preview-image"
+                                />
+                            ) : (
+                                <div className="profile-preview-fallback">
+                                    <span className="material-symbols-outlined">person</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="profile-preview-meta">
+                            <strong>{selectedProfile.nickname}</strong>
+                            <span>사번: {selectedProfile.employeeId || '미등록'}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Winners Modal */}
             <WinnersModal

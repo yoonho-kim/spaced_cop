@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,122 +12,144 @@ import {
 } from '../utils/storage';
 import './Event.css';
 
-const WIN_PROBABILITY = 0.05;
-const PULL_TRIGGER_DISTANCE = 84;
-const MAX_PULL_DISTANCE = 120;
-const WIN_PRIZES = [
-    '스타벅스 아메리카노',
-    '점심 식사권',
-    '간식 박스',
-    '추가 휴식 30분',
-    '스페셜 굿즈',
-];
-
-const LOSE_PRIZE = '다음 기회에';
-const BOARDING_META = [
-    { flight: 'SD-271', gate: 'A1', seat: '12A', zone: 'SKY', terminal: 'T1', board: '18:05' },
-    { flight: 'SD-518', gate: 'B3', seat: '07F', zone: 'PRM', terminal: 'T2', board: '18:20' },
-    { flight: 'SD-909', gate: 'C2', seat: '21C', zone: 'ECO', terminal: 'T1', board: '18:35' },
-];
+const COFFEE_RATE = 5;
+const MEAL_RATE = 1;
 
 const pickPrize = () => {
-    const isWinner = Math.random() < WIN_PROBABILITY;
-    if (!isWinner) {
-        return { result: LOSE_PRIZE, isWinner: false };
+    const roll = Math.random() * 100;
+
+    if (roll < MEAL_RATE) {
+        return { tier: 'meal', label: '식사권', isWinner: true };
     }
-    return {
-        result: WIN_PRIZES[Math.floor(Math.random() * WIN_PRIZES.length)],
-        isWinner: true,
-    };
+    if (roll < MEAL_RATE + COFFEE_RATE) {
+        return { tier: 'coffee', label: '커피', isWinner: true };
+    }
+
+    return { tier: 'miss', label: '다음 기회에', isWinner: false };
+};
+
+const inferTier = (label, isWinner) => {
+    if (!isWinner) return 'miss';
+    if (String(label || '').includes('식사')) return 'meal';
+    return 'coffee';
+};
+
+const getToneClass = (tier) => {
+    if (tier === 'meal') return 'event-tone-meal';
+    if (tier === 'coffee') return 'event-tone-coffee';
+    return 'event-tone-miss';
 };
 
 const Event = ({ onBack, eventData, user }) => {
-    const [isShuffling, setIsShuffling] = useState(false);
-    const [selectedIndex, setSelectedIndex] = useState(null);
+    const [charge, setCharge] = useState(0);
+    const [isCharging, setIsCharging] = useState(false);
+    const [isPulling, setIsPulling] = useState(false);
+
     const [result, setResult] = useState(null);
-    const [statusMessage, setStatusMessage] = useState('');
+    const [statusMessage, setStatusMessage] = useState('패널을 문질러 게이지를 100% 채우세요.');
     const [currentEvent, setCurrentEvent] = useState(eventData || null);
     const [isLoadingEvent, setIsLoadingEvent] = useState(!eventData);
     const [isCheckingEntry, setIsCheckingEntry] = useState(false);
 
-    const [activePullIndex, setActivePullIndex] = useState(null);
-    const [pullOffsets, setPullOffsets] = useState([0, 0, 0]);
-    const [showConfetti, setShowConfetti] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastTone, setToastTone] = useState('neutral');
 
     const hasAlertedRef = useRef(false);
-    const pullStartYRef = useRef(0);
-    const activePointerIdRef = useRef(null);
-    const pullOffsetsRef = useRef([0, 0, 0]);
-    const confettiTimerRef = useRef(null);
+    const lastPosRef = useRef(null);
+    const rafRef = useRef(null);
     const toastTimerRef = useRef(null);
-
-    const boxes = useMemo(() => [0, 1, 2], []);
-    const confettiPieces = useMemo(
-        () => Array.from({ length: 24 }, (_, i) => ({
-            id: i,
-            left: `${Math.random() * 100}%`,
-            delay: `${Math.random() * 0.25}s`,
-            duration: `${0.8 + Math.random() * 0.8}s`,
-            x: `${(Math.random() - 0.5) * 120}px`,
-            hue: `${Math.floor(Math.random() * 360)}deg`,
-        })),
-        []
-    );
 
     const eventKey = currentEvent ? getEventKey(currentEvent) : null;
     const employeeId = user?.employeeId;
     const nickname = user?.nickname;
 
-    const isPickLocked =
-        isShuffling ||
+    const isLocked =
+        isPulling ||
         !!result ||
         isCheckingEntry ||
         isLoadingEvent ||
         !employeeId ||
         !currentEvent?.isActive;
 
-    const updatePullOffset = (index, value) => {
-        const clamped = Math.max(0, Math.min(MAX_PULL_DISTANCE, value));
-        setPullOffsets((prev) => {
-            const next = [...prev];
-            next[index] = clamped;
-            pullOffsetsRef.current = next;
-            return next;
-        });
-    };
-
-    const resetPullOffsets = () => {
-        pullOffsetsRef.current = [0, 0, 0];
-        setPullOffsets([0, 0, 0]);
-    };
-
-    const showToast = (message, tone = 'neutral') => {
+    const showToast = useCallback((message, tone = 'neutral') => {
         setToastMessage(message);
         setToastTone(tone);
+
         if (toastTimerRef.current) {
             window.clearTimeout(toastTimerRef.current);
         }
         toastTimerRef.current = window.setTimeout(() => {
             setToastMessage('');
-        }, 2200);
-    };
+        }, 2400);
+    }, []);
 
-    const triggerCelebrate = () => {
-        setShowConfetti(true);
-        if (confettiTimerRef.current) {
-            window.clearTimeout(confettiTimerRef.current);
+    const resetCharge = useCallback(() => {
+        if (isPulling || !!result) return;
+        setCharge(0);
+        setIsCharging(false);
+        lastPosRef.current = null;
+        setStatusMessage('패널을 문질러 게이지를 100% 채우세요.');
+    }, [isPulling, result]);
+
+    const doPull = useCallback(async () => {
+        if (isLocked || isPulling) return;
+
+        setIsPulling(true);
+        setStatusMessage('추첨 중...');
+
+        await new Promise((resolve) => window.setTimeout(resolve, 650));
+
+        const picked = pickPrize();
+
+        const saveResult = await addEventEntry({
+            eventKey,
+            employeeId,
+            nickname,
+            result: picked.label,
+            isWinner: picked.isWinner,
+            boxIndex: 0,
+        });
+
+        if (!saveResult.success) {
+            if (saveResult.error?.code === '23505') {
+                const existing = await getEventEntryForEmployee(eventKey, employeeId);
+                if (existing) {
+                    setResult({
+                        tier: inferTier(existing.result, !!existing.isWinner),
+                        label: existing.result,
+                        isWinner: !!existing.isWinner,
+                    });
+                    setStatusMessage('이미 참여 완료되었습니다.');
+                } else {
+                    setStatusMessage('이미 참여한 기록이 있습니다.');
+                }
+            } else {
+                setStatusMessage('참여 기록 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            }
+
+            setIsPulling(false);
+            setIsCharging(false);
+            return;
         }
-        confettiTimerRef.current = window.setTimeout(() => {
-            setShowConfetti(false);
-        }, 1800);
-    };
+
+        setResult(picked);
+        setStatusMessage(
+            picked.tier === 'meal'
+                ? '축하합니다! 식사권 당첨입니다.'
+                : picked.tier === 'coffee'
+                  ? '축하합니다! 커피 당첨입니다.'
+                  : '이번엔 아쉽지만 다음 기회에 도전해주세요.'
+        );
+        showToast(`결과: ${picked.label}`, picked.isWinner ? 'win' : 'lose');
+
+        setIsPulling(false);
+        setIsCharging(false);
+    }, [employeeId, eventKey, isLocked, isPulling, nickname, showToast]);
 
     useEffect(() => {
         let isMounted = true;
 
-        const loadEventSettings = async () => {
+        const loadEvent = async () => {
             if (eventData) {
                 setCurrentEvent(eventData);
                 setIsLoadingEvent(false);
@@ -141,7 +164,7 @@ const Event = ({ onBack, eventData, user }) => {
             }
         };
 
-        loadEventSettings();
+        loadEvent();
 
         return () => {
             isMounted = false;
@@ -162,12 +185,15 @@ const Event = ({ onBack, eventData, user }) => {
             if (!isMounted) return;
 
             if (existing) {
-                const fixedIndex = existing.boxIndex ?? 1;
-                setSelectedIndex(fixedIndex);
-                setResult(existing.result);
+                setResult({
+                    tier: inferTier(existing.result, !!existing.isWinner),
+                    label: existing.result,
+                    isWinner: !!existing.isWinner,
+                });
+                setCharge(100);
                 setStatusMessage('이미 참여 완료되었습니다.');
-                setToastMessage('');
             }
+
             setIsCheckingEntry(false);
         };
 
@@ -187,109 +213,60 @@ const Event = ({ onBack, eventData, user }) => {
     }, [employeeId, onBack, user]);
 
     useEffect(() => {
-        if (activePullIndex === null) return undefined;
-
-        const handlePointerMove = (event) => {
-            if (event.pointerId !== activePointerIdRef.current) return;
-            const delta = event.clientY - pullStartYRef.current;
-            updatePullOffset(activePullIndex, delta);
-        };
-
-        const handlePointerEnd = async (event) => {
-            if (event.pointerId !== activePointerIdRef.current) return;
-            const index = activePullIndex;
-            const distance = pullOffsetsRef.current[index];
-
-            setActivePullIndex(null);
-            activePointerIdRef.current = null;
-
-            if (distance < PULL_TRIGGER_DISTANCE) {
-                updatePullOffset(index, 0);
-                return;
-            }
-
-            updatePullOffset(index, MAX_PULL_DISTANCE);
-            await handlePick(index);
-            resetPullOffsets();
-        };
-
-        window.addEventListener('pointermove', handlePointerMove);
-        window.addEventListener('pointerup', handlePointerEnd);
-        window.addEventListener('pointercancel', handlePointerEnd);
-
-        return () => {
-            window.removeEventListener('pointermove', handlePointerMove);
-            window.removeEventListener('pointerup', handlePointerEnd);
-            window.removeEventListener('pointercancel', handlePointerEnd);
-        };
-    }, [activePullIndex]);
+        if (charge >= 100 && isCharging && !isPulling && !result) {
+            const timer = window.setTimeout(() => {
+                doPull();
+            }, 120);
+            return () => window.clearTimeout(timer);
+        }
+        return undefined;
+    }, [charge, isCharging, isPulling, result, doPull]);
 
     useEffect(() => () => {
-        if (confettiTimerRef.current) window.clearTimeout(confettiTimerRef.current);
+        if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
         if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     }, []);
 
-    const handlePullStart = (index, event) => {
-        if (isPickLocked || activePullIndex !== null) return;
+    const handlePointerDown = (event) => {
+        if (isLocked) return;
 
-        setStatusMessage('');
-        setActivePullIndex(index);
-        pullStartYRef.current = event.clientY;
-        activePointerIdRef.current = event.pointerId;
-        updatePullOffset(index, 0);
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        setIsCharging(true);
+        lastPosRef.current = { x: event.clientX, y: event.clientY };
+        setStatusMessage('문질문질! 게이지를 채우는 중...');
     };
 
-    const handlePick = async (index) => {
-        if (isPickLocked) return;
+    const handlePointerMove = (event) => {
+        if (!isCharging || isLocked) return;
+        if (rafRef.current) return;
 
-        if (!employeeId) {
-            setStatusMessage('사번이 등록된 계정만 참여할 수 있어요.');
-            return;
-        }
+        rafRef.current = window.requestAnimationFrame(() => {
+            rafRef.current = null;
 
-        if (!currentEvent?.isActive) {
-            setStatusMessage('현재 진행 중인 이벤트가 없습니다.');
-            return;
-        }
-
-        setStatusMessage('찰칵! 티켓을 확인하는 중...');
-        setIsShuffling(true);
-        setSelectedIndex(index);
-
-        await new Promise((resolve) => window.setTimeout(resolve, 450));
-
-        const { result: prizeResult, isWinner } = pickPrize();
-        setResult(prizeResult);
-
-        const saveResult = await addEventEntry({
-            eventKey,
-            employeeId,
-            nickname,
-            result: prizeResult,
-            isWinner,
-            boxIndex: index,
-        });
-
-        if (!saveResult.success) {
-            if (saveResult.error?.code === '23505') {
-                const existing = await getEventEntryForEmployee(eventKey, employeeId);
-                if (existing) {
-                    setSelectedIndex(existing.boxIndex ?? index);
-                    setResult(existing.result);
-                    setStatusMessage('이미 참여 완료되었습니다.');
-                } else {
-                    setStatusMessage('이미 참여한 기록이 있습니다.');
-                }
-            } else {
-                setStatusMessage('참여 기록 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            const prev = lastPosRef.current;
+            if (!prev) {
+                lastPosRef.current = { x: event.clientX, y: event.clientY };
+                return;
             }
-        } else {
-            triggerCelebrate();
-            showToast(`획득: ${prizeResult}`, isWinner ? 'win' : 'lose');
-            setStatusMessage(isWinner ? '축하합니다! 당첨입니다.' : '아쉽지만 다음 기회에!');
-        }
 
-        setIsShuffling(false);
+            const dx = event.clientX - prev.x;
+            const dy = event.clientY - prev.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            setCharge((current) => Math.min(100, current + dist * 0.18));
+            lastPosRef.current = { x: event.clientX, y: event.clientY };
+        });
+    };
+
+    const handlePointerUp = async () => {
+        if (!isCharging) return;
+
+        setIsCharging(false);
+        lastPosRef.current = null;
+
+        if (charge >= 100 && !isPulling && !result) {
+            await doPull();
+        }
     };
 
     return (
@@ -299,191 +276,159 @@ const Event = ({ onBack, eventData, user }) => {
                     <span className="material-symbols-outlined text-[18px]">arrow_back</span>
                     돌아가기
                 </Button>
-                <Badge variant="secondary">PULL 이벤트</Badge>
+                <Badge variant="secondary">이벤트</Badge>
             </div>
 
             <Card className="event-page-card">
                 <CardHeader className="space-y-1">
-                    <CardTitle>당겨서 뽑기</CardTitle>
-                    <CardDescription>PULL 탭을 아래로 당겨 티켓을 확정하세요.</CardDescription>
+                    <CardTitle>이벤트</CardTitle>
+                    <CardDescription>패널을 드래그해서 게이지를 100% 채우면 자동 추첨됩니다.</CardDescription>
                 </CardHeader>
+
                 <CardContent className="space-y-4">
                     {currentEvent && !currentEvent.isActive && (
                         <div className="event-warning">현재 진행 중인 이벤트가 없습니다.</div>
                     )}
 
-                    {isLoadingEvent && (
-                        <div className="event-warning">이벤트 정보를 불러오는 중입니다...</div>
-                    )}
+                    {isLoadingEvent && <div className="event-warning">이벤트 정보를 불러오는 중입니다...</div>}
 
                     {!isLoadingEvent && !currentEvent && (
                         <div className="event-warning">이벤트 정보를 불러올 수 없습니다.</div>
                     )}
 
-                    <div className="event-pull-card-wrap">
-                        {showConfetti && (
-                            <div className="event-confetti-layer" aria-hidden>
-                                {confettiPieces.map((piece) => (
-                                    <span
-                                        key={piece.id}
-                                        className="event-confetti"
-                                        style={{
-                                            left: piece.left,
-                                            animationDelay: piece.delay,
-                                            animationDuration: piece.duration,
-                                            '--confetti-x': piece.x,
-                                            '--confetti-hue': piece.hue,
-                                        }}
-                                    />
-                                ))}
+                    <Card className="event-rate-card">
+                        <CardContent className="pt-4 space-y-3">
+                            <div className="text-sm font-medium">상품 정보</div>
+                            <div className="event-rate-badges">
+                                <Badge variant="outline">식사권</Badge>
+                                <Badge variant="outline">커피</Badge>
                             </div>
-                        )}
+                            <div className="text-xs text-muted-foreground">추첨 결과에 따라 당첨되지 않을 수 있습니다.</div>
+                        </CardContent>
+                    </Card>
 
-                        <div className={`event-pull-grid ${isShuffling ? 'is-shuffling' : ''}`}>
-                            {boxes.map((boxIndex) => {
-                                const isSelected = selectedIndex === boxIndex;
-                                const isRevealed = !!result && isSelected;
-                                const isLocked = selectedIndex !== null && !isSelected;
-                                const isDragging = activePullIndex === boxIndex;
-                                const pullOffset = pullOffsets[boxIndex] || 0;
-                                const canPull = !isPickLocked && activePullIndex === null;
-                                const progress = Math.min(100, Math.round((pullOffset / PULL_TRIGGER_DISTANCE) * 100));
-                                const meta = BOARDING_META[boxIndex];
-
-                                return (
-                                    <div
-                                        key={boxIndex}
-                                        className={`event-pull-card ${isSelected ? 'is-selected' : ''} ${isLocked ? 'is-locked' : ''} ${isRevealed ? 'is-revealed' : ''} ${showConfetti && isSelected ? 'is-celebrating' : ''}`}
+                    <div className="event-pull-zone-wrap">
+                        <motion.div
+                            className={`event-pull-zone ${isCharging ? 'is-charging' : ''} ${result ? getToneClass(result.tier) : ''}`}
+                            onPointerDown={handlePointerDown}
+                            onPointerMove={handlePointerMove}
+                            onPointerUp={handlePointerUp}
+                            onPointerCancel={handlePointerUp}
+                            animate={{ scale: isCharging ? 0.995 : 1 }}
+                            transition={{ duration: 0.12 }}
+                        >
+                            <AnimatePresence>
+                                {(isCharging || isPulling) && (
+                                    <motion.div
+                                        className="event-energy-aura"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
                                     >
-                                        <div className="event-ticket-viewport">
-                                            <div
-                                                className={`event-ticket ${isRevealed ? 'is-result' : ''}`}
-                                                style={{ '--pull-offset': `${pullOffset}px` }}
-                                            >
-                                                <div className="event-ticket-topline">
-                                                    <span className="event-airline">SPACE AIRLINES</span>
-                                                    <strong className="event-flight-no">{meta.flight}</strong>
-                                                </div>
+                                        <motion.div
+                                            className="event-energy-orb"
+                                            animate={{
+                                                scale: [0.9, 1.06, 0.95],
+                                                rotate: [0, 12, -8, 0],
+                                            }}
+                                            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
-                                                <div className="event-ticket-route">
-                                                    <div className="event-route-node">
-                                                        <em>FROM</em>
-                                                        <strong>ICN</strong>
-                                                    </div>
-                                                    <span className="material-symbols-outlined event-flight-icon">flight_takeoff</span>
-                                                    <div className="event-route-node to">
-                                                        <em>TO</em>
-                                                        <strong>LUCK</strong>
-                                                    </div>
-                                                </div>
+                            <div className="event-pull-content">
+                                <div className="event-pull-title">
+                                    {result ? '결과가 확정되었습니다' : isPulling ? '추첨 중...' : '문질문질 해서 채우기'}
+                                </div>
 
-                                                <div className="event-ticket-code">BOARDING PASS</div>
-
-                                                <Separator className="event-ticket-separator" />
-
-                                                <div className="event-ticket-meta-grid">
-                                                    <div className="event-meta-item">
-                                                        <em>GATE</em>
-                                                        <strong>{meta.gate}</strong>
-                                                    </div>
-                                                    <div className="event-meta-item">
-                                                        <em>SEAT</em>
-                                                        <strong>{meta.seat}</strong>
-                                                    </div>
-                                                    <div className="event-meta-item">
-                                                        <em>ZONE</em>
-                                                        <strong>{meta.zone}</strong>
-                                                    </div>
-                                                    <div className="event-meta-item">
-                                                        <em>TERM</em>
-                                                        <strong>{meta.terminal}</strong>
-                                                    </div>
-                                                    <div className="event-meta-item">
-                                                        <em>BOARD</em>
-                                                        <strong>{meta.board}</strong>
-                                                    </div>
-                                                </div>
-
-                                                <div className="event-ticket-perforation" aria-hidden />
-
-                                                <div className="event-ticket-body">
-                                                    {isRevealed ? (
-                                                        <span className="event-ticket-prize">{result}</span>
-                                                    ) : (
-                                                        <span className="event-ticket-hint">탭을 아래로 당겨 티켓을 발권하세요</span>
-                                                    )}
-                                                </div>
-
-                                                <div className="event-ticket-barcode" aria-hidden>
-                                                    <span />
-                                                    <span />
-                                                    <span />
-                                                    <span />
-                                                    <span />
-                                                    <span />
-                                                    <span />
-                                                    <span />
-                                                    <span />
-                                                    <span />
-                                                    <span />
-                                                    <span />
-                                                </div>
-                                            </div>
+                                {!result && (
+                                    <motion.div
+                                        className="event-energy-card"
+                                        animate={
+                                            isPulling
+                                                ? { y: [0, -6, 0], rotate: [0, 1.5, -1.5, 0] }
+                                                : isCharging
+                                                  ? { y: [0, -2, 0] }
+                                                  : { y: 0 }
+                                        }
+                                        transition={
+                                            isPulling
+                                                ? { duration: 0.6, repeat: Infinity, ease: 'easeInOut' }
+                                                : isCharging
+                                                  ? { duration: 0.35, repeat: Infinity, ease: 'easeInOut' }
+                                                  : { duration: 0.2 }
+                                        }
+                                    >
+                                        <div className="event-energy-label">이벤트 에너지</div>
+                                        <div className="event-progress-track">
+                                            <span className="event-progress-fill" style={{ width: `${Math.min(100, charge)}%` }} />
                                         </div>
+                                        <div className="event-progress-text">{Math.round(charge)}%</div>
+                                        <div className="event-energy-hint">100%가 되면 자동 추첨됩니다.</div>
+                                    </motion.div>
+                                )}
 
-                                        <button
-                                            type="button"
-                                            className={`event-pull-handle ${isDragging ? 'is-dragging' : ''}`}
-                                            onPointerDown={(event) => handlePullStart(boxIndex, event)}
-                                            disabled={!canPull}
-                                            aria-label={`티켓 ${boxIndex + 1} 당겨서 뽑기`}
+                                <AnimatePresence>
+                                    {result && (
+                                        <motion.div
+                                            className={`event-result-card ${getToneClass(result.tier)}`}
+                                            initial={{ opacity: 0, scale: 0.9, y: 12 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                                            transition={{ duration: 0.28, ease: 'easeOut' }}
                                         >
-                                            <span className="event-pull-label">PULL</span>
-                                            <span className="material-symbols-outlined">south</span>
-                                        </button>
+                                            <div className="event-result-top">
+                                                <Badge variant="outline" className="event-result-badge">
+                                                    {result.tier === 'meal'
+                                                        ? '식사권'
+                                                        : result.tier === 'coffee'
+                                                          ? '커피'
+                                                          : '다음 기회'}
+                                                </Badge>
+                                                <strong className="event-result-name">{result.label}</strong>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
 
-                                        <div className="event-pull-meter">
-                                            <div className="event-pull-meter-fill" style={{ width: `${progress}%` }} />
-                                        </div>
-                                        <div className="event-box-footer">CARD {boxIndex + 1}</div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                            {!result && (
+                                <div className="event-pull-footnote">
+                                    {isPulling ? '연출 중...' : '패널을 드래그해서 게이지를 채우세요'}
+                                </div>
+                            )}
+                        </motion.div>
                     </div>
 
                     <Separator />
 
-                    <div className="event-status">
-                        {isShuffling && <span>찰칵! 결과를 확정하고 있어요…</span>}
-                        {!isShuffling && result && (
-                            <div className="event-result-banner">
-                                <strong>당첨 결과:</strong> {result}
-                            </div>
-                        )}
-                        {!isShuffling && statusMessage && (
-                            <div className="event-status-message">{statusMessage}</div>
-                        )}
-                    </div>
+                    <div className="event-status">{statusMessage}</div>
 
                     <div className="event-actions">
-                        <Button
-                            variant="outline"
-                            disabled={!!result || isPickLocked}
-                            onClick={resetPullOffsets}
-                        >
-                            다시 뽑기
+                        <Button variant="outline" onClick={resetCharge} disabled={isCharging || isPulling || !!result}>
+                            리셋
                         </Button>
-                        <span className="event-footnote">참여는 이벤트당 1회로 제한됩니다.</span>
+                        <span className="event-footnote">사번별 이벤트 1회 참여 (이벤트 변경 시 초기화)</span>
                     </div>
                 </CardContent>
             </Card>
 
-            {toastMessage && (
-                <div className={`event-toast ${toastTone === 'win' ? 'is-win' : ''}`} role="status">
-                    {toastMessage}
-                </div>
-            )}
+            <AnimatePresence>
+                {toastMessage && (
+                    <motion.div
+                        key="event-toast"
+                        className={`event-toast ${toastTone === 'win' ? 'is-win' : ''}`}
+                        role="status"
+                        initial={{ opacity: 0, y: 8, x: '-50%' }}
+                        animate={{ opacity: 1, y: 0, x: '-50%' }}
+                        exit={{ opacity: 0, y: 8, x: '-50%' }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        {toastMessage}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

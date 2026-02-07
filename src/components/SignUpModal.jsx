@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { register, checkNicknameAvailability } from '../utils/auth';
-import { generateProfileIconWithRetry } from '../utils/huggingfaceService';
+import { generateTemplateAvatar } from '../utils/avatarTemplateService';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
@@ -233,7 +233,12 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
         setError('');
 
         try {
-            const iconResult = await generateProfileIconWithRetry(personality);
+            const iconResult = await generateTemplateAvatar({
+                personality,
+                gender,
+                nickname,
+                employeeId
+            });
 
             let profileIconUrl = null;
             let profileIconPrompt = null;
@@ -286,8 +291,8 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
                         <div>
                             <CardTitle>{STEP_TITLES[step]}</CardTitle>
                             {step === 1 && <CardDescription>기본 정보를 입력해주세요</CardDescription>}
-                            {step === 2 && <CardDescription>성향 기반으로 프로필 아이콘을 생성합니다</CardDescription>}
-                            {step === 3 && <CardDescription>AI 이미지 생성 중입니다</CardDescription>}
+                            {step === 2 && <CardDescription>성별, 성향, 사번 정보를 반영해 1인 캐릭터 프로필 이미지를 생성합니다</CardDescription>}
+                            {step === 3 && <CardDescription>프로필 이미지 생성 중입니다</CardDescription>}
                             {step === 4 && <CardDescription>이제 로그인해서 시작하세요</CardDescription>}
                         </div>
                         {step !== 3 && (
@@ -441,7 +446,7 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
                                     progress_activity
                                 </span>
                             </div>
-                            <h3 className="text-lg font-semibold">가상의 인물을 생성중입니다...</h3>
+                            <h3 className="text-lg font-semibold">캐릭터 아바타를 생성중입니다...</h3>
                             <p className="text-sm text-muted-foreground">
                                 성향을 분석해 프로필 아이콘을 만들고 있습니다.
                             </p>
