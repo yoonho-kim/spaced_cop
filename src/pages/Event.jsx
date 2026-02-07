@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import {
     addEventEntry,
+    getEventEntries,
     getEventEntryForEmployee,
     getEventKey,
     getEventSettings,
@@ -50,6 +51,8 @@ const Event = ({ onBack, eventData, user }) => {
     const [currentEvent, setCurrentEvent] = useState(eventData || null);
     const [isLoadingEvent, setIsLoadingEvent] = useState(!eventData);
     const [isCheckingEntry, setIsCheckingEntry] = useState(false);
+    const [winnerEntries, setWinnerEntries] = useState([]);
+    const [isLoadingWinners, setIsLoadingWinners] = useState(false);
 
     const [toastMessage, setToastMessage] = useState('');
     const [toastTone, setToastTone] = useState('neutral');
@@ -83,13 +86,19 @@ const Event = ({ onBack, eventData, user }) => {
         }, 2400);
     }, []);
 
-    const resetCharge = useCallback(() => {
-        if (isPulling || !!result) return;
-        setCharge(0);
-        setIsCharging(false);
-        lastPosRef.current = null;
-        setStatusMessage('패널을 문질러 게이지를 100% 채우세요.');
-    }, [isPulling, result]);
+    const loadWinners = useCallback(async () => {
+        if (!eventKey) {
+            setWinnerEntries([]);
+            setIsLoadingWinners(false);
+            return;
+        }
+
+        setIsLoadingWinners(true);
+        const entries = await getEventEntries(eventKey);
+        const winners = entries.filter((entry) => entry.isWinner);
+        setWinnerEntries(winners);
+        setIsLoadingWinners(false);
+    }, [eventKey]);
 
     const doPull = useCallback(async () => {
         if (isLocked || isPulling) return;
@@ -141,10 +150,11 @@ const Event = ({ onBack, eventData, user }) => {
                   : '이번엔 아쉽지만 다음 기회에 도전해주세요.'
         );
         showToast(`결과: ${picked.label}`, picked.isWinner ? 'win' : 'lose');
+        await loadWinners();
 
         setIsPulling(false);
         setIsCharging(false);
-    }, [employeeId, eventKey, isLocked, isPulling, nickname, showToast]);
+    }, [employeeId, eventKey, isLocked, isPulling, loadWinners, nickname, showToast]);
 
     useEffect(() => {
         let isMounted = true;
@@ -203,6 +213,10 @@ const Event = ({ onBack, eventData, user }) => {
             isMounted = false;
         };
     }, [eventKey, employeeId]);
+
+    useEffect(() => {
+        loadWinners();
+    }, [loadWinners]);
 
     useEffect(() => {
         if (user && !employeeId && !hasAlertedRef.current) {
@@ -267,6 +281,17 @@ const Event = ({ onBack, eventData, user }) => {
         if (charge >= 100 && !isPulling && !result) {
             await doPull();
         }
+    };
+
+    const formatWinnerTime = (timestamp) => {
+        if (!timestamp) return '-';
+        return new Date(timestamp).toLocaleString('ko-KR', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        });
     };
 
     return (
@@ -405,12 +430,35 @@ const Event = ({ onBack, eventData, user }) => {
 
                     <div className="event-status">{statusMessage}</div>
 
-                    <div className="event-actions">
-                        <Button variant="outline" onClick={resetCharge} disabled={isCharging || isPulling || !!result}>
-                            리셋
-                        </Button>
-                        <span className="event-footnote">사번별 이벤트 1회 참여 (이벤트 변경 시 초기화)</span>
-                    </div>
+                    <Card className="event-winners-card">
+                        <CardContent className="pt-4">
+                            <div className="event-winners-header">
+                                <div className="text-sm font-medium">당첨자 현황</div>
+                                <span className="event-footnote">사번별 이벤트 1회 참여</span>
+                            </div>
+
+                            {isLoadingWinners ? (
+                                <div className="event-winners-empty">당첨자 정보를 불러오는 중입니다...</div>
+                            ) : winnerEntries.length === 0 ? (
+                                <div className="event-winners-empty">현재까지 당첨자가 없습니다.</div>
+                            ) : (
+                                <div className="event-winners-list">
+                                    {winnerEntries.map((entry) => (
+                                        <div key={entry.id} className="event-winner-item">
+                                            <div className="event-winner-main">
+                                                <strong>{entry.nickname || '익명'}</strong>
+                                                <span>사번: {entry.employeeId || '-'}</span>
+                                            </div>
+                                            <div className="event-winner-sub">
+                                                <span>{entry.result}</span>
+                                                <span>{formatWinnerTime(entry.createdAt)}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </CardContent>
             </Card>
 

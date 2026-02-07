@@ -19,8 +19,7 @@ export default async function handler(request, response) {
         return response.status(200).json({ status: 'ok', message: 'Hugging Face Proxy is running' });
     }
 
-    // Use router endpoint as api-inference is deprecated
-    const MODEL_URL = "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0";
+    const DEFAULT_MODEL = 'stabilityai/stable-diffusion-xl-base-1.0';
     const API_KEY = process.env.VITE_HUGGINGFACE_API_KEY;
 
     if (request.method !== 'POST') {
@@ -31,13 +30,20 @@ export default async function handler(request, response) {
     }
 
     try {
+        const requestBody = (request.body && typeof request.body === 'object') ? request.body : {};
+        const requestedModel = typeof requestBody.model === 'string' ? requestBody.model.trim() : '';
+        const isValidModelId = /^[\w.-]+\/[\w.-]+$/.test(requestedModel);
+        const modelId = isValidModelId ? requestedModel : DEFAULT_MODEL;
+        const MODEL_URL = `https://router.huggingface.co/hf-inference/models/${modelId}`;
+        const { model, ...forwardBody } = requestBody;
+
         const hfResponse = await fetch(MODEL_URL, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${API_KEY}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(request.body),
+            body: JSON.stringify(forwardBody),
         });
 
         if (!hfResponse.ok) {

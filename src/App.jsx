@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { getCurrentUser, isAuthenticated } from './utils/auth';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
+import { getCurrentUser } from './utils/auth';
 import { initializeStorage } from './utils/storage';
-import Login from './pages/Login';
-import LoadingPage from './pages/LoadingPage';
-import MainLayout from './pages/MainLayout';
 import './index.css';
+
+const Login = React.lazy(() => import('./pages/Login'));
+const LoadingPage = React.lazy(() => import('./pages/LoadingPage'));
+const MainLayout = React.lazy(() => import('./pages/MainLayout'));
 
 function App() {
   const [user, setUser] = useState(null);
@@ -80,17 +81,33 @@ function App() {
 
   // Show loading page during transition
   if (showLoadingPage) {
-    return <LoadingPage onComplete={handleLoadingComplete} />;
+    return (
+      <Suspense fallback={null}>
+        <LoadingPage onComplete={handleLoadingComplete} />
+      </Suspense>
+    );
   }
 
   return (
-    <>
+    <Suspense
+      fallback={(
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          backgroundColor: '#000'
+        }}>
+          <div className="loading"></div>
+        </div>
+      )}
+    >
       {!user ? (
         <Login onLogin={handleLogin} />
       ) : (
         <MainLayout user={user} onLogout={handleLogout} />
       )}
-    </>
+    </Suspense>
   );
 }
 

@@ -1,48 +1,47 @@
 /**
  * Hugging Face Inference API Service
- * Stable Diffusion XL을 사용한 프로필 아이콘 생성
+ * 캐릭터 프로필 아이콘 생성
  */
 
 const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
 const MODEL_URL = '/api/huggingface';
 
-// 성향 질문 → AI 프롬프트 매핑
+const MODEL_CANDIDATES = [
+    'Lykon/dreamshaper-xl-lightning',
+    'stabilityai/stable-diffusion-xl-base-1.0'
+];
+
+// 성향 질문 → 프롬프트 매핑
 const PERSONALITY_MAPPINGS = {
-    // Q1: 좋아하는 시간대 → 색감
     time: {
         morning: { colors: 'warm yellow and orange tones', mood: 'bright and energetic' },
         afternoon: { colors: 'soft green and beige tones', mood: 'calm and relaxed' },
         evening: { colors: 'purple and pink gradient', mood: 'emotional and dreamy' },
         night: { colors: 'deep navy blue and black', mood: 'mysterious and quiet' }
     },
-    // Q2: 느낌 → 형태/질감
     feeling: {
         citrus: { style: 'vibrant and crisp details', texture: 'fresh and zesty' },
         chocolate: { style: 'soft organic lines', texture: 'warm and smooth' },
         mint: { style: 'minimal clean aesthetic', texture: 'cool and sharp' }
     },
-    // Q3: 드림 하우스 → 배경
     place: {
         city: { background: 'abstract modern city skyline', atmosphere: 'urban and sophisticated' },
         forest: { background: 'stylized nature with lush trees', atmosphere: 'peaceful and natural' },
         beach: { background: 'gentle ocean waves and sunny beach', atmosphere: 'refreshing and sunny' },
         space: { background: 'magic cosmic nebula and stars', atmosphere: 'infinite and wondrous' }
     },
-    // Q4: 영혼 동물 → 인물 특징
     animal: {
         cat: { trait: 'elegant and independent look', vibe: 'graceful' },
         dog: { trait: 'friendly and active energetic look', vibe: 'cheerful' },
         owl: { trait: 'wise and mysterious calm look', vibe: 'thoughtful' },
         dolphin: { trait: 'flexible and social outgoing look', vibe: 'playful' }
     },
-    // Q5: 초능력 → 시각적 효과
     superpower: {
         teleport: { effect: 'dynamic particles and motion blur', energy: 'high energy' },
         invisible: { effect: 'ethereal transparency and subtle glows', energy: 'mystical' },
         mindread: { effect: 'deep thoughtful gaze with aura', energy: 'spiritual' },
         fly: { effect: 'lightness and wind wisps', energy: 'dreamy' }
     },
-    // Q6: 최고 간식 → 부가 특징
     snack: {
         coffee: { detail: 'concentrated and focused expression', finish: 'clean and modern' },
         chips: { detail: 'joyful and fun expression', finish: 'bright and lively' },
@@ -54,18 +53,18 @@ const PERSONALITY_MAPPINGS = {
 const GENDER_MAPPINGS = {
     male: {
         subject: 'adult male office worker',
-        genderCue: 'male, man, masculine facial features',
-        negativeCue: 'female, woman, girl, feminine face, long eyelashes with heavy makeup'
+        cue: 'male, man, masculine facial features',
+        negative: 'female, woman, girl, feminine face, heavy makeup'
     },
     female: {
         subject: 'adult female office worker',
-        genderCue: 'female, woman, feminine facial features',
-        negativeCue: 'male, man, boy, masculine face, beard stubble'
+        cue: 'female, woman, feminine facial features',
+        negative: 'male, man, boy, masculine jawline, beard stubble'
     },
     other: {
         subject: 'adult office worker',
-        genderCue: 'androgynous adult person',
-        negativeCue: ''
+        cue: 'androgynous adult person',
+        negative: ''
     }
 };
 
@@ -108,185 +107,75 @@ const buildGenerationSpec = (profileInput, strictness = 0) => {
     const a = PERSONALITY_MAPPINGS.animal[p.animal] || PERSONALITY_MAPPINGS.animal.cat;
     const s = PERSONALITY_MAPPINGS.superpower[p.superpower] || PERSONALITY_MAPPINGS.superpower.teleport;
     const sn = PERSONALITY_MAPPINGS.snack[p.snack] || PERSONALITY_MAPPINGS.snack.coffee;
-
-    const genderGuide = GENDER_MAPPINGS[gender] || {
-        subject: 'adult office worker',
-        genderCue: 'adult person',
-        negativeCue: ''
-    };
+    const genderGuide = GENDER_MAPPINGS[gender] || GENDER_MAPPINGS.other;
 
     const safeNickname = toSafeText(nickname);
     const safeEmployeeId = toSafeText(employeeId);
     const identityHint = [safeEmployeeId ? `employee-${safeEmployeeId}` : '', safeNickname ? `name-${safeNickname}` : '']
         .filter(Boolean)
         .join(', ');
-    const repeatedGenderCue = Array.from({ length: Math.max(1, strictness + 1) }, () => genderGuide.genderCue).join(', ');
-    const repeatedSingleCutCue = Array.from(
-        { length: Math.max(2, strictness + 2) },
-        () => 'single character, one person only, one frame, no duplicate face'
-    ).join(', ');
 
-    const prompt = `Disney-Pixar style character portrait, cinematic and emotional.
-${repeatedSingleCutCue}.
-head-and-shoulders close-up composition, centered, facing camera, face occupies most of frame.
-subject: ${genderGuide.subject}, ${repeatedGenderCue}.
-appearance: ${a.trait}, ${sn.detail}, subtle ${f.texture} impression, ${f.style}, ${sn.finish}.
-mood: ${t.mood}, color tone: ${t.colors}, energy hint: ${s.energy}, minimal background tone inspired by ${pl.atmosphere} and ${pl.background}.
-style: non-photorealistic, disney-inspired 3d character illustration, expressive eyes, soft cinematic shading, high quality character art.
+    const repeatSingle = Array.from({ length: Math.max(2, strictness + 2) }, () => 'single character, one person only, one face only, one frame only').join(', ');
+    const repeatGender = Array.from({ length: Math.max(1, strictness + 1) }, () => genderGuide.cue).join(', ');
+
+    const prompt = `Disney Pixar inspired high-quality character portrait for profile icon.
+${repeatSingle}.
+bust shot composition, centered portrait, front-facing, clean background, no text.
+subject: ${genderGuide.subject}, ${repeatGender}.
+personality cues: ${a.trait}, ${sn.detail}, ${f.style}, ${f.texture}, ${s.effect}.
+mood and palette: ${t.mood}, ${t.colors}, background atmosphere inspired by ${pl.atmosphere} and ${pl.background}.
+style: polished 3d character illustration, expressive face, cinematic soft lighting, detailed and consistent.
 identity hint: ${identityHint || 'employee-default'}.
-strict rule: exactly one face, no second person, no duplicate face, no collage, no split layout, no comic panel grid, no character sheet.`
+strict rule: exactly one face in image, no collage, no split panel, no grid, no duplicate character.`
         .replace(/\s+/g, ' ')
         .trim();
 
-    const negativePromptItems = [
-        'painting',
-        '3d render',
-        'cgi',
-        'photorealistic',
+    const negativePrompt = [
         'real photo',
-        'id photo',
+        'photorealistic',
+        'painting',
+        'sketch',
+        'chibi',
+        'flat icon',
+        'emoji',
         'grid',
         'collage',
         'mosaic',
         '2x2',
-        'four panel',
+        '3x3',
         '4-panel',
         'quadrants',
-        'comic panels',
-        'storyboard',
-        'contact sheet',
-        'diptych',
-        'triptych',
-        'tiled layout',
-        'repeated portrait',
-        'mirrored faces',
         'sprite sheet',
         'sticker sheet',
-        'avatar sheet',
-        'icon set',
-        'multiple heads',
-        'many faces',
+        'contact sheet',
+        'character sheet',
         'split screen',
-        'multiple images',
-        'several people',
+        'multiple portraits',
+        'multiple people',
         'group',
         'crowd',
         'couple',
-        'family',
-        'friends',
-        'two faces',
         'duplicate face',
-        'extra face',
-        'character sheet',
-        'watermark',
-        'signature',
+        'two faces',
+        'many faces',
         'text',
         'logo',
-        'mascot logo',
-        'chibi',
-        'flat icon sheet',
-        'deformed face',
-        'bad anatomy',
+        'watermark',
         'blurry',
         'low quality',
-        'out of frame',
-        'cropped head'
-    ];
-
-    if (genderGuide.negativeCue) {
-        negativePromptItems.push(genderGuide.negativeCue);
-    }
+        'bad anatomy',
+        'deformed face',
+        genderGuide.negative
+    ].filter(Boolean).join(', ');
 
     return {
         prompt,
-        negativePrompt: negativePromptItems.join(', '),
+        negativePrompt,
         seed: buildIdentitySeed({ employeeId, nickname }) + strictness * 101,
-        guidanceScale: Math.min(12, 10 + strictness * 0.6)
+        guidanceScale: Math.min(13, 10.5 + strictness * 0.7)
     };
 };
 
-/**
- * 성향 데이터를 기반으로 AI 프롬프트 생성
- * 입력: personality 또는 { personality, gender, nickname, employeeId }
- */
-export const generatePrompt = (profileInput) => {
-    return buildGenerationSpec(profileInput).prompt;
-};
-
-/**
- * 프로필 아이콘 생성
- * @param {Object} profileInput - personality 또는 { personality, gender, nickname, employeeId }
- * @returns {Promise<{ success: boolean, imageData?: string, prompt?: string, error?: string }>}
- */
-export const generateProfileIcon = async (profileInput, options = {}) => {
-    try {
-        const strictness = Number(options.strictness || 0);
-        const spec = buildGenerationSpec(profileInput, strictness);
-
-        const response = await fetch(MODEL_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                inputs: spec.prompt,
-                parameters: {
-                    negative_prompt: spec.negativePrompt,
-                    num_inference_steps: 50,
-                    guidance_scale: spec.guidanceScale,
-                    num_images: 1,
-                    width: 512,
-                    height: 512,
-                    seed: spec.seed
-                }
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Hugging Face API Error:', errorText);
-
-            // 모델 로딩 중인 경우
-            if (response.status === 503) {
-                return {
-                    success: false,
-                    error: '모델을 불러오는 중입니다. 잠시 후 다시 시도해주세요.',
-                    isLoading: true
-                };
-            }
-
-            return {
-                success: false,
-                error: `아이콘 생성 실패: ${response.status}`
-            };
-        }
-
-        // 응답은 이미지 blob
-        const imageBlob = await response.blob();
-        const processedBlob = await enforceSingleCharacterPortrait(imageBlob);
-
-        // Blob을 Base64로 변환
-        const base64 = await blobToBase64(processedBlob);
-
-        return {
-            success: true,
-            imageData: base64,
-            prompt: spec.prompt
-        };
-
-    } catch (error) {
-        console.error('Error generating profile icon:', error);
-        return {
-            success: false,
-            error: error.message || '아이콘 생성 중 오류가 발생했습니다.'
-        };
-    }
-};
-
-/**
- * Blob을 Base64 문자열로 변환
- */
 const blobToBase64 = (blob) => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -377,12 +266,11 @@ const calcGlobalAdjacentDiff = (data, width, height, axis) => {
 const detectGridCount = (data, width, height) => {
     const globalX = calcGlobalAdjacentDiff(data, width, height, 'x');
     const globalY = calcGlobalAdjacentDiff(data, width, height, 'y');
-    const candidates = [3, 2, 4];
+    const candidates = [2, 3, 4];
 
     for (const n of candidates) {
         const seamX = [];
         const seamY = [];
-
         for (let k = 1; k < n; k += 1) {
             seamX.push(calcAdjacentDiff(data, width, height, 'x', Math.round((width * k) / n)));
             seamY.push(calcAdjacentDiff(data, width, height, 'y', Math.round((height * k) / n)));
@@ -401,13 +289,27 @@ const detectGridCount = (data, width, height) => {
     return null;
 };
 
-const cropCenterCell = async (image, gridCount) => {
+const pickGridTile = (gridCount, seed) => {
+    if (gridCount % 2 === 1) {
+        const mid = Math.floor(gridCount / 2);
+        return { col: mid, row: mid };
+    }
+
+    const totalTiles = gridCount * gridCount;
+    const tileIndex = seed % totalTiles;
+    return {
+        row: Math.floor(tileIndex / gridCount),
+        col: tileIndex % gridCount
+    };
+};
+
+const cropGridTile = async (image, gridCount, tile) => {
     const sourceWidth = image.naturalWidth || image.width;
     const sourceHeight = image.naturalHeight || image.height;
-    const cropWidth = Math.round(sourceWidth / gridCount);
-    const cropHeight = Math.round(sourceHeight / gridCount);
-    const sourceX = Math.round(sourceWidth / 2 - cropWidth / 2);
-    const sourceY = Math.round(sourceHeight / 2 - cropHeight / 2);
+    const tileWidth = Math.round(sourceWidth / gridCount);
+    const tileHeight = Math.round(sourceHeight / gridCount);
+    const sourceX = tile.col * tileWidth;
+    const sourceY = tile.row * tileHeight;
 
     const canvas = document.createElement('canvas');
     canvas.width = sourceWidth;
@@ -419,8 +321,8 @@ const cropCenterCell = async (image, gridCount) => {
         image,
         sourceX,
         sourceY,
-        cropWidth,
-        cropHeight,
+        tileWidth,
+        tileHeight,
         0,
         0,
         sourceWidth,
@@ -430,10 +332,10 @@ const cropCenterCell = async (image, gridCount) => {
     return canvasToBlob(canvas);
 };
 
-const cropCenterFocus = async (image, ratio = 0.42, yBias = -0.05) => {
+const cropCenterFocus = async (image, ratio = 0.84, yBias = -0.05) => {
     const sourceWidth = image.naturalWidth || image.width;
     const sourceHeight = image.naturalHeight || image.height;
-    const safeRatio = Math.max(0.3, Math.min(1, ratio));
+    const safeRatio = Math.max(0.55, Math.min(1, ratio));
     const cropWidth = Math.round(sourceWidth * safeRatio);
     const cropHeight = Math.round(sourceHeight * safeRatio);
     const sourceX = Math.round(sourceWidth / 2 - cropWidth / 2);
@@ -461,11 +363,9 @@ const cropCenterFocus = async (image, ratio = 0.42, yBias = -0.05) => {
     return canvasToBlob(canvas);
 };
 
-const enforceSingleCharacterPortrait = async (imageBlob) => {
+const enforceSingleCharacterPortrait = async (imageBlob, seed = 1) => {
     try {
         const originalImage = await loadImageFromBlob(imageBlob);
-        let workingImage = originalImage;
-        let workingBlob = imageBlob;
         const width = originalImage.naturalWidth || originalImage.width;
         const height = originalImage.naturalHeight || originalImage.height;
 
@@ -479,51 +379,138 @@ const enforceSingleCharacterPortrait = async (imageBlob) => {
         const imageData = ctx.getImageData(0, 0, width, height);
         const gridCount = detectGridCount(imageData.data, width, height);
 
+        let workingBlob = imageBlob;
+        let workingImage = originalImage;
+
         if (gridCount) {
-            const croppedByGrid = await cropCenterCell(originalImage, gridCount);
-            if (croppedByGrid) {
-                workingBlob = croppedByGrid;
-                workingImage = await loadImageFromBlob(croppedByGrid);
+            const tile = pickGridTile(gridCount, seed);
+            const croppedTile = await cropGridTile(originalImage, gridCount, tile);
+            if (croppedTile) {
+                workingBlob = croppedTile;
+                workingImage = await loadImageFromBlob(croppedTile);
             }
         }
 
-        // 분할 감지 여부와 무관하게 중앙 인물 한 컷으로 강제 포커스 크롭
-        const focused = await cropCenterFocus(
+        const focusedBlob = await cropCenterFocus(
             workingImage,
-            gridCount ? 0.9 : 0.42,
-            gridCount ? -0.03 : -0.05
+            gridCount ? 0.9 : 0.84,
+            gridCount ? -0.04 : -0.05
         );
-        return focused || workingBlob;
+
+        return focusedBlob || workingBlob;
     } catch (error) {
         console.warn('single portrait post-process skipped:', error);
         return imageBlob;
     }
 };
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 성향 데이터를 기반으로 AI 프롬프트 생성
+ * 입력: personality 또는 { personality, gender, nickname, employeeId }
+ */
+export const generatePrompt = (profileInput) => {
+    return buildGenerationSpec(profileInput).prompt;
+};
+
+/**
+ * 프로필 아이콘 생성
+ * @param {Object} profileInput - personality 또는 { personality, gender, nickname, employeeId }
+ * @returns {Promise<{ success: boolean, imageData?: string, prompt?: string, error?: string }>}
+ */
+export const generateProfileIcon = async (profileInput, options = {}) => {
+    try {
+        const strictness = Number(options.strictness || 0);
+        const model = options.model || MODEL_CANDIDATES[0];
+        const spec = buildGenerationSpec(profileInput, strictness);
+
+        const response = await fetch(MODEL_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model,
+                inputs: spec.prompt,
+                parameters: {
+                    negative_prompt: spec.negativePrompt,
+                    num_inference_steps: 50,
+                    guidance_scale: spec.guidanceScale,
+                    width: 512,
+                    height: 512,
+                    seed: spec.seed
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Hugging Face API Error:', errorText);
+
+            if (response.status === 503) {
+                return {
+                    success: false,
+                    error: '모델을 불러오는 중입니다. 잠시 후 다시 시도해주세요.',
+                    status: 503,
+                    isLoading: true
+                };
+            }
+
+            return {
+                success: false,
+                error: `아이콘 생성 실패: ${response.status}`,
+                status: response.status
+            };
+        }
+
+        const imageBlob = await response.blob();
+        const processedBlob = await enforceSingleCharacterPortrait(imageBlob, spec.seed);
+        const base64 = await blobToBase64(processedBlob);
+
+        return {
+            success: true,
+            imageData: base64,
+            prompt: `${spec.prompt}\nmodel:${model}`
+        };
+    } catch (error) {
+        console.error('Error generating profile icon:', error);
+        return {
+            success: false,
+            error: error.message || '아이콘 생성 중 오류가 발생했습니다.'
+        };
+    }
+};
+
 /**
  * 재시도 로직이 포함된 아이콘 생성
- * 모델 로딩 시간을 고려하여 최대 3회 재시도
  */
-export const generateProfileIconWithRetry = async (profileInput, maxRetries = 3) => {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const result = await generateProfileIcon(profileInput, { strictness: attempt - 1 });
+export const generateProfileIconWithRetry = async (profileInput, maxRetries = 5) => {
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
+        const model = MODEL_CANDIDATES[(attempt - 1) % MODEL_CANDIDATES.length];
+        const result = await generateProfileIcon(profileInput, {
+            strictness: attempt - 1,
+            model
+        });
 
         if (result.success) {
             return result;
         }
 
+        lastError = result;
+
         if (result.isLoading && attempt < maxRetries) {
-            // 모델 로딩 중이면 대기 후 재시도
-            await new Promise(resolve => setTimeout(resolve, 5000 * attempt));
+            await sleep(2500 * attempt);
             continue;
         }
-
-        return result;
     }
 
     return {
         success: false,
-        error: '아이콘 생성에 실패했습니다. 나중에 다시 시도해주세요.'
+        error: lastError?.error || '아이콘 생성에 실패했습니다. 잠시 후 다시 시도해주세요.'
     };
 };
 

@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { logout, isAdmin } from '../utils/auth';
 import { addPost, getEventSettings } from '../utils/storage';
-import { generatePostFromImage } from '../utils/openaiService';
-import Feed from './Feed';
-import MeetingRooms from './MeetingRooms';
-import Volunteer from './Volunteer';
-import News from './News';
-import Event from './Event';
-import Admin from './Admin';
-import Statistics from './Statistics';
 import Modal from '../components/Modal';
 import './MainLayout.css';
+
+const Feed = React.lazy(() => import('./Feed'));
+const MeetingRooms = React.lazy(() => import('./MeetingRooms'));
+const Volunteer = React.lazy(() => import('./Volunteer'));
+const News = React.lazy(() => import('./News'));
+const Event = React.lazy(() => import('./Event'));
+const Admin = React.lazy(() => import('./Admin'));
+const Statistics = React.lazy(() => import('./Statistics'));
 
 const MainLayout = ({ user, onLogout }) => {
     const [activeTab, setActiveTab] = useState('feed');
@@ -177,6 +177,7 @@ const MainLayout = ({ user, onLogout }) => {
         // Generate post using AI (이미지 미리보기는 표시하지 않음)
         setIsGenerating(true);
         try {
+            const { generatePostFromImage } = await import('../utils/openaiService');
             const generatedText = await generatePostFromImage(file);
             setNewPost(generatedText);
         } catch (error) {
@@ -337,14 +338,16 @@ const MainLayout = ({ user, onLogout }) => {
             </header>
 
             <main className="main-content" ref={mainContentRef}>
-                {ActiveComponent && (
-                    <ActiveComponent
-                        user={user}
-                        onNavigateToTab={setActiveTab}
-                        onBack={() => setActiveTab(previousTab)}
-                        eventData={eventPopup}
-                    />
-                )}
+                <Suspense fallback={<div style={{ padding: '16px', color: '#64748b', fontSize: '14px' }}>화면을 불러오는 중...</div>}>
+                    {ActiveComponent && (
+                        <ActiveComponent
+                            user={user}
+                            onNavigateToTab={setActiveTab}
+                            onBack={() => setActiveTab(previousTab)}
+                            eventData={eventPopup}
+                        />
+                    )}
+                </Suspense>
             </main>
 
             <nav className={`bottom-nav ${isNavVisible && !isEventPage ? '' : 'hidden'}`}>
@@ -526,7 +529,9 @@ const MainLayout = ({ user, onLogout }) => {
 
             {/* Statistics Modal */}
             {showStatistics && (
-                <Statistics onClose={() => setShowStatistics(false)} />
+                <Suspense fallback={null}>
+                    <Statistics onClose={() => setShowStatistics(false)} />
+                </Suspense>
             )}
         </div>
     );
