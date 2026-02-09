@@ -13,41 +13,53 @@ import {
 } from '../utils/storage';
 import './Event.css';
 
-const COFFEE_RATE = 5;
-const MEAL_RATE = 1;
+const WIN_RATE = 2;
+const PRIZE_LABEL = '키캡키링';
+const MISS_LABEL = '다음 기회에..';
+const wait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
 const pickPrize = () => {
     const roll = Math.random() * 100;
 
-    if (roll < MEAL_RATE) {
-        return { tier: 'meal', label: '식사권', isWinner: true };
-    }
-    if (roll < MEAL_RATE + COFFEE_RATE) {
-        return { tier: 'coffee', label: '커피', isWinner: true };
+    if (roll < WIN_RATE) {
+        return { tier: 'keycap', label: PRIZE_LABEL, isWinner: true };
     }
 
-    return { tier: 'miss', label: '다음 기회에', isWinner: false };
+    return { tier: 'miss', label: MISS_LABEL, isWinner: false };
 };
 
 const inferTier = (label, isWinner) => {
     if (!isWinner) return 'miss';
-    if (String(label || '').includes('식사')) return 'meal';
-    return 'coffee';
+
+    const normalizedLabel = String(label || '');
+    if (normalizedLabel.includes('키캡')) return 'keycap';
+    if (normalizedLabel.includes('식사')) return 'meal';
+    if (normalizedLabel.includes('커피')) return 'coffee';
+
+    return 'winner';
 };
 
 const getToneClass = (tier) => {
+    if (tier === 'keycap' || tier === 'winner') return 'event-tone-keycap';
     if (tier === 'meal') return 'event-tone-meal';
     if (tier === 'coffee') return 'event-tone-coffee';
     return 'event-tone-miss';
 };
 
+const getResultBadgeLabel = (tier, isWinner) => {
+    if (!isWinner || tier === 'miss') return '다음 기회';
+    if (tier === 'keycap') return PRIZE_LABEL;
+    if (tier === 'meal') return '식사권';
+    if (tier === 'coffee') return '커피';
+    return '당첨';
+};
+
 const Event = ({ onBack, eventData, user }) => {
-    const [charge, setCharge] = useState(0);
-    const [isCharging, setIsCharging] = useState(false);
     const [isPulling, setIsPulling] = useState(false);
+    const [pullPhase, setPullPhase] = useState('idle');
 
     const [result, setResult] = useState(null);
-    const [statusMessage, setStatusMessage] = useState('패널을 문질러 게이지를 100% 채우세요.');
+    const [statusMessage, setStatusMessage] = useState('카드를 클릭해 뽑기를 시작하세요.');
     const [currentEvent, setCurrentEvent] = useState(eventData || null);
     const [isLoadingEvent, setIsLoadingEvent] = useState(!eventData);
     const [isCheckingEntry, setIsCheckingEntry] = useState(false);
@@ -58,9 +70,10 @@ const Event = ({ onBack, eventData, user }) => {
     const [toastTone, setToastTone] = useState('neutral');
 
     const hasAlertedRef = useRef(false);
-    const lastPosRef = useRef(null);
-    const rafRef = useRef(null);
     const toastTimerRef = useRef(null);
+    const spinAudioRef = useRef(null);
+    const winAudioRef = useRef(null);
+    const loseAudioRef = useRef(null);
 
     const eventKey = currentEvent ? getEventKey(currentEvent) : null;
     const employeeId = user?.employeeId;
@@ -86,6 +99,30 @@ const Event = ({ onBack, eventData, user }) => {
         }, 2400);
     }, []);
 
+    const startSpinSound = useCallback(() => {
+        const spinAudio = spinAudioRef.current;
+        if (!spinAudio) return;
+
+        spinAudio.currentTime = 0;
+        spinAudio.play().catch(() => {});
+    }, []);
+
+    const stopSpinSound = useCallback(() => {
+        const spinAudio = spinAudioRef.current;
+        if (!spinAudio) return;
+
+        spinAudio.pause();
+        spinAudio.currentTime = 0;
+    }, []);
+
+    const playOneShot = useCallback((audioRef) => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+    }, []);
+
     const loadWinners = useCallback(async () => {
         if (!eventKey) {
             setWinnerEntries([]);
@@ -104,9 +141,18 @@ const Event = ({ onBack, eventData, user }) => {
         if (isLocked || isPulling) return;
 
         setIsPulling(true);
-        setStatusMessage('추첨 중...');
+        setPullPhase('spinning');
+        setStatusMessage('카드가 회전 중입니다...');
+        startSpinSound();
+        await wait(1600);
 
-        await new Promise((resolve) => window.setTimeout(resolve, 650));
+        setPullPhase('lightning');
+        setStatusMessage('번개 에너지를 모으는 중...');
+        await wait(540);
+
+        setPullPhase('revealing');
+        setStatusMessage('결과를 확인합니다...');
+        await wait(280);
 
         const picked = pickPrize();
 
@@ -120,6 +166,7 @@ const Event = ({ onBack, eventData, user }) => {
         });
 
         if (!saveResult.success) {
+            stopSpinSound();
             if (saveResult.error?.code === '23505') {
                 const existing = await getEventEntryForEmployee(eventKey, employeeId);
                 if (existing) {
@@ -128,33 +175,50 @@ const Event = ({ onBack, eventData, user }) => {
                         label: existing.result,
                         isWinner: !!existing.isWinner,
                     });
+                    setPullPhase('result');
                     setStatusMessage('이미 참여 완료되었습니다.');
                 } else {
+                    setPullPhase('idle');
                     setStatusMessage('이미 참여한 기록이 있습니다.');
                 }
             } else {
+                setPullPhase('idle');
                 setStatusMessage('참여 기록 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
             }
 
             setIsPulling(false);
-            setIsCharging(false);
             return;
         }
 
+        stopSpinSound();
+        setPullPhase('result');
         setResult(picked);
         setStatusMessage(
-            picked.tier === 'meal'
-                ? '축하합니다! 식사권 당첨입니다.'
-                : picked.tier === 'coffee'
-                  ? '축하합니다! 커피 당첨입니다.'
-                  : '이번엔 아쉽지만 다음 기회에 도전해주세요.'
+            picked.isWinner ? `축하합니다! ${PRIZE_LABEL} 당첨입니다.` : '이번엔 아쉽지만 다음 기회에 도전해주세요.'
         );
+
+        if (picked.isWinner) {
+            playOneShot(winAudioRef);
+        } else {
+            playOneShot(loseAudioRef);
+        }
+
         showToast(`결과: ${picked.label}`, picked.isWinner ? 'win' : 'lose');
         await loadWinners();
 
         setIsPulling(false);
-        setIsCharging(false);
-    }, [employeeId, eventKey, isLocked, isPulling, loadWinners, nickname, showToast]);
+    }, [
+        employeeId,
+        eventKey,
+        isLocked,
+        isPulling,
+        loadWinners,
+        nickname,
+        playOneShot,
+        showToast,
+        startSpinSound,
+        stopSpinSound,
+    ]);
 
     useEffect(() => {
         let isMounted = true;
@@ -200,7 +264,7 @@ const Event = ({ onBack, eventData, user }) => {
                     label: existing.result,
                     isWinner: !!existing.isWinner,
                 });
-                setCharge(100);
+                setPullPhase('result');
                 setStatusMessage('이미 참여 완료되었습니다.');
             }
 
@@ -227,60 +291,42 @@ const Event = ({ onBack, eventData, user }) => {
     }, [employeeId, onBack, user]);
 
     useEffect(() => {
-        if (charge >= 100 && isCharging && !isPulling && !result) {
-            const timer = window.setTimeout(() => {
-                doPull();
-            }, 120);
-            return () => window.clearTimeout(timer);
-        }
-        return undefined;
-    }, [charge, isCharging, isPulling, result, doPull]);
+        const spinAudio = new Audio('/sounds/lotto-spin.mp3');
+        spinAudio.loop = true;
+        spinAudio.volume = 0.42;
+        spinAudioRef.current = spinAudio;
 
-    useEffect(() => () => {
-        if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
-        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+        const winAudio = new Audio('/sounds/lotto-win.mp3');
+        winAudio.volume = 0.82;
+        winAudioRef.current = winAudio;
+
+        const loseAudio = new Audio('/sounds/lotto-lose.mp3');
+        loseAudio.volume = 0.74;
+        loseAudioRef.current = loseAudio;
+
+        return () => {
+            [spinAudioRef.current, winAudioRef.current, loseAudioRef.current].forEach((audio) => {
+                if (!audio) return;
+                audio.pause();
+                audio.currentTime = 0;
+            });
+        };
     }, []);
 
-    const handlePointerDown = (event) => {
-        if (isLocked) return;
+    useEffect(() => () => {
+        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+        stopSpinSound();
+    }, [stopSpinSound]);
 
-        event.currentTarget.setPointerCapture?.(event.pointerId);
-        setIsCharging(true);
-        lastPosRef.current = { x: event.clientX, y: event.clientY };
-        setStatusMessage('문질문질! 게이지를 채우는 중...');
-    };
+    const handleDrawClick = useCallback(() => {
+        if (isLocked || isPulling || result) return;
+        doPull();
+    }, [doPull, isLocked, isPulling, result]);
 
-    const handlePointerMove = (event) => {
-        if (!isCharging || isLocked) return;
-        if (rafRef.current) return;
-
-        rafRef.current = window.requestAnimationFrame(() => {
-            rafRef.current = null;
-
-            const prev = lastPosRef.current;
-            if (!prev) {
-                lastPosRef.current = { x: event.clientX, y: event.clientY };
-                return;
-            }
-
-            const dx = event.clientX - prev.x;
-            const dy = event.clientY - prev.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            setCharge((current) => Math.min(100, current + dist * 0.18));
-            lastPosRef.current = { x: event.clientX, y: event.clientY };
-        });
-    };
-
-    const handlePointerUp = async () => {
-        if (!isCharging) return;
-
-        setIsCharging(false);
-        lastPosRef.current = null;
-
-        if (charge >= 100 && !isPulling && !result) {
-            await doPull();
-        }
+    const handleDrawKeyDown = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        handleDrawClick();
     };
 
     const formatWinnerTime = (timestamp) => {
@@ -307,7 +353,7 @@ const Event = ({ onBack, eventData, user }) => {
             <Card className="event-page-card">
                 <CardHeader className="space-y-1">
                     <CardTitle>이벤트</CardTitle>
-                    <CardDescription>패널을 드래그해서 게이지를 100% 채우면 자동 추첨됩니다.</CardDescription>
+                    <CardDescription>카드를 클릭하면 회전 연출 후 자동으로 추첨됩니다.</CardDescription>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
@@ -325,8 +371,8 @@ const Event = ({ onBack, eventData, user }) => {
                         <CardContent className="pt-4 space-y-3">
                             <div className="text-sm font-medium">상품 정보</div>
                             <div className="event-rate-badges">
-                                <Badge variant="outline">식사권</Badge>
-                                <Badge variant="outline">커피</Badge>
+                                <Badge variant="outline">{PRIZE_LABEL}</Badge>
+                                <Badge variant="outline">당첨 확률 {WIN_RATE}%</Badge>
                             </div>
                             <div className="text-xs text-muted-foreground">추첨 결과에 따라 당첨되지 않을 수 있습니다.</div>
                         </CardContent>
@@ -334,16 +380,24 @@ const Event = ({ onBack, eventData, user }) => {
 
                     <div className="event-pull-zone-wrap">
                         <motion.div
-                            className={`event-pull-zone ${isCharging ? 'is-charging' : ''} ${result ? getToneClass(result.tier) : ''}`}
-                            onPointerDown={handlePointerDown}
-                            onPointerMove={handlePointerMove}
-                            onPointerUp={handlePointerUp}
-                            onPointerCancel={handlePointerUp}
-                            animate={{ scale: isCharging ? 0.995 : 1 }}
-                            transition={{ duration: 0.12 }}
+                            className={`event-pull-zone ${isPulling ? 'is-pulling' : ''} ${pullPhase === 'lightning' ? 'is-lightning' : ''} ${result ? getToneClass(result.tier) : ''}`}
+                            onClick={handleDrawClick}
+                            onKeyDown={handleDrawKeyDown}
+                            role="button"
+                            tabIndex={isLocked ? -1 : 0}
+                            aria-disabled={isLocked}
+                            animate={
+                                isPulling
+                                    ? {
+                                          scale: [1, 1.01, 0.995, 1],
+                                          rotate: [0, 0.2, -0.2, 0],
+                                      }
+                                    : { scale: 1, rotate: 0 }
+                            }
+                            transition={isPulling ? { duration: 0.52, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
                         >
                             <AnimatePresence>
-                                {(isCharging || isPulling) && (
+                                {isPulling && (
                                     <motion.div
                                         className="event-energy-aura"
                                         initial={{ opacity: 0 }}
@@ -353,66 +407,162 @@ const Event = ({ onBack, eventData, user }) => {
                                         <motion.div
                                             className="event-energy-orb"
                                             animate={{
-                                                scale: [0.9, 1.06, 0.95],
+                                                scale: pullPhase === 'lightning' ? [1, 1.2, 0.96] : [0.9, 1.06, 0.95],
                                                 rotate: [0, 12, -8, 0],
+                                                opacity: pullPhase === 'lightning' ? [0.3, 0.8, 0.22] : [0.22, 0.45, 0.24],
                                             }}
-                                            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                                            transition={{
+                                                duration: pullPhase === 'lightning' ? 0.35 : 1.2,
+                                                repeat: Infinity,
+                                                ease: 'easeInOut',
+                                            }}
                                         />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <AnimatePresence>
+                                {pullPhase === 'lightning' && (
+                                    <motion.div
+                                        className="event-lightning-layer"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                    >
+                                        <motion.div
+                                            className="event-lightning-flash"
+                                            animate={{ opacity: [0.08, 0.54, 0.12, 0.7, 0.14] }}
+                                            transition={{ duration: 0.5, repeat: Infinity }}
+                                        />
+                                        <motion.span
+                                            className="material-symbols-outlined event-lightning-icon bolt-one"
+                                            animate={{ scale: [0.8, 1.4, 0.9], rotate: [0, -18, 8] }}
+                                            transition={{ duration: 0.42, repeat: Infinity, ease: 'easeInOut' }}
+                                        >
+                                            bolt
+                                        </motion.span>
+                                        <motion.span
+                                            className="material-symbols-outlined event-lightning-icon bolt-two"
+                                            animate={{ scale: [1, 1.55, 0.95], rotate: [0, 20, -6] }}
+                                            transition={{ duration: 0.38, repeat: Infinity, ease: 'easeInOut' }}
+                                        >
+                                            bolt
+                                        </motion.span>
+                                        <motion.span
+                                            className="material-symbols-outlined event-lightning-icon bolt-three"
+                                            animate={{ scale: [0.85, 1.35, 1], rotate: [0, -8, 14] }}
+                                            transition={{ duration: 0.4, repeat: Infinity, ease: 'easeInOut' }}
+                                        >
+                                            bolt
+                                        </motion.span>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
                             <div className="event-pull-content">
                                 <div className="event-pull-title">
-                                    {result ? '결과가 확정되었습니다' : isPulling ? '추첨 중...' : '문질문질 해서 채우기'}
+                                    {result
+                                        ? '결과가 확정되었습니다'
+                                        : isPulling
+                                          ? pullPhase === 'lightning'
+                                              ? '번개 에너지 발동!'
+                                              : '카드 회전 중...'
+                                          : '카드를 클릭해 뽑기를 시작하세요'}
                                 </div>
 
                                 {!result && (
                                     <motion.div
-                                        className="event-energy-card"
+                                        className="event-lotto-stage"
                                         animate={
                                             isPulling
-                                                ? { y: [0, -6, 0], rotate: [0, 1.5, -1.5, 0] }
-                                                : isCharging
-                                                  ? { y: [0, -2, 0] }
-                                                  : { y: 0 }
+                                                ? { y: [0, -8, 0] }
+                                                : { y: 0 }
                                         }
-                                        transition={
-                                            isPulling
-                                                ? { duration: 0.6, repeat: Infinity, ease: 'easeInOut' }
-                                                : isCharging
-                                                  ? { duration: 0.35, repeat: Infinity, ease: 'easeInOut' }
-                                                  : { duration: 0.2 }
-                                        }
+                                        transition={isPulling ? { duration: 0.6, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
                                     >
-                                        <div className="event-energy-label">이벤트 에너지</div>
-                                        <div className="event-progress-track">
-                                            <span className="event-progress-fill" style={{ width: `${Math.min(100, charge)}%` }} />
-                                        </div>
-                                        <div className="event-progress-text">{Math.round(charge)}%</div>
-                                        <div className="event-energy-hint">100%가 되면 자동 추첨됩니다.</div>
+                                        <motion.div
+                                            className="event-lotto-card"
+                                            style={{ transformPerspective: 1100 }}
+                                            animate={
+                                                isPulling
+                                                    ? pullPhase === 'lightning'
+                                                        ? {
+                                                              rotateY: [0, 360, 760],
+                                                              rotateX: [0, 16, -8, 0],
+                                                              rotateZ: [0, -5, 5, 0],
+                                                          }
+                                                        : {
+                                                              rotateY: [0, 360, 720],
+                                                              rotateZ: [0, -3, 3, 0],
+                                                          }
+                                                    : { rotateY: 0, rotateX: 0, rotateZ: 0 }
+                                            }
+                                            transition={
+                                                isPulling
+                                                    ? {
+                                                          duration: pullPhase === 'lightning' ? 0.44 : 0.6,
+                                                          repeat: Infinity,
+                                                          ease: 'easeInOut',
+                                                      }
+                                                    : { duration: 0.2 }
+                                            }
+                                        >
+                                            <div className="event-lotto-card-face event-lotto-card-front">
+                                                <span className="event-lotto-card-gloss" />
+                                                <div className="event-card-front-top">
+                                                    <span className="event-card-brand">SPACE D SIGNATURE</span>
+                                                    <span className="event-card-chip" aria-hidden="true" />
+                                                </div>
+                                                <div className="event-card-center">
+                                                    <span className="event-lotto-card-title">PREMIUM DRAW</span>
+                                                    <span className="event-lotto-card-sub">LIMITED EVENT PASS</span>
+                                                </div>
+                                                <span className="event-card-number">NO. 0002</span>
+                                            </div>
+                                            <div className="event-lotto-card-face event-lotto-card-back">
+                                                <span className="event-lotto-card-gloss is-back" />
+                                                <span className="event-card-strip" aria-hidden="true" />
+                                            </div>
+                                        </motion.div>
+
+                                        <Button
+                                            type="button"
+                                            className="event-draw-button"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                handleDrawClick();
+                                            }}
+                                            disabled={isLocked}
+                                        >
+                                            {isPulling ? '뽑기 진행 중...' : '카드 뽑기'}
+                                        </Button>
                                     </motion.div>
                                 )}
 
                                 <AnimatePresence>
                                     {result && (
                                         <motion.div
-                                            className={`event-result-card ${getToneClass(result.tier)}`}
+                                            className={`event-result-card ${getToneClass(result.tier)} ${result.tier === 'miss' ? 'event-result-card-miss' : ''}`}
                                             initial={{ opacity: 0, scale: 0.9, y: 12 }}
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95, y: 8 }}
                                             transition={{ duration: 0.28, ease: 'easeOut' }}
                                         >
-                                            <div className="event-result-top">
-                                                <Badge variant="outline" className="event-result-badge">
-                                                    {result.tier === 'meal'
-                                                        ? '식사권'
-                                                        : result.tier === 'coffee'
-                                                          ? '커피'
-                                                          : '다음 기회'}
-                                                </Badge>
-                                                <strong className="event-result-name">{result.label}</strong>
-                                            </div>
+                                            {result.tier === 'miss' ? (
+                                                <div className="event-miss-card-face">
+                                                    <span className="event-lotto-card-gloss is-back" />
+                                                    <span className="event-card-strip" aria-hidden="true" />
+                                                    <span className="event-miss-card-copy">{MISS_LABEL}</span>
+                                                    <span className="event-miss-card-sub">KEEP YOUR LUCK SPINNING</span>
+                                                </div>
+                                            ) : (
+                                                <div className="event-result-top">
+                                                    <Badge variant="outline" className="event-result-badge">
+                                                        {getResultBadgeLabel(result.tier, result.isWinner)}
+                                                    </Badge>
+                                                    <strong className="event-result-name">{result.label}</strong>
+                                                </div>
+                                            )}
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -420,7 +570,11 @@ const Event = ({ onBack, eventData, user }) => {
 
                             {!result && (
                                 <div className="event-pull-footnote">
-                                    {isPulling ? '연출 중...' : '패널을 드래그해서 게이지를 채우세요'}
+                                    {isPulling
+                                        ? pullPhase === 'lightning'
+                                            ? '번개 연출 중...'
+                                            : '카드 연출 중...'
+                                        : '카드를 탭하거나 버튼을 눌러 시작하세요'}
                                 </div>
                             )}
                         </motion.div>

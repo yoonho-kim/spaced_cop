@@ -53,16 +53,34 @@
     position: relative;
     border-radius: 14px;
     border: 1px solid rgba(15, 23, 42, 0.12);
-    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    background: linear-gradient(145deg, #f8fbff, #eef6ff 35%, #f8fafc);
     min-height: 320px;
     padding: 16px;
     overflow: hidden;
-    touch-action: none;
-    cursor: grab;
+    touch-action: manipulation;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.event-pull-zone.is-charging {
-    cursor: grabbing;
+.event-pull-zone:hover,
+.event-pull-zone:focus-visible {
+    border-color: rgba(59, 130, 246, 0.44);
+    box-shadow: 0 10px 26px rgba(30, 64, 175, 0.16);
+    outline: none;
+}
+
+.event-pull-zone[aria-disabled='true'] {
+    cursor: not-allowed;
+}
+
+.event-pull-zone.is-pulling {
+    border-color: rgba(59, 130, 246, 0.52);
+    box-shadow: 0 16px 32px rgba(30, 64, 175, 0.2);
+}
+
+.event-pull-zone.is-lightning {
+    border-color: rgba(251, 191, 36, 0.76);
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.28), 0 18px 34px rgba(250, 204, 21, 0.26);
 }
 
 .event-energy-aura {
@@ -75,17 +93,55 @@
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 240px;
-    height: 240px;
+    width: 290px;
+    height: 290px;
     transform: translate(-50%, -50%);
     border-radius: 999px;
-    background: rgba(59, 130, 246, 0.12);
-    filter: blur(22px);
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.22), rgba(37, 99, 235, 0.06) 58%, transparent 78%);
+    filter: blur(20px);
+}
+
+.event-lightning-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.event-lightning-flash {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 20% 25%, rgba(255, 255, 255, 0.7), transparent 45%),
+        radial-gradient(circle at 75% 28%, rgba(125, 211, 252, 0.54), transparent 48%),
+        radial-gradient(circle at 50% 74%, rgba(253, 224, 71, 0.42), transparent 52%);
+}
+
+.event-lightning-icon {
+    position: absolute;
+    color: #f8fafc;
+    font-size: 42px;
+    filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.68));
+}
+
+.event-lightning-icon.bolt-one {
+    left: 16%;
+    top: 20%;
+}
+
+.event-lightning-icon.bolt-two {
+    right: 14%;
+    top: 32%;
+}
+
+.event-lightning-icon.bolt-three {
+    left: 45%;
+    bottom: 18%;
 }
 
 .event-pull-content {
     position: relative;
-    z-index: 1;
+    z-index: 3;
     min-height: 288px;
     display: flex;
     flex-direction: column;
@@ -98,6 +154,7 @@
 .event-pull-title {
     font-size: 13px;
     color: #64748b;
+    font-weight: 600;
 }
 
 .event-energy-card {
@@ -146,6 +203,165 @@
     color: #64748b;
 }
 
+.event-lotto-stage {
+    width: min(100%, 320px);
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.34);
+    background:
+        radial-gradient(circle at 24% 18%, rgba(191, 219, 254, 0.52), transparent 42%),
+        linear-gradient(148deg, rgba(255, 255, 255, 0.94), rgba(241, 245, 249, 0.92));
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+.event-lotto-card {
+    width: min(100%, 228px);
+    aspect-ratio: 16 / 10;
+    position: relative;
+    transform-style: preserve-3d;
+}
+
+.event-lotto-card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 14px;
+    backface-visibility: hidden;
+    overflow: hidden;
+    box-shadow: 0 14px 26px rgba(15, 23, 42, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.event-lotto-card-front {
+    background:
+        radial-gradient(circle at 15% 18%, rgba(253, 224, 71, 0.42), transparent 38%),
+        radial-gradient(circle at 84% 82%, rgba(147, 197, 253, 0.34), transparent 40%),
+        linear-gradient(138deg, #0f172a, #1e3a8a 52%, #1d4ed8 100%);
+    color: #f8fafc;
+}
+
+.event-lotto-card-back {
+    transform: rotateY(180deg);
+    background:
+        radial-gradient(circle at 80% 22%, rgba(110, 231, 183, 0.26), transparent 38%),
+        linear-gradient(130deg, #0f172a, #1e293b 48%, #334155 100%);
+    color: #e2e8f0;
+}
+
+.event-lotto-card-gloss {
+    position: absolute;
+    inset: -35% auto -35% -44%;
+    width: 56%;
+    background: linear-gradient(102deg, transparent 0%, rgba(255, 255, 255, 0.54) 46%, transparent 100%);
+    opacity: 0.44;
+    transform: rotate(14deg);
+    animation: event-premium-gloss 3.6s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.event-lotto-card-gloss.is-back {
+    opacity: 0.26;
+    animation-duration: 4.2s;
+}
+
+.event-card-front-top {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.event-card-brand {
+    font-size: 10px;
+    letter-spacing: 0.13em;
+    font-weight: 700;
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.event-card-chip {
+    width: 34px;
+    height: 25px;
+    border-radius: 7px;
+    border: 1px solid rgba(250, 204, 21, 0.55);
+    background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0, rgba(255, 255, 255, 0.08) 3px, transparent 3px, transparent 6px),
+        linear-gradient(135deg, #fde68a, #f59e0b);
+    box-shadow: inset 0 0 0 1px rgba(146, 64, 14, 0.24);
+}
+
+.event-card-center {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.event-lotto-card-title {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    font-family: 'Noto Serif KR', 'Times New Roman', serif;
+    text-shadow: 0 2px 10px rgba(15, 23, 42, 0.38);
+}
+
+.event-lotto-card-sub {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: rgba(226, 232, 240, 0.88);
+}
+
+.event-card-number {
+    position: relative;
+    z-index: 1;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    font-weight: 700;
+    color: rgba(226, 232, 240, 0.82);
+}
+
+.event-card-strip {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 18px;
+    height: 34px;
+    background: linear-gradient(90deg, rgba(2, 6, 23, 0.92), rgba(15, 23, 42, 0.86));
+}
+
+.event-draw-button {
+    width: min(100%, 212px);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+@keyframes event-premium-gloss {
+    0% {
+        transform: translateX(0) rotate(14deg);
+        opacity: 0.2;
+    }
+    42% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: translateX(250%) rotate(14deg);
+        opacity: 0.15;
+    }
+}
+
 .event-result-card {
     width: min(100%, 320px);
     border-radius: 14px;
@@ -153,6 +369,50 @@
     background: rgba(255, 255, 255, 0.84);
     padding: 16px;
     box-shadow: 0 12px 20px rgba(15, 23, 42, 0.12);
+}
+
+.event-result-card-miss {
+    width: min(100%, 228px);
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+.event-miss-card-face {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background:
+        radial-gradient(circle at 80% 22%, rgba(110, 231, 183, 0.26), transparent 38%),
+        linear-gradient(130deg, #0f172a, #1e293b 48%, #334155 100%);
+    box-shadow: 0 14px 26px rgba(15, 23, 42, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.event-miss-card-copy {
+    margin-top: 58px;
+    padding: 6px 8px;
+    width: 100%;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    color: #0f172a;
+    background: linear-gradient(90deg, rgba(248, 250, 252, 0.9), rgba(226, 232, 240, 0.82));
+}
+
+.event-miss-card-sub {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: rgba(226, 232, 240, 0.88);
 }
 
 .event-result-top {
@@ -190,6 +450,11 @@
 .event-tone-coffee {
     border-color: rgba(8, 145, 178, 0.42);
     background: linear-gradient(145deg, #ecfeff, #cffafe);
+}
+
+.event-tone-keycap {
+    border-color: rgba(234, 179, 8, 0.52);
+    background: linear-gradient(145deg, #fefce8, #fef3c7);
 }
 
 .event-tone-miss {
@@ -311,6 +576,42 @@
 
     .event-result-name {
         font-size: 21px;
+    }
+
+    .event-lotto-stage {
+        width: 100%;
+        padding: 14px;
+    }
+
+    .event-lotto-card {
+        width: min(100%, 196px);
+    }
+
+    .event-lotto-card-face {
+        padding: 12px;
+    }
+
+    .event-lotto-card-title {
+        font-size: 17px;
+    }
+
+    .event-result-card-miss {
+        width: min(100%, 196px);
+    }
+
+    .event-miss-card-face {
+        padding: 12px;
+    }
+
+    .event-miss-card-copy {
+        margin-top: 54px;
+        font-size: 11px;
+    }
+
+    .event-pull-footnote {
+        max-width: calc(100% - 20px);
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .event-winner-item {
