@@ -16,6 +16,7 @@ import {
     upsertEventSettings,
     uploadEventImage,
     deleteEventImage,
+    addPost,
 } from '../utils/storage';
 import { updateAdminPassword, adminGetUsers, adminUpdateUserBasicInfo, adminResetUserPassword } from '../utils/auth';
 import Button from '../components/Button';
@@ -25,6 +26,18 @@ import ParticipantListModal from '../components/ParticipantListModal';
 import './Admin.css';
 
 const HONORIFIC_REGEX = /^[가-힣]{1,4}$/;
+
+const formatVolunteerDateLabel = (dateString) => {
+    if (!dateString) return '00월 00일';
+    const date = new Date(`${dateString}T00:00:00`);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${month}월 ${day}일`;
+};
+
+const buildLotteryFeedContent = (activity) => (
+    `${activity.title} 의 추첨이 완료되었습니다.\n - 봉사활동 일자 : ${formatVolunteerDateLabel(activity.date)}`
+);
 
 const Admin = () => {
     const [activeSection, setActiveSection] = useState('rooms');
@@ -108,7 +121,7 @@ const Admin = () => {
             setShowRecurringModal(false);
             loadData();
             alert('반복 예약 규칙이 추가되었으며 향후 1년치 예약이 생성되었습니다.');
-        } catch (error) {
+        } catch {
             alert('반복 예약 추가 중 오류가 발생했습니다.');
         }
     };
@@ -145,6 +158,7 @@ const Admin = () => {
 
     const handlePublishActivity = async (activityId) => {
         const activity = activities.find(a => a.id === activityId);
+        if (!activity) return;
         const activityRegistrations = registrations.filter(r => r.activityId === activityId && r.status === 'pending');
 
         if (activityRegistrations.length === 0) {
@@ -164,6 +178,13 @@ const Admin = () => {
                 status: 'closed',
                 isPublished: true,
                 publishedAt: new Date().toISOString()
+            });
+
+            await addPost({
+                content: buildLotteryFeedContent(activity),
+                author: 'admin',
+                isAdmin: true,
+                postType: 'volunteer',
             });
 
             alert(`전원 당첨! ${activityRegistrations.length}명 모두 확정되었습니다.\n탭1에 24시간 동안 게시됩니다.`);
@@ -213,6 +234,13 @@ const Admin = () => {
             status: 'closed',
             isPublished: true,
             publishedAt: new Date().toISOString()
+        });
+
+        await addPost({
+            content: buildLotteryFeedContent(activity),
+            author: 'admin',
+            isAdmin: true,
+            postType: 'volunteer',
         });
 
         alert(`추첨 완료!\n당첨: ${maxParticipants}명 (봉사활동 참여 횟수 기준)\n불합격: ${applicantsWithPriority.length - maxParticipants}명\n탭1에 24시간 동안 게시됩니다.`);
@@ -421,9 +449,6 @@ const Admin = () => {
         if (modalType === 'addRoom') {
             await addMeetingRoom(formData);
         } else if (modalType === 'addActivity') {
-            // AI 이미지 생성을 위한 프롬프트 생성
-            const imagePrompt = `Volunteer activity: ${formData.title}. ${formData.description}. Realistic photo of people volunteering, helping community, warm and positive atmosphere, high quality photography`;
-
             // 이미지 생성 API 호출 (Unsplash API 사용)
             let imageUrl = '';
             try {
@@ -564,13 +589,6 @@ const Admin = () => {
                                 const now = new Date();
                                 const deadline = activity.deadline ? new Date(activity.deadline) : null;
                                 const isDeadlinePassed = deadline && now > deadline;
-
-                                // 추첨 버튼 활성화 조건: 마감일 지남 + 정원 초과 신청
-                                const canRunLottery = isDeadlinePassed && pendingCount > activity.maxParticipants;
-
-                                // 게시 가능 조건: 추첨 완료 또는 정원 미달로 마감
-                                const hasWinners = confirmedCount > 0;
-                                const isUnderCapacity = isDeadlinePassed && pendingCount <= activity.maxParticipants && pendingCount > 0;
 
                                 return (
                                     <div key={activity.id} className="admin-item">
