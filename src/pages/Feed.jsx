@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getPostsPage, addPost, addLike, removeLike, addComment, deletePost, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations, getTop3Volunteers } from '../utils/storage';
+import { getPostsPage, addPost, addLike, removeLike, addComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations, getTop3Volunteers } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
@@ -19,6 +19,9 @@ const Feed = ({ user, onNavigateToTab }) => {
     const [selectedProfile, setSelectedProfile] = useState(null);
     const [expandedComments, setExpandedComments] = useState(new Set());
     const [commentInputs, setCommentInputs] = useState({});
+    const [editingPostId, setEditingPostId] = useState(null);
+    const [editingContent, setEditingContent] = useState('');
+    const [isUpdatingPost, setIsUpdatingPost] = useState(false);
     const [top3Volunteers, setTop3Volunteers] = useState([]);
     const loadMoreRef = useRef(null);
     const observerRef = useRef(null);
@@ -234,11 +237,97 @@ const Feed = ({ user, onNavigateToTab }) => {
         refreshPosts();
     };
 
-    const handleDeletePost = async (postId) => {
-        if (window.confirm('정말로 이 게시물을 삭제하시겠습니까?')) {
-            await deletePost(postId);
-            refreshPosts();
+    const canManagePost = (post) => {
+        if (!post) return false;
+        if (isAdmin()) return true;
+
+        const userNickname = String(user?.nickname || '').trim();
+        const postAuthor = String(post.author || '').trim();
+        const userEmployeeId = String(user?.employeeId || '').trim();
+        const postAuthorEmployeeId = String(post.authorEmployeeId || '').trim();
+
+        if (userNickname && postAuthor && userNickname === postAuthor) {
+            return true;
         }
+
+        if (userEmployeeId && postAuthorEmployeeId && userEmployeeId === postAuthorEmployeeId) {
+            return true;
+        }
+
+        return false;
+    };
+
+    const handleStartEditPost = (post) => {
+        if (!canManagePost(post)) {
+            window.alert('작성자만 게시물을 수정할 수 있습니다.');
+            return;
+        }
+
+        setEditingPostId(post.id);
+        setEditingContent(post.content || '');
+    };
+
+    const handleCancelEditPost = () => {
+        setEditingPostId(null);
+        setEditingContent('');
+        setIsUpdatingPost(false);
+    };
+
+    const handleSaveEditPost = async (post) => {
+        if (!canManagePost(post)) {
+            window.alert('작성자만 게시물을 수정할 수 있습니다.');
+            return;
+        }
+
+        const nextContent = editingContent.trim();
+        if (!nextContent) {
+            window.alert('내용을 입력해주세요.');
+            return;
+        }
+
+        if (nextContent === String(post.content || '').trim()) {
+            handleCancelEditPost();
+            return;
+        }
+
+        setIsUpdatingPost(true);
+        const result = await updatePost(post.id, nextContent);
+        setIsUpdatingPost(false);
+
+        if (!result?.success) {
+            window.alert('게시물 수정에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        handleCancelEditPost();
+        refreshPosts();
+    };
+
+    const handleDeletePost = async (post) => {
+        if (!canManagePost(post)) {
+            window.alert('작성자만 게시물을 삭제할 수 있습니다.');
+            return;
+        }
+
+        const firstCheck = window.confirm('정말로 이 게시물을 삭제하시겠습니까?');
+        if (!firstCheck) return;
+
+        const deleteKeyword = window.prompt('삭제를 진행하려면 "삭제"를 입력하세요.');
+        if (deleteKeyword !== '삭제') {
+            window.alert('삭제가 취소되었습니다.');
+            return;
+        }
+
+        const result = await deletePost(post.id);
+        if (!result?.success) {
+            window.alert('게시물 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        if (editingPostId === post.id) {
+            handleCancelEditPost();
+        }
+        refreshPosts();
     };
 
     const toggleComments = (postId) => {
@@ -355,6 +444,8 @@ const Feed = ({ user, onNavigateToTab }) => {
                             const comments = post.comments || [];
                             const isLiked = likes.includes(user.nickname);
                             const isExpanded = expandedComments.has(post.id);
+                            const canManage = canManagePost(post);
+                            const isEditingPost = editingPostId === post.id;
 
                             return (
                                 <div key={post.id} className="post-item animate-fade-in">
@@ -405,20 +496,63 @@ const Feed = ({ user, onNavigateToTab }) => {
                                                     {formatTimestamp(post.timestamp)}
                                                 </p>
                                             </div>
-                                            {isAdmin() && (
-                                                <button
-                                                    className="delete-post-btn"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeletePost(post.id);
-                                                    }}
-                                                    title="게시물 삭제"
-                                                >
-                                                    <span className="material-symbols-outlined">delete</span>
-                                                </button>
+                                            {canManage && (
+                                                <div className="post-owner-actions">
+                                                    <button
+                                                        className="post-owner-btn edit"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleStartEditPost(post);
+                                                        }}
+                                                        title="게시물 수정"
+                                                    >
+                                                        <span className="material-symbols-outlined">edit</span>
+                                                    </button>
+                                                    <button
+                                                        className="post-owner-btn delete"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeletePost(post);
+                                                        }}
+                                                        title="게시물 삭제"
+                                                    >
+                                                        <span className="material-symbols-outlined">delete</span>
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
-                                        <p className="post-text">{post.content}</p>
+
+                                        {isEditingPost ? (
+                                            <div className="post-edit-area">
+                                                <textarea
+                                                    className="post-edit-input"
+                                                    value={editingContent}
+                                                    onChange={(e) => setEditingContent(e.target.value)}
+                                                    rows={3}
+                                                    maxLength={2000}
+                                                />
+                                                <div className="post-edit-actions">
+                                                    <button
+                                                        type="button"
+                                                        className="post-edit-btn cancel"
+                                                        onClick={handleCancelEditPost}
+                                                        disabled={isUpdatingPost}
+                                                    >
+                                                        취소
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="post-edit-btn save"
+                                                        onClick={() => handleSaveEditPost(post)}
+                                                        disabled={!editingContent.trim() || isUpdatingPost}
+                                                    >
+                                                        {isUpdatingPost ? '저장 중...' : '저장'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="post-text">{post.content}</p>
+                                        )}
 
                                         {/* Post Actions */}
                                         <div className="post-actions">

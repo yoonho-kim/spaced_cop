@@ -367,17 +367,6 @@ const Event = ({ onBack, eventData, user }) => {
                         <div className="event-warning">이벤트 정보를 불러올 수 없습니다.</div>
                     )}
 
-                    <Card className="event-rate-card">
-                        <CardContent className="pt-4 space-y-3">
-                            <div className="text-sm font-medium">상품 정보</div>
-                            <div className="event-rate-badges">
-                                <Badge variant="outline">{PRIZE_LABEL}</Badge>
-                                <Badge variant="outline">당첨 확률 {WIN_RATE}%</Badge>
-                            </div>
-                            <div className="text-xs text-muted-foreground">추첨 결과에 따라 당첨되지 않을 수 있습니다.</div>
-                        </CardContent>
-                    </Card>
-
                     <div className="event-pull-zone-wrap">
                         <motion.div
                             className={`event-pull-zone ${isPulling ? 'is-pulling' : ''} ${pullPhase === 'lightning' ? 'is-lightning' : ''} ${result ? getToneClass(result.tier) : ''}`}

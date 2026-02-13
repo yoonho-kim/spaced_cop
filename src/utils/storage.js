@@ -446,6 +446,31 @@ export const addPost = async (post) => {
   };
 };
 
+export const updatePost = async (postId, content) => {
+  const nextContent = typeof content === 'string' ? content.trim() : '';
+  if (!nextContent) {
+    return { success: false, error: '내용이 비어 있습니다.' };
+  }
+
+  const { data, error } = await supabase
+    .from('posts')
+    .update({ content: nextContent })
+    .eq('id', postId)
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('Error updating post:', error);
+    return { success: false, error };
+  }
+
+  if (!data) {
+    return { success: false, error: '게시물을 찾을 수 없습니다.' };
+  }
+
+  return { success: true };
+};
+
 export const deletePost = async (postId) => {
   const { error } = await supabase
     .from('posts')
@@ -454,7 +479,10 @@ export const deletePost = async (postId) => {
 
   if (error) {
     console.error('Error deleting post:', error);
+    return { success: false, error };
   }
+
+  return { success: true };
 };
 
 // ============================================

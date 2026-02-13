@@ -35,16 +35,6 @@
     gap: 8px;
 }
 
-.event-rate-card {
-    background: rgba(148, 163, 184, 0.08);
-}
-
-.event-rate-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
 .event-pull-zone-wrap {
     position: relative;
 }

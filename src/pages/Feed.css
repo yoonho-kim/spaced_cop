@@ -580,33 +580,118 @@
 
 .post-header-info {
     flex: 1;
+    padding-right: 74px;
 }
 
-.delete-post-btn {
+.post-owner-actions {
     position: absolute;
     top: 0;
     right: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.post-owner-btn {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: rgba(239, 68, 68, 0.1);
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #ef4444;
     cursor: pointer;
     transition: all 0.2s ease;
-    opacity: 0.6;
+    opacity: 0.75;
 }
 
-.delete-post-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
+.post-owner-btn.edit {
+    background: rgba(14, 116, 144, 0.12);
+    color: #0e7490;
+}
+
+.post-owner-btn.delete {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.post-owner-btn:hover {
     opacity: 1;
 }
 
-.delete-post-btn .material-symbols-outlined {
+.post-owner-btn.edit:hover {
+    background: rgba(14, 116, 144, 0.2);
+}
+
+.post-owner-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.post-owner-btn .material-symbols-outlined {
     font-size: 16px;
+}
+
+.post-edit-area {
+    margin-top: 2px;
+}
+
+.post-edit-input {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 10px;
+    background: #ffffff;
+    color: var(--color-text-main);
+    font-size: 13px;
+    line-height: 1.45;
+    padding: 10px 12px;
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+}
+
+.post-edit-input:focus {
+    outline: none;
+    border-color: rgba(41, 82, 204, 0.45);
+    box-shadow: 0 0 0 4px rgba(41, 82, 204, 0.12);
+}
+
+.post-edit-actions {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.post-edit-btn {
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.post-edit-btn.cancel {
+    background: rgba(148, 163, 184, 0.14);
+    color: #475569;
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
+.post-edit-btn.save {
+    background: rgba(41, 82, 204, 0.14);
+    color: #1d4ed8;
+    border-color: rgba(41, 82, 204, 0.2);
+}
+
+.post-edit-btn:hover {
+    transform: translateY(-1px);
+}
+
+.post-edit-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .post-content {
