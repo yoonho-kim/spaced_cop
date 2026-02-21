@@ -1,5 +1,5 @@
 /* Space D Login - Glass Morphism Design */
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
 
 /* Background Image */
 .login-bg-image {
@@ -29,7 +29,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
-    font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    font-family: var(--font-family-body);
     overflow: hidden;
 }
 

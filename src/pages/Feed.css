@@ -15,7 +15,7 @@
     background: transparent;
     border: none;
     border-radius: 0;
-    font-family: 'Noto Sans KR', 'Manrope', 'Inter', sans-serif;
+    font-family: var(--font-family-body);
     position: relative;
     z-index: 0;
 }

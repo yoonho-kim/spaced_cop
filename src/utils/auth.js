@@ -52,6 +52,11 @@ const hashPassword = async (password) => {
 export const register = async (userData) => {
     try {
         const { nickname, password, employeeId, gender, personality, profileIconUrl, profileIconPrompt } = userData;
+        const normalizedEmployeeId = typeof employeeId === 'string' ? employeeId.trim() : '';
+
+        if (!normalizedEmployeeId) {
+            return { success: false, error: '사번을 입력해주세요.' };
+        }
 
         // 닉네임 중복 체크
         const { data: existingUser } = await supabase
@@ -73,7 +78,7 @@ export const register = async (userData) => {
             .insert([{
                 nickname,
                 password_hash: passwordHash,
-                employee_id: employeeId || null,
+                employee_id: normalizedEmployeeId,
                 gender: gender || null,
                 personality_time: personality?.time || null,
                 personality_feeling: personality?.feeling || null,

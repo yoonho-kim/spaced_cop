@@ -256,6 +256,10 @@ const WinnersModal = ({ isOpen, onClose, activity }) => {
                                         <span className="material-symbols-outlined">calendar_today</span>
                                         <span>{formatDate(activity.date)}</span>
                                     </div>
+                                    <div className="detail-row">
+                                        <span className="material-symbols-outlined">event_busy</span>
+                                        <span>모집 마감일: {formatDate(activity.deadline)}</span>
+                                    </div>
                                     {activity.location && (
                                         <div className="detail-row">
                                             <span className="material-symbols-outlined">location_on</span>

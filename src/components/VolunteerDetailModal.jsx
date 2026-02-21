@@ -32,6 +32,10 @@ const VolunteerDetailModal = ({ activity, user, onClose, onRegister, currentAppl
                             <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }}>calendar_today</span>
                             <span>{formatDate(activity.date)}</span>
                         </div>
+                        <div className="meta-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }}>event_busy</span>
+                            <span>모집 마감일: {activity.deadline ? formatDate(activity.deadline) : '-'}</span>
+                        </div>
                         {typeof currentApplicants === 'number' && typeof onRegister === 'function' && (
                             <div className="meta-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }}>group</span>

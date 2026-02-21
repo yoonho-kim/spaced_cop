@@ -189,6 +189,14 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
             setError('비밀번호가 일치하지 않습니다.');
             return false;
         }
+        if (!employeeId.trim()) {
+            setError('사번을 입력해주세요.');
+            return false;
+        }
+        if (!gender) {
+            setError('성별을 선택해주세요.');
+            return false;
+        }
         setError('');
         return true;
     };
@@ -228,6 +236,7 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
     };
 
     const handleSignUp = async () => {
+        const normalizedEmployeeId = employeeId.trim();
         setStep(3);
         setIsLoading(true);
         setError('');
@@ -237,7 +246,7 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
                 personality,
                 gender,
                 nickname,
-                employeeId
+                employeeId: normalizedEmployeeId
             });
 
             let profileIconUrl = null;
@@ -252,7 +261,7 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
             const result = await register({
                 nickname,
                 password,
-                employeeId: employeeId || null,
+                employeeId: normalizedEmployeeId,
                 gender: gender || null,
                 personality,
                 profileIconUrl,
@@ -375,16 +384,16 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">사번 (선택)</label>
+                                <label className="text-sm font-medium text-foreground">사번 *</label>
                                 <Input
                                     value={employeeId}
                                     onChange={(e) => setEmployeeId(e.target.value)}
-                                    placeholder="사번을 입력하세요"
+                                    placeholder="DS직원은 DS사번 으로 가입"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">성별 (선택)</label>
+                                <label className="text-sm font-medium text-foreground">성별 *</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     {[
                                         { value: 'male', label: '👨 남성' },

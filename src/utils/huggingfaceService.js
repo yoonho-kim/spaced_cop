@@ -1,6 +1,6 @@
 /**
  * Hugging Face Inference API Service
- * 캐릭터 프로필 아이콘 생성
+ * 인물 캐릭터 프로필 아이콘 생성
  */
 
 const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
@@ -11,58 +11,58 @@ const MODEL_CANDIDATES = [
     'stabilityai/stable-diffusion-xl-base-1.0'
 ];
 
-// 성향 질문 → 프롬프트 매핑
+// 성향 질문 → 증명사진 프롬프트 매핑 (스타일 보조용)
 const PERSONALITY_MAPPINGS = {
     time: {
-        morning: { colors: 'warm yellow and orange tones', mood: 'bright and energetic' },
-        afternoon: { colors: 'soft green and beige tones', mood: 'calm and relaxed' },
-        evening: { colors: 'purple and pink gradient', mood: 'emotional and dreamy' },
-        night: { colors: 'deep navy blue and black', mood: 'mysterious and quiet' }
+        morning: { lighting: 'daylight-balanced soft key light', mood: 'clean and energetic tone' },
+        afternoon: { lighting: 'neutral softbox light', mood: 'calm and stable tone' },
+        evening: { lighting: 'warm softbox light', mood: 'gentle and friendly tone' },
+        night: { lighting: 'cool softbox light', mood: 'composed and serious tone' }
     },
     feeling: {
-        citrus: { style: 'vibrant and crisp details', texture: 'fresh and zesty' },
-        chocolate: { style: 'soft organic lines', texture: 'warm and smooth' },
-        mint: { style: 'minimal clean aesthetic', texture: 'cool and sharp' }
+        citrus: { expression: 'slight confident smile', texture: 'crisp and polished styling' },
+        chocolate: { expression: 'warm natural smile', texture: 'soft and approachable styling' },
+        mint: { expression: 'neutral calm expression', texture: 'minimal and clean styling' }
     },
     place: {
-        city: { background: 'abstract modern city skyline', atmosphere: 'urban and sophisticated' },
-        forest: { background: 'stylized nature with lush trees', atmosphere: 'peaceful and natural' },
-        beach: { background: 'gentle ocean waves and sunny beach', atmosphere: 'refreshing and sunny' },
-        space: { background: 'magic cosmic nebula and stars', atmosphere: 'infinite and wondrous' }
+        city: { backdrop: 'light gray seamless studio backdrop', atmosphere: 'professional and modern' },
+        forest: { backdrop: 'soft sage seamless studio backdrop', atmosphere: 'calm and natural' },
+        beach: { backdrop: 'bright sky-blue seamless studio backdrop', atmosphere: 'fresh and open' },
+        space: { backdrop: 'deep navy seamless studio backdrop', atmosphere: 'focused and premium' }
     },
     animal: {
-        cat: { trait: 'elegant and independent look', vibe: 'graceful' },
-        dog: { trait: 'friendly and active energetic look', vibe: 'cheerful' },
-        owl: { trait: 'wise and mysterious calm look', vibe: 'thoughtful' },
-        dolphin: { trait: 'flexible and social outgoing look', vibe: 'playful' }
+        cat: { trait: 'composed and confident eyes', vibe: 'elegant' },
+        dog: { trait: 'friendly and open expression', vibe: 'cheerful' },
+        owl: { trait: 'thoughtful and stable gaze', vibe: 'intellectual' },
+        dolphin: { trait: 'bright and approachable expression', vibe: 'playful' }
     },
     superpower: {
-        teleport: { effect: 'dynamic particles and motion blur', energy: 'high energy' },
-        invisible: { effect: 'ethereal transparency and subtle glows', energy: 'mystical' },
-        mindread: { effect: 'deep thoughtful gaze with aura', energy: 'spiritual' },
-        fly: { effect: 'lightness and wind wisps', energy: 'dreamy' }
+        teleport: { posture: 'upright posture', energy: 'decisive and active mood' },
+        invisible: { posture: 'stable posture', energy: 'quiet and clean mood' },
+        mindread: { posture: 'balanced posture', energy: 'calm and analytical mood' },
+        fly: { posture: 'light relaxed posture', energy: 'optimistic and airy mood' }
     },
     snack: {
-        coffee: { detail: 'concentrated and focused expression', finish: 'clean and modern' },
-        chips: { detail: 'joyful and fun expression', finish: 'bright and lively' },
-        fruit: { detail: 'refreshing and healthy glow', finish: 'clear and pure' },
-        chocolate: { detail: 'sweet and comforting expression', finish: 'warm and cozy' }
+        coffee: { detail: 'focused and reliable expression', finish: 'well-groomed professional finish' },
+        chips: { detail: 'lively and bright expression', finish: 'clean and friendly finish' },
+        fruit: { detail: 'fresh and healthy expression', finish: 'natural and neat finish' },
+        chocolate: { detail: 'warm and kind expression', finish: 'soft and stable finish' }
     }
 };
 
 const GENDER_MAPPINGS = {
     male: {
-        subject: 'adult male office worker',
-        cue: 'male, man, masculine facial features',
-        negative: 'female, woman, girl, feminine face, heavy makeup'
+        subject: 'adult East Asian man, office employee',
+        cue: 'male, man, masculine face, masculine jawline, short male hairstyle',
+        negative: 'female, woman, girl, feminine face, long feminine hairstyle, lipstick, eyelashes, heavy makeup'
     },
     female: {
-        subject: 'adult female office worker',
-        cue: 'female, woman, feminine facial features',
-        negative: 'male, man, boy, masculine jawline, beard stubble'
+        subject: 'adult East Asian woman, office employee',
+        cue: 'female, woman, feminine face, feminine features, long or medium female hairstyle',
+        negative: 'male, man, boy, masculine jawline, beard, mustache, stubble'
     },
     other: {
-        subject: 'adult office worker',
+        subject: 'adult East Asian person, office employee',
         cue: 'androgynous adult person',
         negative: ''
     }
@@ -115,29 +115,42 @@ const buildGenerationSpec = (profileInput, strictness = 0) => {
         .filter(Boolean)
         .join(', ');
 
-    const repeatSingle = Array.from({ length: Math.max(2, strictness + 2) }, () => 'single character, one person only, one face only, one frame only').join(', ');
-    const repeatGender = Array.from({ length: Math.max(1, strictness + 1) }, () => genderGuide.cue).join(', ');
+    const repeatSingle = Array.from({ length: Math.max(3, strictness + 3) }, () => 'one person only, one face only, single headshot').join(', ');
+    const repeatGender = Array.from({ length: Math.max(2, strictness + 2) }, () => genderGuide.cue).join(', ');
 
-    const prompt = `Disney Pixar inspired high-quality character portrait for profile icon.
+    const prompt = `High-quality cute human character avatar portrait for profile icon.
 ${repeatSingle}.
-bust shot composition, centered portrait, front-facing, clean background, no text.
-subject: ${genderGuide.subject}, ${repeatGender}.
-personality cues: ${a.trait}, ${sn.detail}, ${f.style}, ${f.texture}, ${s.effect}.
-mood and palette: ${t.mood}, ${t.colors}, background atmosphere inspired by ${pl.atmosphere} and ${pl.background}.
-style: polished 3d character illustration, expressive face, cinematic soft lighting, detailed and consistent.
-identity hint: ${identityHint || 'employee-default'}.
-strict rule: exactly one face in image, no collage, no split panel, no grid, no duplicate character.`
+composition: passport-photo inspired headshot, head-and-shoulders, centered framing, front-facing, looking directly at camera.
+subject: ${genderGuide.subject}.
+gender lock: ${repeatGender}.
+expression and tone: ${sn.detail}, ${a.trait}, ${f.expression}, ${a.vibe}.
+styling: ${s.posture}, ${s.energy}, ${f.texture}, ${sn.finish}.
+lighting and backdrop: ${t.lighting}, ${t.mood}, ${pl.backdrop}, ${pl.atmosphere}.
+visual style: stylized 3D human character, polished game-avatar quality, soft shading, clean edges, expressive but natural face proportions.
+cute style priority: adorable and friendly character design, slightly larger bright eyes, softly rounded facial contour, gentle smile, youthful and approachable look.
+render quality: premium character render, smooth gradients, soft pastel color accents, glossy but natural hair detail.
+render direction: clearly non-photorealistic, not a real person photo, not hyper-real skin texture.
+wardrobe: simple office shirt or blouse, neutral color, minimal accessories.
+strict rule: exactly one human character face, no extra people, no collage, no panel, no text, no watermark.
+identity hint: ${identityHint || 'employee-default'}.`
         .replace(/\s+/g, ' ')
         .trim();
 
     const negativePrompt = [
         'real photo',
         'photorealistic',
-        'painting',
-        'sketch',
+        'hyperrealistic',
+        'raw photo',
+        'dslr',
+        'film grain',
+        'skin pores',
         'chibi',
+        'anime style',
         'flat icon',
         'emoji',
+        'mask',
+        'animal character',
+        'monster character',
         'grid',
         'collage',
         'mosaic',
@@ -151,6 +164,7 @@ strict rule: exactly one face in image, no collage, no split panel, no grid, no 
         'character sheet',
         'split screen',
         'multiple portraits',
+        'multiple heads',
         'multiple people',
         'group',
         'crowd',
@@ -158,11 +172,38 @@ strict rule: exactly one face in image, no collage, no split panel, no grid, no 
         'duplicate face',
         'two faces',
         'many faces',
+        'full body',
+        'upper body',
+        'hands',
+        'body pose',
+        'side view',
+        'profile view',
+        'looking away',
+        'tilted face',
+        'open mouth',
+        'teeth',
+        'hat',
+        'sunglasses',
+        'earphones',
+        'busy background',
+        'landscape background',
+        'city street',
+        'forest',
+        'beach',
+        'space',
         'text',
         'logo',
         'watermark',
         'blurry',
         'low quality',
+        'old age',
+        'aged face',
+        'wrinkles',
+        'harsh shadows',
+        'scary',
+        'horror',
+        'angry expression',
+        'stern expression',
         'bad anatomy',
         'deformed face',
         genderGuide.negative
@@ -171,8 +212,8 @@ strict rule: exactly one face in image, no collage, no split panel, no grid, no 
     return {
         prompt,
         negativePrompt,
-        seed: buildIdentitySeed({ employeeId, nickname }) + strictness * 101,
-        guidanceScale: Math.min(13, 10.5 + strictness * 0.7)
+        seed: buildIdentitySeed({ employeeId, nickname }) + strictness * 173,
+        guidanceScale: Math.min(13, 10.6 + strictness * 0.7)
     };
 };
 
@@ -393,8 +434,8 @@ const enforceSingleCharacterPortrait = async (imageBlob, seed = 1) => {
 
         const focusedBlob = await cropCenterFocus(
             workingImage,
-            gridCount ? 0.9 : 0.84,
-            gridCount ? -0.04 : -0.05
+            gridCount ? 0.82 : 0.76,
+            gridCount ? -0.07 : -0.09
         );
 
         return focusedBlob || workingBlob;

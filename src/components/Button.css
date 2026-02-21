@@ -9,7 +9,7 @@
     cursor: pointer;
     border: none;
     outline: none;
-    font-family: inherit;
+    font-family: var(--font-family-nickname);
 }
 
 .btn:disabled {

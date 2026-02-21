@@ -72,6 +72,12 @@ const Volunteer = ({ user }) => {
         : registrations.filter(r => r.userName === user.nickname); // 일반 사용자는 본인 것만
     const openActivities = activities.filter(a => a.status === 'open'); // 모집중인 활동만 표시
 
+    const openActivityDetailModal = (activity) => {
+        if (!activity) return;
+        setSelectedActivity(activity);
+        setShowDetailModal(true);
+    };
+
     // Calculate volunteer ranking for the current year
     const calculateRanking = () => {
         const currentYear = new Date().getFullYear();
@@ -176,10 +182,7 @@ const Volunteer = ({ user }) => {
                                 <div
                                     key={activity.id}
                                     className="activity-card"
-                                    onClick={() => {
-                                        setSelectedActivity(activity);
-                                        setShowDetailModal(true);
-                                    }}
+                                    onClick={() => openActivityDetailModal(activity)}
                                     style={{ cursor: 'pointer' }}
                                 >
                                     <div className="activity-header">
@@ -264,17 +267,38 @@ const Volunteer = ({ user }) => {
                                                 key={registration.id}
                                                 className="registration-item"
                                                 onClick={() => {
-                                                    if (user?.isAdmin && activity) {
-                                                        setSelectedActivity(activity);
-                                                        setShowParticipantModal(true);
+                                                    if (activity) {
+                                                        openActivityDetailModal(activity);
                                                     }
                                                 }}
-                                                style={user?.isAdmin ? { cursor: 'pointer' } : {}}
+                                                style={activity ? { cursor: 'pointer' } : {}}
                                             >
                                                 <div className="registration-info">
                                                     <h4>
                                                         {registration.activityTitle}
-                                                        {user?.isAdmin && <span className="material-symbols-outlined" style={{ fontSize: '14px', marginLeft: '6px', verticalAlign: 'middle', color: '#6366f1' }}>groups</span>}
+                                                        {user?.isAdmin && activity && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedActivity(activity);
+                                                                    setShowParticipantModal(true);
+                                                                }}
+                                                                style={{
+                                                                    marginLeft: '6px',
+                                                                    border: 'none',
+                                                                    background: 'transparent',
+                                                                    color: '#6366f1',
+                                                                    cursor: 'pointer',
+                                                                    padding: 0,
+                                                                    verticalAlign: 'middle'
+                                                                }}
+                                                                aria-label="참가자 목록 보기"
+                                                                title="참가자 목록 보기"
+                                                            >
+                                                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>groups</span>
+                                                            </button>
+                                                        )}
                                                     </h4>
                                                     <p className="text-secondary">
                                                         {user?.isAdmin && <span style={{ color: '#a5b4fc' }}>{registration.employeeId} · </span>}
