@@ -453,3 +453,114 @@
         font-size: 10px;
     }
 }
+
+/* ── 예약 정보 모달 ───────────────────────────────────────── */
+.reservation-info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* 회의실 + 날짜 헤더 블록 */
+.reservation-info-header {
+    background: rgba(41, 82, 204, 0.06);
+    border: 1px solid rgba(41, 82, 204, 0.12);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+}
+
+.reservation-info-header-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.reservation-room-icon {
+    font-size: 20px;
+    color: #2952cc;
+    flex-shrink: 0;
+}
+
+.reservation-info-room {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    flex: 1;
+}
+
+.reservation-status-badge {
+    background: #dbeafe !important;
+    color: #1d4ed8 !important;
+    border-color: #bfdbfe !important;
+    font-size: 0.7rem !important;
+    padding: 2px 8px !important;
+    border-radius: 999px !important;
+    font-weight: 600 !important;
+    flex-shrink: 0;
+}
+
+.reservation-info-date {
+    font-size: 0.82rem;
+    color: #64748b;
+    padding-left: 28px;
+}
+
+/* 시간 강조 블록 */
+.reservation-info-time {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #15803d;
+}
+
+/* 상세 정보 행 */
+.info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 9px 2px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.info-label {
+    width: 56px;
+    flex-shrink: 0;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #94a3b8;
+    padding-top: 1px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    text-align: center;
+}
+
+.info-icon {
+    font-size: 16px;
+    color: #cbd5e1;
+}
+
+.info-value {
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #0f172a;
+    line-height: 1.5;
+    word-break: keep-all;
+    padding-top: 1px;
+}

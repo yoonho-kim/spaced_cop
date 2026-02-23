@@ -3,6 +3,7 @@ import { getMeetingRooms, getReservations, addReservation, deleteReservation } f
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import { Badge } from '@/components/ui/badge';
 import './MeetingRooms.css';
 
 const MeetingRooms = ({ user }) => {
@@ -347,29 +348,49 @@ const MeetingRooms = ({ user }) => {
                     title="예약 정보"
                 >
                     <div className="reservation-info-content">
-                        <div className="info-row">
-                            <span className="info-label">회의실</span>
-                            <span className="info-value">{selectedReservation.roomName}</span>
+                        {/* 회의실 + 날짜 헤더 */}
+                        <div className="reservation-info-header">
+                            <div className="reservation-info-header-top">
+                                <span className="material-symbols-outlined reservation-room-icon">meeting_room</span>
+                                <span className="reservation-info-room">{selectedReservation.roomName}</span>
+                                <Badge className="reservation-status-badge">예약중</Badge>
+                            </div>
+                            <div className="reservation-info-date">
+                                {(() => {
+                                    const [y, m, d] = selectedReservation.date.split('-').map(Number);
+                                    const dt = new Date(y, m - 1, d);
+                                    return dt.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+                                })()}
+                            </div>
                         </div>
-                        <div className="info-row">
-                            <span className="info-label">날짜</span>
-                            <span className="info-value">{new Date(selectedReservation.date).toLocaleDateString('ko-KR')}</span>
+
+                        {/* 시간 강조 블록 */}
+                        <div className="reservation-info-time">
+                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>schedule</span>
+                            {selectedReservation.startTime} ~ {selectedReservation.endTime}
                         </div>
+
+                        {/* 상세 정보 행 */}
                         <div className="info-row">
-                            <span className="info-label">시간</span>
-                            <span className="info-value">{selectedReservation.startTime}:00 - {selectedReservation.endTime}:00</span>
-                        </div>
-                        <div className="info-row">
-                            <span className="info-label">예약자</span>
+                            <span className="info-label">
+                                <span className="material-symbols-outlined info-icon">person</span>
+                                예약자
+                            </span>
                             <span className="info-value">{selectedReservation.userName}</span>
                         </div>
                         <div className="info-row">
-                            <span className="info-label">부서</span>
-                            <span className="info-value">{selectedReservation.department}</span>
+                            <span className="info-label">
+                                <span className="material-symbols-outlined info-icon">business</span>
+                                부서
+                            </span>
+                            <span className="info-value">{selectedReservation.department || '—'}</span>
                         </div>
                         <div className="info-row">
-                            <span className="info-label">목적</span>
-                            <span className="info-value">{selectedReservation.purpose}</span>
+                            <span className="info-label">
+                                <span className="material-symbols-outlined info-icon">notes</span>
+                                목적
+                            </span>
+                            <span className="info-value">{selectedReservation.purpose || '—'}</span>
                         </div>
                     </div>
                 </Modal>
