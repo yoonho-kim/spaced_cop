@@ -2,6 +2,7 @@ import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { logout, isAdmin } from '../utils/auth';
 import { addPost, getEventSettings } from '../utils/storage';
 import Modal from '../components/Modal';
+import TeamPopcorn from '../components/TeamPopcorn';
 import './MainLayout.css';
 
 const Feed = React.lazy(() => import('./Feed'));
@@ -27,6 +28,7 @@ const MainLayout = ({ user, onLogout }) => {
     const [imagePreview, setImagePreview] = useState(null);
     const fileInputRef = useRef(null);
 
+    const [showTeamPopcorn, setShowTeamPopcorn] = useState(false);
     const [eventPopup, setEventPopup] = useState(null);
     const [showEventPopup, setShowEventPopup] = useState(false);
     const [previousTab, setPreviousTab] = useState('feed');
@@ -293,6 +295,17 @@ const MainLayout = ({ user, onLogout }) => {
                             className="menu-item"
                             onClick={(e) => {
                                 e.stopPropagation();
+                                setShowTeamPopcorn(true);
+                                setShowMenu(false);
+                            }}
+                        >
+                            <span>🍿</span>
+                            <span>팀 팝콘</span>
+                        </button>
+                        <button
+                            className="menu-item"
+                            onClick={(e) => {
+                                e.stopPropagation();
                                 openEventPage();
                                 setShowMenu(false);
                             }}
@@ -532,6 +545,11 @@ const MainLayout = ({ user, onLogout }) => {
                 <Suspense fallback={null}>
                     <Statistics onClose={() => setShowStatistics(false)} />
                 </Suspense>
+            )}
+
+            {/* Team Popcorn */}
+            {showTeamPopcorn && (
+                <TeamPopcorn onClose={() => setShowTeamPopcorn(false)} />
             )}
         </div>
     );
