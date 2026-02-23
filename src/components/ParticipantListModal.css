@@ -4,18 +4,11 @@
     inset: 0;
     background: rgba(15, 23, 42, 0.5);
     display: flex;
-    align-items: flex-end;        /* mobile: sheet from bottom */
+    align-items: center;
     justify-content: center;
     z-index: 1000;
-    padding: 0;
+    padding: 20px;
     animation: overlayFadeIn 0.2s ease;
-}
-
-@media (min-width: 480px) {
-    .participant-modal-overlay {
-        align-items: center;
-        padding: 20px;
-    }
 }
 
 @keyframes overlayFadeIn {
@@ -27,27 +20,14 @@
     background: #ffffff;
     width: 100%;
     max-width: 520px;
-    max-height: 92vh;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
-    border-radius: 20px 20px 0 0;  /* mobile: bottom sheet */
+    border-radius: 16px;
     border: 1px solid rgba(15, 23, 42, 0.08);
-    box-shadow: 0 -4px 32px rgba(15, 23, 42, 0.15);
-    animation: sheetSlideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+    animation: modalSlideUp 0.25s ease;
     overflow: hidden;
-}
-
-@media (min-width: 480px) {
-    .participant-modal {
-        border-radius: 16px;
-        box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
-        animation: modalSlideUp 0.25s ease;
-    }
-}
-
-@keyframes sheetSlideUp {
-    from { transform: translateY(100%); opacity: 0; }
-    to   { transform: translateY(0);   opacity: 1; }
 }
 
 @keyframes modalSlideUp {
