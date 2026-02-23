@@ -19,7 +19,7 @@ export default async function handler(request, response) {
         return response.status(200).json({ status: 'ok', message: 'Hugging Face Proxy is running' });
     }
 
-    const DEFAULT_MODEL = 'stabilityai/stable-diffusion-xl-base-1.0';
+    const DEFAULT_MODEL = 'black-forest-labs/FLUX.1-schnell';
     const API_KEY = process.env.VITE_HUGGINGFACE_API_KEY;
 
     if (request.method !== 'POST') {

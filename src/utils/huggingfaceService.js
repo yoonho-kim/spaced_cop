@@ -7,8 +7,8 @@ const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
 const MODEL_URL = '/api/huggingface';
 
 const MODEL_CANDIDATES = [
-    'Lykon/dreamshaper-xl-lightning',
-    'stabilityai/stable-diffusion-xl-base-1.0'
+    'black-forest-labs/FLUX.1-schnell',
+    'stabilityai/stable-diffusion-2-1'
 ];
 
 // 성향 질문 → 증명사진 프롬프트 매핑 (스타일 보조용)
@@ -448,6 +448,25 @@ const enforceSingleCharacterPortrait = async (imageBlob, seed = 1) => {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * FLUX 모델용 자연어 프롬프트 빌더
+ * FLUX는 키워드 나열보다 자연스러운 문장 프롬프트에 더 잘 반응함
+ */
+const buildFluxPrompt = (profileInput) => {
+    const { personality: p, gender } = normalizeProfileInput(profileInput);
+    const t = PERSONALITY_MAPPINGS.time[p.time] || PERSONALITY_MAPPINGS.time.morning;
+    const f = PERSONALITY_MAPPINGS.feeling[p.feeling] || PERSONALITY_MAPPINGS.feeling.citrus;
+    const pl = PERSONALITY_MAPPINGS.place[p.place] || PERSONALITY_MAPPINGS.place.city;
+    const a = PERSONALITY_MAPPINGS.animal[p.animal] || PERSONALITY_MAPPINGS.animal.cat;
+    const s = PERSONALITY_MAPPINGS.superpower[p.superpower] || PERSONALITY_MAPPINGS.superpower.teleport;
+    const sn = PERSONALITY_MAPPINGS.snack[p.snack] || PERSONALITY_MAPPINGS.snack.coffee;
+
+    const genderWord = gender === 'male' ? 'male' : gender === 'female' ? 'female' : 'androgynous';
+    const genderSubject = gender === 'male' ? 'man' : gender === 'female' ? 'woman' : 'person';
+
+    return `A single professional headshot portrait of one ${genderWord} East Asian ${genderSubject}, office worker. Front-facing, looking directly at camera, centered framing. ${pl.backdrop}, ${pl.atmosphere} atmosphere. ${t.lighting}, ${t.mood}. ${sn.detail}, ${a.trait}, ${f.expression}, ${a.vibe} personality. ${s.posture}, ${s.energy}. Stylized 3D character art style, cute and friendly design, slightly larger bright eyes, softly rounded facial contour. Not photorealistic, not anime. Simple office attire. Clean single-person portrait only, no text, no watermark.`;
+};
+
+/**
  * 성향 데이터를 기반으로 AI 프롬프트 생성
  * 입력: personality 또는 { personality, gender, nickname, employeeId }
  */
@@ -466,6 +485,24 @@ export const generateProfileIcon = async (profileInput, options = {}) => {
         const model = options.model || MODEL_CANDIDATES[0];
         const spec = buildGenerationSpec(profileInput, strictness);
 
+        const isFlux = model.toLowerCase().includes('flux');
+        const prompt = isFlux ? buildFluxPrompt(profileInput) : spec.prompt;
+        const parameters = isFlux
+            ? {
+                num_inference_steps: 4,
+                width: 512,
+                height: 512,
+                seed: spec.seed
+            }
+            : {
+                negative_prompt: spec.negativePrompt,
+                num_inference_steps: 30,
+                guidance_scale: spec.guidanceScale,
+                width: 512,
+                height: 512,
+                seed: spec.seed
+            };
+
         const response = await fetch(MODEL_URL, {
             method: 'POST',
             headers: {
@@ -474,15 +511,8 @@ export const generateProfileIcon = async (profileInput, options = {}) => {
             },
             body: JSON.stringify({
                 model,
-                inputs: spec.prompt,
-                parameters: {
-                    negative_prompt: spec.negativePrompt,
-                    num_inference_steps: 50,
-                    guidance_scale: spec.guidanceScale,
-                    width: 512,
-                    height: 512,
-                    seed: spec.seed
-                }
+                inputs: prompt,
+                parameters
             })
         });
 
