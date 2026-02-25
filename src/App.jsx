@@ -1,4 +1,5 @@
 import React, { Suspense, useState, useEffect, useRef } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { getCurrentUser } from './utils/auth';
 import { initializeStorage } from './utils/storage';
 import './index.css';
@@ -89,25 +90,28 @@ function App() {
   }
 
   return (
-    <Suspense
-      fallback={(
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          backgroundColor: '#000'
-        }}>
-          <div className="loading"></div>
-        </div>
-      )}
-    >
-      {!user ? (
-        <Login onLogin={handleLogin} />
-      ) : (
-        <MainLayout user={user} onLogout={handleLogout} />
-      )}
-    </Suspense>
+    <>
+      <Suspense
+        fallback={(
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100vh',
+            backgroundColor: '#000'
+          }}>
+            <div className="loading"></div>
+          </div>
+        )}
+      >
+        {!user ? (
+          <Login onLogin={handleLogin} />
+        ) : (
+          <MainLayout user={user} onLogout={handleLogout} />
+        )}
+      </Suspense>
+      <Analytics />
+    </>
   );
 }
 
