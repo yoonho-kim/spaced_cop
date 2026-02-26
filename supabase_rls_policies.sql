@@ -68,7 +68,22 @@ DROP POLICY IF EXISTS "supply_requests_insert_authenticated" ON supply_requests;
 DROP POLICY IF EXISTS "supply_requests_update_authenticated" ON supply_requests;
 DROP POLICY IF EXISTS "supply_requests_delete_authenticated" ON supply_requests;
 
--- Users (민감 데이터 포함: password_hash)
+-- 현재 구조 호환을 위해 users 기존 정책을 전부 초기화
+DO $$
+DECLARE
+  p RECORD;
+BEGIN
+  FOR p IN
+    SELECT policyname
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'users'
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.users', p.policyname);
+  END LOOP;
+END $$;
+
+-- Users (현재 클라이언트 anon 직접 접근 구조 호환)
 CREATE POLICY "users_insert_signup_non_admin" ON users
   FOR INSERT TO anon, authenticated
   WITH CHECK (COALESCE(is_admin, false) = false);
@@ -78,9 +93,14 @@ CREATE POLICY "users_select_authenticated_only" ON users
   USING (true);
 
 CREATE POLICY "users_update_authenticated_only" ON users
-  FOR UPDATE TO authenticated
+  FOR UPDATE TO anon, authenticated
   USING (true)
-  WITH CHECK (COALESCE(is_admin, false) = false);
+  WITH CHECK (
+    COALESCE(is_admin, false) = COALESCE(
+      (SELECT u.is_admin FROM users u WHERE u.id = users.id),
+      COALESCE(is_admin, false)
+    )
+  );
 
 -- 사용자 삭제는 서버 관리 작업으로 제한
 CREATE POLICY "users_delete_blocked" ON users
