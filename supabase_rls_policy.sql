@@ -2,18 +2,20 @@
 -- Space D - 회원가입을 위한 RLS 정책 추가
 -- ============================================
 
--- 1. users 테이블의 INSERT 정책 추가 (누구나 회원가입 가능하도록)
--- 기존 정책이 있다면 충돌할 수 있으므로, 기존 정책 확인 후 실행 권장
--- DROP POLICY IF EXISTS "Enable insert for authentication" ON users;
+-- 0. 기존 완화 정책 제거
+DROP POLICY IF EXISTS "Enable insert for authentication" ON users;
+DROP POLICY IF EXISTS "Enable read access for all users" ON users;
+DROP POLICY IF EXISTS "users_insert_signup_non_admin" ON users;
+DROP POLICY IF EXISTS "users_select_authenticated_only" ON users;
 
-CREATE POLICY "Enable insert for authentication" 
-ON users FOR INSERT 
-WITH CHECK (true);
+-- 1. users INSERT 정책 (회원가입 허용 + 관리자 계정 생성 차단)
+CREATE POLICY "users_insert_signup_non_admin"
+ON users FOR INSERT TO anon, authenticated
+WITH CHECK (COALESCE(is_admin, false) = false);
 
--- 2. users 테이블의 SELECT 정책 확인 (이미 있다면 생략 가능)
--- (내 정보만 볼 수 있게 하거나, 로그인 시 확인을 위해 필요)
-CREATE POLICY "Enable read access for all users" 
-ON users FOR SELECT 
+-- 2. users SELECT 정책 (로그인 사용자로 제한)
+CREATE POLICY "users_select_authenticated_only"
+ON users FOR SELECT TO authenticated
 USING (true);
 
 -- 3. 스토리지 버킷 정책 (아이콘 업로드용 - 필요한 경우)

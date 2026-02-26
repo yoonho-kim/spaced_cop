@@ -18,5 +18,12 @@ create unique index if not exists app_event_entries_unique
 
 alter table app_event_entries enable row level security;
 
-create policy "Enable all access for app_event_entries" on app_event_entries
-  for all using (true) with check (true);
+drop policy if exists "Enable all access for app_event_entries" on app_event_entries;
+drop policy if exists "app_event_entries_read_authenticated" on app_event_entries;
+drop policy if exists "app_event_entries_insert_authenticated" on app_event_entries;
+
+create policy "app_event_entries_read_authenticated" on app_event_entries
+  for select to authenticated using (true);
+
+create policy "app_event_entries_insert_authenticated" on app_event_entries
+  for insert to authenticated with check (true);

@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space D 정보보안성 검토 보고서</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #eef2f7;
+      --ink: #0b1220;
+      --muted: #5a6780;
+      --line: #d7e0ec;
+      --card: #ffffff;
+      --accent: #0f6fff;
+      --accent-soft: #e8f0ff;
+      --critical: #d7263d;
+      --high: #f97316;
+      --medium: #eab308;
+      --low: #16a34a;
+      --shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Manrope", "Noto Sans KR", sans-serif;
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 8% 5%, #dbe9ff 0, transparent 36%),
+        radial-gradient(circle at 92% 12%, #ffe9d2 0, transparent 34%),
+        var(--bg);
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 2rem));
+      margin: 2rem auto 3rem;
+      display: grid;
+      gap: 1.1rem;
+    }
+
+    .hero {
+      background: linear-gradient(130deg, #0d1f3d 0%, #15386f 52%, #0f6fff 100%);
+      color: #f8fbff;
+      border-radius: 24px;
+      padding: 1.6rem 1.6rem 1.35rem;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -22%;
+      top: -68%;
+      width: 70%;
+      aspect-ratio: 1 / 1;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(255,255,255,0.2), rgba(255,255,255,0));
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      margin: 0 0 .5rem;
+      font-size: clamp(1.4rem, 3.5vw, 2rem);
+      line-height: 1.3;
+      font-family: "Noto Sans KR", sans-serif;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      margin: 0;
+      opacity: 0.92;
+      font-size: .96rem;
+    }
+
+    .meta {
+      margin-top: .95rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .36rem;
+      padding: .35rem .62rem;
+      border-radius: 999px;
+      font-size: .74rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255,255,255,0.24);
+      color: #f2f7ff;
+      backdrop-filter: blur(3px);
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.15rem;
+      box-shadow: 0 4px 14px rgba(15,23,42,.04);
+    }
+
+    .panel h2 {
+      margin: 0 0 .65rem;
+      font-family: "Noto Sans KR", sans-serif;
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: -.01em;
+    }
+
+    .summary-grid {
+      margin-top: .8rem;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: .62rem;
+    }
+
+    .score {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: .6rem .7rem;
+      background: #fbfdff;
+    }
+
+    .score .k {
+      display: block;
+      font-size: .7rem;
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .score .v {
+      display: block;
+      margin-top: .14rem;
+      font-size: 1.1rem;
+      font-weight: 900;
+      letter-spacing: -.02em;
+    }
+
+    .score.critical .v { color: var(--critical); }
+    .score.high .v { color: var(--high); }
+    .score.medium .v { color: #b58100; }
+    .score.low .v { color: var(--low); }
+    .score.total .v { color: var(--accent); }
+
+    .note {
+      margin: .55rem 0 0;
+      color: var(--muted);
+      font-size: .87rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+      margin: .3rem 0 .8rem;
+    }
+
+    .filter {
+      border: 1px solid var(--line);
+      background: #f7faff;
+      color: #263146;
+      font-weight: 800;
+      font-size: .76rem;
+      border-radius: 999px;
+      padding: .38rem .72rem;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+
+    .filter:hover { transform: translateY(-1px); }
+
+    .filter.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(15,111,255,.25);
+    }
+
+    .vuln-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .72rem;
+    }
+
+    .vuln {
+      border: 1px solid var(--line);
+      border-top: 4px solid #9aa6bb;
+      border-radius: 14px;
+      background: #fff;
+      padding: .78rem .82rem;
+      display: grid;
+      gap: .45rem;
+    }
+
+    .vuln.critical { border-top-color: var(--critical); }
+    .vuln.high { border-top-color: var(--high); }
+    .vuln.medium { border-top-color: var(--medium); }
+    .vuln.low { border-top-color: var(--low); }
+
+    .vuln-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+    }
+
+    .vuln h3 {
+      margin: 0;
+      font-size: .9rem;
+      line-height: 1.4;
+      font-weight: 900;
+      letter-spacing: -.01em;
+    }
+
+    .badge {
+      font-size: .67rem;
+      font-weight: 900;
+      letter-spacing: .03em;
+      border-radius: 999px;
+      padding: .22rem .48rem;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .badge.critical { color: #8b1021; background: #ffe8ec; border-color: #ffc7d1; }
+    .badge.high { color: #8a3d00; background: #fff0e4; border-color: #ffd6bc; }
+    .badge.medium { color: #7a5a00; background: #fff8da; border-color: #f5e7a3; }
+    .badge.low { color: #0f6a2e; background: #e8fbe9; border-color: #bde8c5; }
+
+    .evidence {
+      margin: 0;
+      color: #30405c;
+      font-size: .78rem;
+    }
+
+    .evidence code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .72rem;
+      background: #edf2f8;
+      padding: .12rem .3rem;
+      border-radius: 6px;
+      border: 1px solid #d7e0ec;
+      color: #25324a;
+      word-break: break-all;
+    }
+
+    details {
+      border-top: 1px dashed #d9e1ec;
+      padding-top: .45rem;
+    }
+
+    summary {
+      cursor: pointer;
+      font-size: .78rem;
+      font-weight: 800;
+      color: #30405c;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    summary::before { content: "▶ "; color: #5a6780; }
+    details[open] summary::before { content: "▼ "; }
+
+    ul {
+      margin: .45rem 0 0;
+      padding-left: 1.05rem;
+      display: grid;
+      gap: .26rem;
+      font-size: .79rem;
+      color: #30405c;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      font-size: .82rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: .6rem .66rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      background: #f4f8ff;
+      font-size: .74rem;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      color: #31405a;
+      font-weight: 900;
+    }
+
+    .roadmap {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: .65rem;
+      margin-top: .4rem;
+    }
+
+    .phase {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: .66rem .72rem;
+      background: #fbfdff;
+    }
+
+    .phase h3 {
+      margin: 0 0 .45rem;
+      font-size: .86rem;
+      letter-spacing: -.01em;
+      font-weight: 900;
+      color: #162846;
+    }
+
+    .phase ul { margin: 0; }
+
+    .good-list,
+    .limit-list {
+      margin: 0;
+      padding-left: 1.05rem;
+      display: grid;
+      gap: .35rem;
+      color: #30405c;
+      font-size: .83rem;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: .6rem;
+    }
+
+    .print {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f6f9ff;
+      color: #1f2f4a;
+      font-weight: 800;
+      font-size: .78rem;
+      padding: .44rem .8rem;
+      cursor: pointer;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: .74rem;
+      padding: .3rem 0 .8rem;
+    }
+
+    .hide { display: none !important; }
+
+    @media (max-width: 980px) {
+      .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .vuln-list { grid-template-columns: 1fr; }
+      .roadmap { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(1180px, calc(100% - 1rem)); }
+      .hero { border-radius: 18px; padding: 1.2rem 1rem 1rem; }
+      .panel { padding: .9rem; }
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .wrap { width: 100%; margin: 0; gap: .6rem; }
+      .panel, .hero { box-shadow: none; }
+      .toolbar, .actions { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <h1>Space D 정보보안성 검토 및 시큐어코딩 보고서</h1>
+      <p>정적 코드 리뷰 기준으로 인증/인가, 비밀번호 처리, API 보호, RLS 정책을 중점 점검한 결과입니다.</p>
+      <div class="meta">
+        <span class="chip">프로젝트: Space D</span>
+        <span class="chip">검토일: 2026-02-26</span>
+        <span class="chip">범위: React · Vercel API · Supabase</span>
+        <span class="chip">기준: 저장소 코드/SQL</span>
+      </div>
+    </header>
+
+    <section class="panel">
+      <h2>총괄 요약</h2>
+      <p class="note">현재 코드 상태 기준으로 운영 환경에서 즉시 보완이 필요한 항목이 다수 확인되었습니다. 특히 RLS 전체 허용, 클라이언트 신뢰 권한관리, 취약한 비밀번호 처리가 핵심 리스크입니다.</p>
+      <div class="summary-grid">
+        <div class="score critical"><span class="k">Critical</span><span class="v">3</span></div>
+        <div class="score high"><span class="k">High</span><span class="v">5</span></div>
+        <div class="score medium"><span class="k">Medium</span><span class="v">4</span></div>
+        <div class="score low"><span class="k">Low</span><span class="v">2</span></div>
+        <div class="score total"><span class="k">Total</span><span class="v">14</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>취약점 상세</h2>
+      <div class="toolbar">
+        <button class="filter active" data-filter="all">전체</button>
+        <button class="filter" data-filter="critical">CRITICAL</button>
+        <button class="filter" data-filter="high">HIGH</button>
+        <button class="filter" data-filter="medium">MEDIUM</button>
+        <button class="filter" data-filter="low">LOW</button>
+      </div>
+
+      <div class="vuln-list" id="vulnList">
+        <article class="vuln critical" data-severity="critical">
+          <div class="vuln-head"><h3>CRITICAL-01 RLS 정책 무력화</h3><span class="badge critical">CRITICAL</span></div>
+          <p class="evidence">근거: <code>supabase_rls_policies.sql:21-50</code>, <code>supabase_event_settings.sql:24-25</code>, <code>supabase_event_entries.sql:21-22</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>Anon Key만으로 주요 테이블 CRUD 가능 상태입니다.</li>
+              <li>게시물/예약/봉사/사용자 데이터 변조·삭제가 가능합니다.</li>
+              <li>운영용 RLS로 즉시 전환하고 관리자 쓰기는 서버 함수로 이관해야 합니다.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln critical" data-severity="critical">
+          <div class="vuln-head"><h3>CRITICAL-02 클라이언트 신뢰 인증/인가</h3><span class="badge critical">CRITICAL</span></div>
+          <p class="evidence">근거: <code>src/utils/auth.js:302-305</code>, <code>src/pages/MainLayout.jsx:23</code>, <code>src/App.jsx:22-25</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>localStorage 세션 조작으로 권한 위조 시도면이 존재합니다.</li>
+              <li>RLS 완화 정책과 결합되면 전체 기능 장악 가능성이 높습니다.</li>
+              <li>Supabase Auth/JWT 기반 서버 인가 검증으로 전환이 필요합니다.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln critical" data-severity="critical">
+          <div class="vuln-head"><h3>CRITICAL-03 비밀번호 해시 취약</h3><span class="badge critical">CRITICAL</span></div>
+          <p class="evidence">근거: <code>src/utils/auth.js:41-47</code>, <code>src/utils/auth.js:138-151</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>SHA-256 단일 해시 + salt 미사용으로 오프라인 크래킹에 취약합니다.</li>
+              <li>클라이언트 해시 비교 구조라 공격면이 큽니다.</li>
+              <li>서버측 bcrypt/Argon2id(또는 Supabase Auth)로 전환해야 합니다.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln high" data-severity="high">
+          <div class="vuln-head"><h3>HIGH-01 API 키 클라이언트 노출</h3><span class="badge high">HIGH</span></div>
+          <p class="evidence">근거: <code>src/utils/openaiService.js:4</code>, <code>src/utils/huggingfaceService.js:6</code>, <code>vite.config.js:58</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li><code>VITE_*</code> 키 사용으로 키 노출 및 무단 과금 위험이 있습니다.</li>
+              <li>클라이언트에서 비밀키 사용을 제거해야 합니다.</li>
+              <li>서버 API에서만 키를 사용하고 사용자 인증 후 프록시해야 합니다.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln high" data-severity="high">
+          <div class="vuln-head"><h3>HIGH-02 주요 API 인증 부재</h3><span class="badge high">HIGH</span></div>
+          <p class="evidence">근거: <code>api/gemini.js</code>, <code>api/huggingface.js</code>, <code>api/event-image-upload.js</code>, <code>api/event-image-delete.js</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>익명 사용자가 비용 유발/파괴적 API를 호출할 수 있습니다.</li>
+              <li>API 공통 인증 미들웨어와 권한 모델 분리가 필요합니다.</li>
+              <li>일반 사용자와 관리자 작업을 명확히 분리하세요.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln high" data-severity="high">
+          <div class="vuln-head"><h3>HIGH-03 Blob 삭제 API 무결성 리스크</h3><span class="badge high">HIGH</span></div>
+          <p class="evidence">근거: <code>api/event-image-delete.js:50-55</code>, <code>api/event-image-delete.js:57-59</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>현재는 도메인 포함 여부만 확인 후 삭제를 수행합니다.</li>
+              <li>객체 경로를 알면 임의 삭제 가능성이 생깁니다.</li>
+              <li>인증 + 소유권 검증 + 허용 prefix 검증을 적용해야 합니다.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln high" data-severity="high">
+          <div class="vuln-head"><h3>HIGH-04 과도한 CORS 허용</h3><span class="badge high">HIGH</span></div>
+          <p class="evidence">근거: <code>api/*.js</code> 공통 <code>Access-Control-Allow-Origin: *</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>외부 도메인에서 API 호출 남용 가능성이 높습니다.</li>
+              <li>운영 도메인 화이트리스트 기반 CORS로 변경이 필요합니다.</li>
+              <li>불필요한 credentials 허용도 정리해야 합니다.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln high" data-severity="high">
+          <div class="vuln-head"><h3>HIGH-05 Rate Limit 부재</h3><span class="badge high">HIGH</span></div>
+          <p class="evidence">근거: <code>api/*.js</code>에 호출 제한 로직 없음</p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>DoS 및 비용 폭증 가능성이 큽니다.</li>
+              <li>IP/사용자 기준 rate limit 정책을 도입해야 합니다.</li>
+              <li>이미지/AI API는 별도 강한 제한값을 적용하세요.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln medium" data-severity="medium">
+          <div class="vuln-head"><h3>MEDIUM-01 기본/약한 관리자 자격정보 흔적</h3><span class="badge medium">MEDIUM</span></div>
+          <p class="evidence">근거: <code>src/utils/storage.js:12-13</code>, <code>supabase_seed_admin.sql:12-15</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>운영 오구성 시 즉시 계정 탈취로 이어질 수 있습니다.</li>
+              <li>기본 자격정보를 코드/시드에서 제거해야 합니다.</li>
+              <li>초기 관리자 온보딩과 비밀번호 강제 변경 절차를 두세요.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln medium" data-severity="medium">
+          <div class="vuln-head"><h3>MEDIUM-02 비밀번호 정책 약함</h3><span class="badge medium">MEDIUM</span></div>
+          <p class="evidence">근거: <code>SignUpModal.jsx:184-186</code>, <code>ChangePasswordModal.jsx:60-62</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>최소 4자 정책은 추측 공격에 매우 취약합니다.</li>
+              <li>길이·복잡도·금지 패턴 정책을 강화해야 합니다.</li>
+              <li>비밀번호 강도 표시 UI를 병행하면 효과적입니다.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln medium" data-severity="medium">
+          <div class="vuln-head"><h3>MEDIUM-03 서버 입력 검증 부족</h3><span class="badge medium">MEDIUM</span></div>
+          <p class="evidence">근거: <code>api/gemini.js:31-35</code>, <code>src/utils/storage.js</code> 다수 CRUD</p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>형식/길이/범위 검증이 약해 비정상 데이터 유입 위험이 있습니다.</li>
+              <li>zod/joi 기반 스키마 검증을 API 단에 강제해야 합니다.</li>
+              <li>DB 제약조건과 애플리케이션 검증을 함께 적용하세요.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln medium" data-severity="medium">
+          <div class="vuln-head"><h3>MEDIUM-04 사번(PII) 노출 범위 과다</h3><span class="badge medium">MEDIUM</span></div>
+          <p class="evidence">근거: <code>src/utils/storage.js:315-317</code>, <code>src/pages/Feed.jsx:678</code>, <code>src/pages/Volunteer.jsx:242-244</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>개인정보 최소노출 원칙 위반 가능성이 있습니다.</li>
+              <li>사번 조회/표시는 본인·관리자에게만 제한해야 합니다.</li>
+              <li>일반 화면에는 마스킹 형태로 전환하는 것이 안전합니다.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln low" data-severity="low">
+          <div class="vuln-head"><h3>LOW-01 보안 헤더/CSP 미설정</h3><span class="badge low">LOW</span></div>
+          <p class="evidence">근거: <code>vercel.json</code> headers 미정의, <code>index.html</code> CSP 부재</p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>클릭재킹/콘텐츠 스니핑/XSS 방어력이 낮습니다.</li>
+              <li><code>CSP</code>, <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>를 적용하세요.</li>
+              <li>배포 게이트에 보안 헤더 검사를 추가하면 재발을 줄일 수 있습니다.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="vuln low" data-severity="low">
+          <div class="vuln-head"><h3>LOW-02 상세 오류 메시지 외부 노출</h3><span class="badge low">LOW</span></div>
+          <p class="evidence">근거: <code>api/huggingface.js:64</code>, <code>api/gemini.js:55</code>, <code>api/gemini.js:28</code></p>
+          <details>
+            <summary>영향 및 권고</summary>
+            <ul>
+              <li>내부 설정/구조 정보가 외부에 노출될 수 있습니다.</li>
+              <li>클라이언트 응답은 일반화하고 상세 원인은 서버 로그로 제한하세요.</li>
+              <li>환경변수명 직접 노출 메시지는 제거하는 것이 바람직합니다.</li>
+            </ul>
+          </details>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>시큐어코딩 점검 매트릭스</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>영역</th>
+            <th>평가</th>
+            <th>코멘트</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>입력값 검증</td><td>미흡</td><td>서버측 스키마 검증 계층 부재, 프론트 의존</td></tr>
+          <tr><td>출력 인코딩/XSS</td><td>양호</td><td>React 기본 렌더링 기반, 위험 API 사용 흔적 적음</td></tr>
+          <tr><td>인증/인가</td><td>미흡</td><td>클라이언트 신뢰 + 완화된 RLS 정책</td></tr>
+          <tr><td>암호화/비밀번호</td><td>미흡</td><td>SHA-256 단일 해시, salt 없음</td></tr>
+          <tr><td>세션 관리</td><td>미흡</td><td>localStorage 중심 세션/권한 저장</td></tr>
+          <tr><td>비밀정보 관리</td><td>미흡</td><td><code>VITE_*</code> 키 사용으로 브라우저 노출면 존재</td></tr>
+          <tr><td>API 보호</td><td>미흡</td><td>인증·rate limit·CORS 제한 부족</td></tr>
+          <tr><td>로깅/오류 처리</td><td>보통</td><td>일부 상세 오류 외부 노출</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>우선 조치 로드맵</h2>
+      <div class="roadmap">
+        <div class="phase">
+          <h3>24시간 이내</h3>
+          <ul>
+            <li>RLS 운영 정책 즉시 전환</li>
+            <li>외부 노출 API 인증 미들웨어 적용</li>
+            <li>클라이언트 <code>VITE_GEMINI_API_KEY</code>, <code>VITE_HUGGINGFACE_API_KEY</code> 제거</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <h3>7일 이내</h3>
+          <ul>
+            <li>Supabase Auth/JWT 기반 인증 구조로 전환</li>
+            <li>비밀번호 저장 방식 bcrypt/Argon2id 교체</li>
+            <li>Blob 삭제 소유권 검증 + CORS 화이트리스트 + Rate Limit 적용</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <h3>30일 이내</h3>
+          <ul>
+            <li>서버 입력검증(zod/joi) 전면 도입</li>
+            <li>사번 등 개인정보 최소노출·마스킹 정책 적용</li>
+            <li>보안 헤더 및 CSP 표준화</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>양호 사항</h2>
+      <ul class="good-list">
+        <li><code>.env</code>가 <code>.gitignore</code>에 포함되어 키 파일 추적 방지 설정이 존재합니다.</li>
+        <li>업로드 용량 제한(3MB)과 파일명 새니타이징이 구현되어 있습니다.</li>
+        <li>Cron 엔드포인트는 Bearer 기반 인증 개념이 적용되어 있습니다.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>검토 한계</h2>
+      <ul class="limit-list">
+        <li>실서버 대상 동적 침투 테스트(DAST) 및 인프라 설정 검증은 포함하지 않았습니다.</li>
+        <li>본 결과는 저장소 코드/SQL 스냅샷 기준입니다.</li>
+      </ul>
+      <div class="actions">
+        <button class="print" onclick="window.print()">인쇄 / PDF 저장</button>
+      </div>
+    </section>
+
+    <p class="footer">Space D Security Review • Generated from repository code evidence</p>
+  </main>
+
+  <script>
+    const buttons = document.querySelectorAll(".filter");
+    const cards = document.querySelectorAll(".vuln");
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        buttons.forEach((b) => b.classList.remove("active"));
+        button.classList.add("active");
+        const target = button.dataset.filter;
+
+        cards.forEach((card) => {
+          if (target === "all" || card.dataset.severity === target) {
+            card.classList.remove("hide");
+          } else {
+            card.classList.add("hide");
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

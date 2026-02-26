@@ -1,9 +1,15 @@
-import { STORAGE_KEYS, getItem, setItem, removeItem } from './storage';
+import { STORAGE_KEYS, getItem, setItem, removeItem } from './clientStorage';
 import { supabase } from './supabase';
 
 // Session expires after 10 hours (in milliseconds)
 const SESSION_DURATION = 10 * 60 * 60 * 1000;
 const HONORIFIC_REGEX = /^[가-힣]{1,4}$/;
+const PASSWORD_HASH_VERSION = 'pbkdf2_sha256';
+const PASSWORD_HASH_ITERATIONS = 210000;
+const PASSWORD_HASH_BYTES = 32;
+const PASSWORD_SALT_BYTES = 16;
+
+let verifiedAdminSession = null;
 
 const normalizeHonorifics = (value) => {
     if (!Array.isArray(value)) return [];
@@ -35,15 +41,150 @@ const validateHonorifics = (value) => {
     return { valid: true, normalized };
 };
 
-/**
- * 비밀번호 해시 생성 (간단한 해시 - 프로덕션에서는 bcrypt 사용 권장)
- */
-const hashPassword = async (password) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
+const textEncoder = new TextEncoder();
+
+const createAdminSessionFingerprint = (user) => {
+    const id = user?.id == null ? '' : String(user.id);
+    const nickname = user?.nickname ? String(user.nickname) : '';
+    return `${id}:${nickname}`;
+};
+
+const markAdminSessionVerified = (user) => {
+    verifiedAdminSession = {
+        fingerprint: createAdminSessionFingerprint(user),
+        expiresAt: user?.expiresAt || new Date(Date.now() + SESSION_DURATION).toISOString(),
+    };
+};
+
+const clearAdminSessionVerification = () => {
+    verifiedAdminSession = null;
+};
+
+const hasVerifiedAdminSession = (user) => {
+    if (!user || user.isAdmin !== true || !verifiedAdminSession) return false;
+
+    if (verifiedAdminSession.fingerprint !== createAdminSessionFingerprint(user)) {
+        return false;
+    }
+
+    if (!verifiedAdminSession.expiresAt) return false;
+    return new Date(verifiedAdminSession.expiresAt) > new Date();
+};
+
+const timingSafeEqualString = (left, right) => {
+    if (typeof left !== 'string' || typeof right !== 'string') return false;
+
+    const maxLength = Math.max(left.length, right.length);
+    let mismatch = left.length === right.length ? 0 : 1;
+
+    for (let i = 0; i < maxLength; i += 1) {
+        const leftCode = i < left.length ? left.charCodeAt(i) : 0;
+        const rightCode = i < right.length ? right.charCodeAt(i) : 0;
+        mismatch |= leftCode ^ rightCode;
+    }
+
+    return mismatch === 0;
+};
+
+const timingSafeEqualBytes = (left, right) => {
+    if (!(left instanceof Uint8Array) || !(right instanceof Uint8Array)) return false;
+
+    const maxLength = Math.max(left.length, right.length);
+    let mismatch = left.length === right.length ? 0 : 1;
+
+    for (let i = 0; i < maxLength; i += 1) {
+        const leftValue = i < left.length ? left[i] : 0;
+        const rightValue = i < right.length ? right[i] : 0;
+        mismatch |= leftValue ^ rightValue;
+    }
+
+    return mismatch === 0;
+};
+
+const toBase64 = (bytes) => {
+    let binary = '';
+    bytes.forEach((byte) => {
+        binary += String.fromCharCode(byte);
+    });
+    return btoa(binary);
+};
+
+const fromBase64 = (value) => {
+    const binary = atob(value);
+    const output = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+        output[i] = binary.charCodeAt(i);
+    }
+    return output;
+};
+
+const hashPasswordLegacySha256 = async (password) => {
+    const data = textEncoder.encode(password);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+};
+
+const derivePbkdf2Hash = async (password, salt, iterations) => {
+    const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        textEncoder.encode(password),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveBits']
+    );
+
+    const bits = await crypto.subtle.deriveBits(
+        {
+            name: 'PBKDF2',
+            hash: 'SHA-256',
+            salt,
+            iterations,
+        },
+        keyMaterial,
+        PASSWORD_HASH_BYTES * 8
+    );
+
+    return new Uint8Array(bits);
+};
+
+/**
+ * 비밀번호 해시 생성 (PBKDF2-SHA256 + 고유 salt)
+ */
+const hashPassword = async (password) => {
+    const salt = crypto.getRandomValues(new Uint8Array(PASSWORD_SALT_BYTES));
+    const derived = await derivePbkdf2Hash(password, salt, PASSWORD_HASH_ITERATIONS);
+    return `${PASSWORD_HASH_VERSION}$${PASSWORD_HASH_ITERATIONS}$${toBase64(salt)}$${toBase64(derived)}`;
+};
+
+const verifyPassword = async (password, storedHash) => {
+    if (typeof storedHash !== 'string' || !storedHash.trim()) {
+        return { valid: false, needsRehash: false };
+    }
+
+    const parts = storedHash.split('$');
+    if (parts.length === 4 && parts[0] === PASSWORD_HASH_VERSION) {
+        const iterations = Number(parts[1]);
+        if (!Number.isInteger(iterations) || iterations < 10000) {
+            return { valid: false, needsRehash: false };
+        }
+
+        try {
+            const salt = fromBase64(parts[2]);
+            const expected = fromBase64(parts[3]);
+            const derived = await derivePbkdf2Hash(password, salt, iterations);
+            const valid = timingSafeEqualBytes(derived, expected);
+            return { valid, needsRehash: valid && iterations < PASSWORD_HASH_ITERATIONS };
+        } catch (error) {
+            console.error('Password verify parse error:', error);
+            return { valid: false, needsRehash: false };
+        }
+    }
+
+    // Legacy SHA-256 hash support (auto-upgrade after successful login)
+    const legacyHash = await hashPasswordLegacySha256(password);
+    const valid = timingSafeEqualString(legacyHash, storedHash);
+    return { valid, needsRehash: valid };
 };
 
 /**
@@ -146,8 +287,8 @@ export const loginWithPassword = async (nickname, password) => {
         }
 
         // 비밀번호 확인
-        const passwordHash = await hashPassword(password);
-        if (dbUser.password_hash !== passwordHash) {
+        const verified = await verifyPassword(password, dbUser.password_hash);
+        if (!verified.valid) {
             return { success: false, error: '비밀번호가 일치하지 않습니다.' };
         }
 
@@ -164,7 +305,27 @@ export const loginWithPassword = async (nickname, password) => {
             expiresAt: new Date(Date.now() + SESSION_DURATION).toISOString(),
         };
 
+        if (user.isAdmin) {
+            markAdminSessionVerified(user);
+        } else {
+            clearAdminSessionVerification();
+        }
+
         setItem(STORAGE_KEYS.USER, user);
+
+        // Legacy hash를 사용 중이거나 iteration이 낮으면 로그인 시점에 자동 업그레이드
+        if (verified.needsRehash) {
+            const upgradedHash = await hashPassword(password);
+            const { error: rehashError } = await supabase
+                .from('users')
+                .update({ password_hash: upgradedHash })
+                .eq('id', dbUser.id);
+
+            if (rehashError) {
+                console.warn('Password hash upgrade skipped:', rehashError);
+            }
+        }
+
         return { success: true, user };
     } catch (error) {
         console.error('Login error:', error);
@@ -177,10 +338,6 @@ export const loginWithPassword = async (nickname, password) => {
  */
 export const changePassword = async (nickname, currentPassword, newPassword) => {
     try {
-        // 현재 비밀번호 확인
-        const currentHash = await hashPassword(currentPassword);
-        const newHash = await hashPassword(newPassword);
-
         // 1. 현재 비밀번호가 맞는지 조회
         const { data: user, error: fetchError } = await supabase
             .from('users')
@@ -192,12 +349,15 @@ export const changePassword = async (nickname, currentPassword, newPassword) => 
             return { success: false, error: '사용자를 찾을 수 없습니다.' };
         }
 
-        if (user.password_hash !== currentHash) {
+        const verified = await verifyPassword(currentPassword, user.password_hash);
+        if (!verified.valid) {
             return { success: false, error: '현재 비밀번호가 일치하지 않습니다.' };
         }
 
+        const newHash = await hashPassword(newPassword);
+
         // 2. 새 비밀번호로 업데이트 시도 (select: 'minimal'로 실제 수정 여부 확인)
-        const { data, error: updateError, count } = await supabase
+        const { data, error: updateError } = await supabase
             .from('users')
             .update({ password_hash: newHash })
             .eq('id', user.id)
@@ -269,11 +429,13 @@ export const login = async (nickname, password = null) => {
         expiresAt: new Date(Date.now() + SESSION_DURATION).toISOString(),
     };
 
+    clearAdminSessionVerification();
     setItem(STORAGE_KEYS.USER, user);
     return { success: true, user };
 };
 
 export const logout = () => {
+    clearAdminSessionVerification();
     removeItem(STORAGE_KEYS.USER);
 };
 
@@ -292,6 +454,12 @@ export const getCurrentUser = () => {
         }
     }
 
+    if (user.isAdmin === true && !hasVerifiedAdminSession(user)) {
+        const downgradedUser = { ...user, isAdmin: false };
+        setItem(STORAGE_KEYS.USER, downgradedUser);
+        return downgradedUser;
+    }
+
     return user;
 };
 
@@ -301,7 +469,7 @@ export const isAuthenticated = () => {
 
 export const isAdmin = () => {
     const user = getCurrentUser();
-    return user && user.isAdmin === true;
+    return !!(user && user.isAdmin === true && hasVerifiedAdminSession(user));
 };
 
 /**
@@ -479,5 +647,9 @@ export const extendSession = () => {
     if (user) {
         user.expiresAt = new Date(Date.now() + SESSION_DURATION).toISOString();
         setItem(STORAGE_KEYS.USER, user);
+
+        if (verifiedAdminSession && verifiedAdminSession.fingerprint === createAdminSessionFingerprint(user)) {
+            verifiedAdminSession.expiresAt = user.expiresAt;
+        }
     }
 };

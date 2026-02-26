@@ -25,5 +25,21 @@ ADD COLUMN IF NOT EXISTS recurring_rule_id UUID REFERENCES meeting_recurring_rul
 -- RLS 정책 설정
 ALTER TABLE public.meeting_recurring_rules ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Enable read for everyone" ON public.meeting_recurring_rules FOR SELECT USING (true);
-CREATE POLICY "Enable all for everyone" ON public.meeting_recurring_rules FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Enable read for everyone" ON public.meeting_recurring_rules;
+DROP POLICY IF EXISTS "Enable all for everyone" ON public.meeting_recurring_rules;
+DROP POLICY IF EXISTS "meeting_recurring_rules_read_all" ON public.meeting_recurring_rules;
+DROP POLICY IF EXISTS "meeting_recurring_rules_insert_authenticated" ON public.meeting_recurring_rules;
+DROP POLICY IF EXISTS "meeting_recurring_rules_update_authenticated" ON public.meeting_recurring_rules;
+DROP POLICY IF EXISTS "meeting_recurring_rules_delete_authenticated" ON public.meeting_recurring_rules;
+
+CREATE POLICY "meeting_recurring_rules_read_all" ON public.meeting_recurring_rules
+FOR SELECT USING (true);
+
+CREATE POLICY "meeting_recurring_rules_insert_authenticated" ON public.meeting_recurring_rules
+FOR INSERT TO authenticated WITH CHECK (true);
+
+CREATE POLICY "meeting_recurring_rules_update_authenticated" ON public.meeting_recurring_rules
+FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+
+CREATE POLICY "meeting_recurring_rules_delete_authenticated" ON public.meeting_recurring_rules
+FOR DELETE TO authenticated USING (true);

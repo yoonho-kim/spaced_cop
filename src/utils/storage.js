@@ -1,60 +1,32 @@
 import { supabase } from './supabase';
+import { isAdmin } from './auth';
+import {
+  STORAGE_KEYS,
+  getItem,
+  setItem,
+  removeItem,
+} from './clientStorage';
 
-// Storage keys (kept for backward compatibility with admin password)
-export const STORAGE_KEYS = {
-  USER: 'spaced_user',
-  ADMIN_PASSWORD: 'spaced_admin_password',
+export {
+  STORAGE_KEYS,
+  getItem,
+  setItem,
+  removeItem,
 };
 
 // Initialize default data
 export const initializeStorage = async () => {
-  // Set default admin password if not exists (still using localStorage)
-  if (!localStorage.getItem(STORAGE_KEYS.ADMIN_PASSWORD)) {
-    localStorage.setItem(STORAGE_KEYS.ADMIN_PASSWORD, '1234');
-  }
-
   // Check if meeting rooms exist, if not, initialize them
   const { data: rooms } = await supabase.from('meeting_rooms').select('id').limit(1);
   if (!rooms || rooms.length === 0) {
-    const defaultRooms = [
-      { name: 'Conference Room A', capacity: 10, floor: '3F' },
-      { name: 'Conference Room B', capacity: 6, floor: '3F' },
-      { name: 'Meeting Room 1', capacity: 4, floor: '2F' },
-      { name: 'Meeting Room 2', capacity: 4, floor: '2F' },
-    ];
-    //await supabase.from('meeting_rooms').insert(defaultRooms);
+    // 기본 회의실 데이터는 운영 정책 확정 전까지 자동 삽입하지 않습니다.
   }
 };
 
-// Generic storage functions (for localStorage compatibility)
-export const getItem = (key) => {
-  try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : null;
-  } catch (error) {
-    console.error(`Error getting item ${key}:`, error);
-    return null;
-  }
-};
-
-export const setItem = (key, value) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch (error) {
-    console.error(`Error setting item ${key}:`, error);
-    return false;
-  }
-};
-
-export const removeItem = (key) => {
-  try {
-    localStorage.removeItem(key);
-    return true;
-  } catch (error) {
-    console.error(`Error removing item ${key}:`, error);
-    return false;
-  }
+const ensureAdminAccess = () => {
+  if (isAdmin()) return true;
+  console.warn('Blocked admin-only operation without a verified admin session.');
+  return false;
 };
 
 // ============================================
@@ -95,6 +67,10 @@ export const getEventSettings = async () => {
 };
 
 export const upsertEventSettings = async (settings) => {
+  if (!ensureAdminAccess()) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
   const payload = {
     id: 1,
     is_active: !!settings.isActive,
@@ -135,6 +111,10 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
 const MAX_EVENT_IMAGE_BYTES = 3 * 1024 * 1024;
 
 export const uploadEventImage = async (file) => {
+  if (!ensureAdminAccess()) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
   if (!file) {
     return { success: false, error: '이미지 파일이 없습니다.' };
   }
@@ -176,6 +156,10 @@ export const uploadEventImage = async (file) => {
 };
 
 export const deleteEventImage = async (path) => {
+  if (!ensureAdminAccess()) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
   if (!path) return { success: true };
 
   try {
@@ -416,14 +400,19 @@ export const getPostsPage = async ({ limit = 10, offset = 0 } = {}) => {
 };
 
 export const addPost = async (post) => {
+  const userIsAdmin = isAdmin();
+  const requestedType = typeof post.postType === 'string' ? post.postType : 'normal';
+  const adminOnlyPostType = requestedType === 'notice' || requestedType === 'volunteer';
+  const safePostType = adminOnlyPostType && !userIsAdmin ? 'normal' : requestedType;
+
   const { data, error } = await supabase
     .from('posts')
     .insert([
       {
         author_nickname: post.author,
         content: post.content,
-        is_admin: post.isAdmin || false,
-        post_type: post.postType || 'normal',
+        is_admin: userIsAdmin && post.isAdmin === true,
+        post_type: safePostType,
       }
     ])
     .select()
@@ -554,6 +543,10 @@ export const getMeetingRooms = async () => {
 };
 
 export const addMeetingRoom = async (room) => {
+  if (!ensureAdminAccess()) {
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('meeting_rooms')
     .insert([room])
@@ -574,6 +567,10 @@ export const addMeetingRoom = async (room) => {
 };
 
 export const deleteMeetingRoom = async (roomId) => {
+  if (!ensureAdminAccess()) {
+    return;
+  }
+
   const { error } = await supabase
     .from('meeting_rooms')
     .delete()
@@ -695,6 +692,10 @@ export const getVolunteerActivities = async () => {
 };
 
 export const addVolunteerActivity = async (activity) => {
+  if (!ensureAdminAccess()) {
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('volunteer_activities')
     .insert([
@@ -740,6 +741,10 @@ export const addVolunteerActivity = async (activity) => {
 };
 
 export const updateVolunteerActivity = async (activityId, updates) => {
+  if (!ensureAdminAccess()) {
+    return;
+  }
+
   // Transform camelCase to snake_case
   const dbUpdates = {};
   if (updates.status !== undefined) dbUpdates.status = updates.status;
@@ -757,6 +762,10 @@ export const updateVolunteerActivity = async (activityId, updates) => {
 };
 
 export const deleteVolunteerActivity = async (activityId) => {
+  if (!ensureAdminAccess()) {
+    return;
+  }
+
   const { error } = await supabase
     .from('volunteer_activities')
     .delete()
@@ -825,6 +834,10 @@ export const addVolunteerRegistration = async (registration) => {
 };
 
 export const updateVolunteerRegistration = async (registrationId, updates) => {
+  if (!ensureAdminAccess()) {
+    return;
+  }
+
   const { error } = await supabase
     .from('volunteer_registrations')
     .update(updates)
@@ -895,6 +908,10 @@ export const addSupplyRequest = async (request) => {
 };
 
 export const updateSupplyRequest = async (requestId, updates) => {
+  if (!ensureAdminAccess()) {
+    return;
+  }
+
   // Transform camelCase to snake_case
   const dbUpdates = {};
   if (updates.status !== undefined) dbUpdates.status = updates.status;
@@ -1158,6 +1175,10 @@ export const getRecurringRules = async () => {
 };
 
 export const addRecurringRule = async (rule) => {
+  if (!ensureAdminAccess()) {
+    throw new Error('권한이 없습니다.');
+  }
+
   // 1. 규칙 저장
   const { data, error } = await supabase
     .from('meeting_recurring_rules')
@@ -1187,6 +1208,10 @@ export const addRecurringRule = async (rule) => {
 };
 
 export const deleteRecurringRule = async (ruleId) => {
+  if (!ensureAdminAccess()) {
+    throw new Error('권한이 없습니다.');
+  }
+
   // ON DELETE CASCADE 설정으로 인해 규칙 삭제 시 관련 예약들도 자동 삭제됨 (DB 레벨)
   const { error } = await supabase
     .from('meeting_recurring_rules')
@@ -1279,6 +1304,10 @@ const expandRecurringReservations = async (rule) => {
 
 // 관리자가 참가자 추가
 export const addParticipantByAdmin = async (activityId, activityTitle, employeeId, employeeName, hours) => {
+  if (!ensureAdminAccess()) {
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('volunteer_registrations')
     .insert([{
@@ -1303,6 +1332,10 @@ export const addParticipantByAdmin = async (activityId, activityTitle, employeeI
 
 // 참가자 정보 수정 (인정시간, 이름, 사번)
 export const updateParticipantDetails = async (registrationId, updates) => {
+  if (!ensureAdminAccess()) {
+    return false;
+  }
+
   const dbUpdates = {};
   if (updates.hours !== undefined) dbUpdates.recognized_hours = updates.hours;
   if (updates.employeeName) dbUpdates.employee_name = updates.employeeName;
@@ -1322,6 +1355,10 @@ export const updateParticipantDetails = async (registrationId, updates) => {
 
 // 참가자 삭제
 export const deleteVolunteerRegistration = async (registrationId) => {
+  if (!ensureAdminAccess()) {
+    return false;
+  }
+
   const { error } = await supabase
     .from('volunteer_registrations')
     .delete()
