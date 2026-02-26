@@ -15,7 +15,7 @@ WITH CHECK (COALESCE(is_admin, false) = false);
 
 -- 2. users SELECT 정책 (로그인 사용자로 제한)
 CREATE POLICY "users_select_authenticated_only"
-ON users FOR SELECT TO authenticated
+ON users FOR SELECT TO anon, authenticated
 USING (true);
 
 -- 3. 스토리지 버킷 정책 (아이콘 업로드용 - 필요한 경우)

@@ -74,7 +74,7 @@ CREATE POLICY "users_insert_signup_non_admin" ON users
   WITH CHECK (COALESCE(is_admin, false) = false);
 
 CREATE POLICY "users_select_authenticated_only" ON users
-  FOR SELECT TO authenticated
+  FOR SELECT TO anon, authenticated
   USING (true);
 
 CREATE POLICY "users_update_authenticated_only" ON users
