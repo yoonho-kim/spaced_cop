@@ -1,19 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getPostsPage, addPost, addLike, removeLike, addComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getMeetingRooms, getReservations, getTop3Volunteers } from '../utils/storage';
+import { getPostsPage, addPost, addLike, removeLike, addComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import WinnersModal from '../components/WinnersModal';
 import './Feed.css';
 
-const Feed = ({ user, onNavigateToTab }) => {
+const Feed = ({ user }) => {
     const [posts, setPosts] = useState([]);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [newPost, setNewPost] = useState('');
     const [publishedActivities, setPublishedActivities] = useState([]);
-    const [topMeetingRoom, setTopMeetingRoom] = useState(null);
     const [showWinnersModal, setShowWinnersModal] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [selectedProfile, setSelectedProfile] = useState(null);
@@ -41,7 +40,6 @@ const Feed = ({ user, onNavigateToTab }) => {
     useEffect(() => {
         loadInitialPosts();
         loadPublishedActivities();
-        loadTopMeetingRoom();
         loadTop3Volunteers();
     }, []);
 
@@ -158,37 +156,6 @@ const Feed = ({ user, onNavigateToTab }) => {
         });
 
         setPublishedActivities(published);
-    };
-
-    const loadTopMeetingRoom = async () => {
-        const rooms = await getMeetingRooms();
-        const reservations = await getReservations();
-
-        if (rooms.length === 0) return;
-
-        const room = rooms[0];
-        const now = new Date();
-        const currentDate = now.toISOString().split('T')[0];
-        const currentHour = now.getHours();
-
-        // 업무 시간 체크 (9시~18시)
-        const isBusinessHours = currentHour >= 9 && currentHour < 18;
-
-        // 현재 시간에 예약이 있는지 확인
-        const currentReservation = reservations.find(r =>
-            r.roomId === room.id &&
-            r.date === currentDate &&
-            parseInt(r.startTime) <= currentHour &&
-            parseInt(r.endTime) > currentHour
-        );
-
-        setTopMeetingRoom({
-            ...room,
-            isAvailable: isBusinessHours && !currentReservation,
-            isBusinessHours: isBusinessHours,
-            currentReservation,
-            currentHour
-        });
     };
 
     const handleSubmit = async (e) => {
@@ -359,7 +326,6 @@ const Feed = ({ user, onNavigateToTab }) => {
     const handleRefresh = () => {
         loadInitialPosts();
         loadPublishedActivities();
-        loadTopMeetingRoom();
     };
     const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(handleRefresh);
 
@@ -394,37 +360,6 @@ const Feed = ({ user, onNavigateToTab }) => {
                                 </div>
                             </div>
                         ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Meeting Room Status Section */}
-            {topMeetingRoom && (
-                <section className="meeting-section">
-                    <div className="section-header">
-                        <h3>회의실 현황</h3>
-                    </div>
-                    <div className="meeting-cards">
-                        <div className="meeting-card-new" onClick={() => onNavigateToTab && onNavigateToTab('meetings')}>
-                            <div className="meeting-image-container">
-                                <img src="/meeting-room.png" alt="Meeting Room" className="meeting-room-image" />
-                            </div>
-                            <div className="meeting-overlay"></div>
-                            <div className={`meeting-status-badge ${topMeetingRoom.isBusinessHours && topMeetingRoom.isAvailable ? 'available' : 'in-use'}`}>
-                                <span className="status-indicator"></span>
-                                {!topMeetingRoom.isBusinessHours
-                                    ? '운영시간 외'
-                                    : topMeetingRoom.isAvailable
-                                        ? 'Available'
-                                        : '사용 중'}
-                            </div>
-                            <div className="meeting-card-info">
-                                <div className="meeting-header">
-                                    <h4>{topMeetingRoom.name}</h4>
-                                    <span className="meeting-floor">{topMeetingRoom.capacity}~12인실 • {topMeetingRoom.floor}</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </section>
             )}
