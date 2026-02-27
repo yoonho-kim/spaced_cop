@@ -4,6 +4,7 @@ import { isAdmin } from '../utils/auth';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import WinnersModal from '../components/WinnersModal';
+import QuickVoteModal from '../components/QuickVoteModal';
 import './Feed.css';
 
 const Feed = ({ user }) => {
@@ -22,6 +23,7 @@ const Feed = ({ user }) => {
     const [editingContent, setEditingContent] = useState('');
     const [isUpdatingPost, setIsUpdatingPost] = useState(false);
     const [top3Volunteers, setTop3Volunteers] = useState([]);
+    const [voteModal, setVoteModal] = useState(null); // 'praise' | 'lunch' | 'coffee' | null
     const loadMoreRef = useRef(null);
     const observerRef = useRef(null);
     const loadingRef = useRef(false);
@@ -333,6 +335,77 @@ const Feed = ({ user }) => {
         <div className="feed-container" style={{ position: 'relative' }}>
             {/* Pull-to-refresh indicator */}
             <PullToRefreshIndicator />
+
+            {/* Quick Action Cards */}
+            <section className="quick-actions-section">
+                <div className="quick-actions-grid">
+                    <button className="quick-card quick-card--praise" onClick={() => setVoteModal('praise')}>
+                        <div className="quick-card__illust">
+                            <svg width="80" height="72" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M38 54C38 54 14 40.5 14 24.5C14 16.492 20.268 10 28 10C32.418 10 36.364 12.094 39 15.382C41.636 12.094 45.582 10 50 10C57.732 10 64 16.492 64 24.5C64 40.5 40 54 40 54H38Z" fill="#FF6B8A" opacity="0.9"/>
+                                <path d="M52 46C52 46 36 37.2 36 26.4C36 21.178 40.03 17 45 17C47.6 17 49.9 18.25 51.5 20.26C53.1 18.25 55.4 17 58 17C62.97 17 67 21.178 67 26.4C67 37.2 53 46 53 46H52Z" fill="#FF99B5" opacity="0.7"/>
+                                <path d="M25 18L26.5 14L28 18L32 19.5L28 21L26.5 25L25 21L21 19.5L25 18Z" fill="#FFD700"/>
+                                <path d="M58 8L59 5L60 8L63 9L60 10L59 13L58 10L55 9L58 8Z" fill="#FFD700"/>
+                                <path d="M14 34L14.8 31.5L15.6 34L18 34.8L15.6 35.6L14.8 38L14 35.6L11.5 34.8L14 34Z" fill="#FFD700" opacity="0.8"/>
+                            </svg>
+                        </div>
+                        <div className="quick-card__text">
+                            <span className="quick-card__title">칭찬하기</span>
+                            <span className="quick-card__subtitle">우수한 팀원을 칭찬하자!</span>
+                        </div>
+                    </button>
+                    <button className="quick-card quick-card--lunch" onClick={() => setVoteModal('lunch')}>
+                        <div className="quick-card__title-top">점심 투표</div>
+                        <div className="quick-card__illust">
+                            <svg width="88" height="72" viewBox="0 0 88 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <ellipse cx="44" cy="56" rx="32" ry="10" fill="#C8EDCA" opacity="0.5"/>
+                                <rect x="18" y="28" width="36" height="26" rx="10" fill="#F5A623"/>
+                                <rect x="20" y="30" width="32" height="22" rx="9" fill="#FAB940"/>
+                                <path d="M24 38C26 34 32 32 36 36C38 38 40 36 42 34" stroke="#F5A623" strokeWidth="2" strokeLinecap="round"/>
+                                <circle cx="36" cy="41" r="5" fill="#FFD580"/>
+                                <rect x="30" y="20" width="12" height="10" rx="3" fill="#6DC070"/>
+                                <rect x="33" y="14" width="6" height="8" rx="2" fill="#5AAD5E"/>
+                                <rect x="58" y="20" width="14" height="20" rx="4" fill="#E8C5A0"/>
+                                <rect x="60" y="24" width="10" height="14" rx="3" fill="#F0D4B0"/>
+                                <line x1="63" y1="26" x2="63" y2="36" stroke="#D4A574" strokeWidth="1.5"/>
+                                <line x1="67" y1="26" x2="67" y2="36" stroke="#D4A574" strokeWidth="1.5"/>
+                            </svg>
+                        </div>
+                    </button>
+                </div>
+                <button className="quick-card quick-card--coffee quick-card--wide" onClick={() => setVoteModal('coffee')}>
+                    <div className="quick-card__text">
+                        <span className="quick-card__title">커피 투표</span>
+                        <span className="quick-card__subtitle">팀 커페 브레이크 타임!</span>
+                    </div>
+                    <div className="quick-card__illust quick-card__illust--row">
+                        <svg width="120" height="64" viewBox="0 0 120 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            {/* 아메리카노 */}
+                            <rect x="6" y="22" width="24" height="32" rx="5" fill="#8B5E3C"/>
+                            <rect x="8" y="24" width="20" height="28" rx="4" fill="#6F4E37"/>
+                            <rect x="8" y="24" width="20" height="8" rx="2" fill="#3E1C00" opacity="0.6"/>
+                            <path d="M30 30 Q36 33 30 36" stroke="#8B5E3C" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                            <path d="M14 18 Q15 14 14 10" stroke="#C4956A" strokeWidth="1.5" strokeLinecap="round"/>
+                            <path d="M18 16 Q20 12 18 8" stroke="#C4956A" strokeWidth="1.5" strokeLinecap="round"/>
+                            {/* 라떼 */}
+                            <rect x="46" y="18" width="28" height="36" rx="6" fill="#D4A96A"/>
+                            <rect x="48" y="20" width="24" height="32" rx="5" fill="#E8C99A"/>
+                            <ellipse cx="60" cy="24" rx="10" ry="4" fill="#F5E6CA"/>
+                            <path d="M52 26 Q60 30 68 26" stroke="#D4A96A" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                            <path d="M74 26 Q80 30 74 34" stroke="#D4A96A" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                            {/* 버블티 */}
+                            <rect x="88" y="14" width="26" height="40" rx="6" fill="#C9A0DC"/>
+                            <rect x="90" y="16" width="22" height="36" rx="5" fill="#DDB8EE"/>
+                            <rect x="90" y="14" width="22" height="8" rx="4" fill="#B57BCC"/>
+                            <circle cx="96" cy="46" r="3" fill="#7B3F8C"/>
+                            <circle cx="104" cy="46" r="3" fill="#7B3F8C"/>
+                            <circle cx="100" cy="50" r="3" fill="#7B3F8C"/>
+                            <rect x="99" y="6" width="3" height="12" rx="1.5" fill="#9B6BB5"/>
+                        </svg>
+                    </div>
+                </button>
+            </section>
+
             {/* Volunteer Activities Section */}
             {publishedActivities.length > 0 && (
                 <section className="volunteer-section">
@@ -622,6 +695,15 @@ const Feed = ({ user }) => {
                 onClose={() => setShowWinnersModal(false)}
                 activity={selectedActivity}
             />
+
+            {/* Quick Vote Modal */}
+            {voteModal && (
+                <QuickVoteModal
+                    voteType={voteModal}
+                    user={user}
+                    onClose={() => setVoteModal(null)}
+                />
+            )}
         </div>
     );
 };

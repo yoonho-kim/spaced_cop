@@ -1370,3 +1370,96 @@ export const deleteVolunteerRegistration = async (registrationId) => {
   }
   return true;
 };
+
+// ============================================
+// QUICK VOTES (칭찬하기 / 점심 투표 / 커피 투표)
+// ============================================
+
+const getTodayKey = () => new Date().toISOString().slice(0, 10);
+
+// 오늘 특정 타입의 전체 투표 목록 조회
+export const getQuickVotes = async (voteType) => {
+  const today = getTodayKey();
+  const { data, error } = await supabase
+    .from('quick_votes')
+    .select('*')
+    .eq('vote_type', voteType)
+    .eq('vote_date', today);
+
+  if (error) {
+    console.error('Error fetching quick votes:', error);
+    return [];
+  }
+  return data;
+};
+
+// 내 투표 조회 (오늘, 특정 타입)
+export const getMyQuickVote = async (voteType, employeeId) => {
+  const today = getTodayKey();
+  const { data, error } = await supabase
+    .from('quick_votes')
+    .select('*')
+    .eq('vote_type', voteType)
+    .eq('employee_id', employeeId)
+    .eq('vote_date', today)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching my quick vote:', error);
+    return null;
+  }
+  return data;
+};
+
+// 투표 추가
+export const addQuickVote = async (voteType, optionKey, optionLabel, employeeId) => {
+  const today = getTodayKey();
+  const { data, error } = await supabase
+    .from('quick_votes')
+    .insert([{
+      vote_type: voteType,
+      option_key: optionKey,
+      option_label: optionLabel,
+      employee_id: employeeId,
+      vote_date: today,
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding quick vote:', error);
+    return null;
+  }
+  return data;
+};
+
+// 투표 취소 (본인 투표 삭제)
+export const removeQuickVote = async (voteType, employeeId) => {
+  const today = getTodayKey();
+  const { error } = await supabase
+    .from('quick_votes')
+    .delete()
+    .eq('vote_type', voteType)
+    .eq('employee_id', employeeId)
+    .eq('vote_date', today);
+
+  if (error) {
+    console.error('Error removing quick vote:', error);
+    return false;
+  }
+  return true;
+};
+
+// 팀원 목록 조회 (칭찬하기용)
+export const getTeamMembers = async () => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('employee_id, nickname, profile_icon_url')
+    .order('nickname', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching team members:', error);
+    return [];
+  }
+  return data;
+};

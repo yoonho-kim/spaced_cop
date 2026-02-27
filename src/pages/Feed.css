@@ -67,6 +67,121 @@
     font-weight: 500;
 }
 
+/* ============================================
+   Quick Action Cards
+   ============================================ */
+.quick-actions-section {
+    padding: 0 16px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.quick-card {
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    overflow: hidden;
+    text-align: left;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.quick-card:active {
+    transform: scale(0.96);
+}
+
+.quick-card:hover {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+/* 칭찬하기 - 연파랑 */
+.quick-card--praise {
+    background: #d8e8fc;
+    padding: 18px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-height: 160px;
+}
+
+/* 점심 투표 - 연초록 */
+.quick-card--lunch {
+    background: #d4f0da;
+    padding: 14px 10px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 160px;
+}
+
+/* 커피 투표 - 베이지 */
+.quick-card--coffee {
+    background: #f0e4d0;
+    padding: 18px 20px;
+}
+
+/* 와이드 카드 */
+.quick-card--wide {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.quick-card__title-top {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #1a3a1a;
+    align-self: flex-start;
+    padding: 0 4px;
+}
+
+.quick-card__illust {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    flex: 1;
+}
+
+.quick-card__illust--row {
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+.quick-card__text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.quick-card__title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.quick-card--wide .quick-card__title {
+    font-size: 1.3rem;
+}
+
+.quick-card__subtitle {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #475569;
+    line-height: 1.4;
+}
+
 /* Section Headers */
 .section-header {
     display: flex;
