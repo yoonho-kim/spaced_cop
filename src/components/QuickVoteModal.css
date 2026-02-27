@@ -1,0 +1,195 @@
+/* QuickVoteModal */
+.qvm-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qvm-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+  text-align: center;
+}
+
+.qvm-voted-notice {
+  font-size: 0.8rem;
+  color: #2952cc;
+  background: #e4e9fb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0;
+  text-align: center;
+}
+
+.qvm-loading {
+  text-align: center;
+  color: #94a3b8;
+  padding: 24px 0;
+  font-size: 0.875rem;
+}
+
+/* 투표 옵션 (점심/커피) */
+.qvm-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qvm-option {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.18s, transform 0.12s;
+  text-align: left;
+}
+
+.qvm-option:active {
+  transform: scale(0.98);
+}
+
+.qvm-option.qvm-voted {
+  border-color: #2952cc;
+  background: #eef1fd;
+}
+
+.qvm-option-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(41, 82, 204, 0.1);
+  transition: width 0.35s ease;
+  border-radius: 10px 0 0 10px;
+  z-index: 0;
+}
+
+.qvm-option-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.qvm-option-emoji {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.qvm-option-label {
+  flex: 1;
+  font-size: 0.925rem;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.qvm-option-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qvm-check {
+  color: #2952cc;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.qvm-option-count {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* 칭찬하기 그리드 */
+.qvm-praise-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.qvm-praise-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, transform 0.12s;
+}
+
+.qvm-praise-item:active {
+  transform: scale(0.95);
+}
+
+.qvm-praise-item.qvm-voted {
+  border-color: #e879a0;
+  background: #fdf0f5;
+}
+
+.qvm-praise-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e4e9fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2952cc;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.qvm-praise-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.qvm-praise-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: center;
+  line-height: 1.2;
+  word-break: break-all;
+}
+
+.qvm-praise-heart {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #94a3b8;
+  transition: transform 0.2s;
+}
+
+.qvm-praise-heart span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #e879a0;
+}
+
+.qvm-heart-active {
+  transform: scale(1.2);
+}
+
+.qvm-total {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  text-align: center;
+  margin: 4px 0 0;
+}
