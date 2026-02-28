@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getPostsPage, addPost, addLike, removeLike, addComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
+import { supabase } from '../utils/supabase';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import WinnersModal from '../components/WinnersModal';
@@ -24,11 +25,20 @@ const Feed = ({ user }) => {
     const [isUpdatingPost, setIsUpdatingPost] = useState(false);
     const [top3Volunteers, setTop3Volunteers] = useState([]);
     const [voteModal, setVoteModal] = useState(null); // 'praise' | 'lunch' | 'coffee' | null
+    const [highlightedPostIds, setHighlightedPostIds] = useState(new Set());
+    const [liveFeedNotice, setLiveFeedNotice] = useState('');
     const loadMoreRef = useRef(null);
     const observerRef = useRef(null);
     const loadingRef = useRef(false);
     const requestedPagesRef = useRef(new Set());
+    const pageRef = useRef(0);
+    const postsRef = useRef([]);
+    const highlightTimeoutsRef = useRef(new Map());
+    const liveNoticeTimeoutRef = useRef(null);
+    const refreshPostsRef = useRef(null);
     const PAGE_SIZE = 10;
+    const NEW_POST_EFFECT_MS = 1800;
+    const LIVE_NOTICE_MS = 2400;
 
     const uniqueById = (items) => {
         const seen = new Set();
@@ -44,6 +54,185 @@ const Feed = ({ user }) => {
         loadPublishedActivities();
         loadTop3Volunteers();
     }, []);
+
+    useEffect(() => {
+        postsRef.current = posts;
+    }, [posts]);
+
+    useEffect(() => {
+        pageRef.current = page;
+    }, [page]);
+
+    useEffect(() => {
+        return () => {
+            highlightTimeoutsRef.current.forEach((timerId) => {
+                clearTimeout(timerId);
+            });
+            highlightTimeoutsRef.current.clear();
+
+            if (liveNoticeTimeoutRef.current) {
+                clearTimeout(liveNoticeTimeoutRef.current);
+                liveNoticeTimeoutRef.current = null;
+            }
+        };
+    }, []);
+
+    const showLiveNotice = (authorNickname) => {
+        if (!authorNickname) return;
+
+        setLiveFeedNotice(`${authorNickname}님이 새 피드를 올렸어요`);
+        if (liveNoticeTimeoutRef.current) {
+            clearTimeout(liveNoticeTimeoutRef.current);
+        }
+        liveNoticeTimeoutRef.current = setTimeout(() => {
+            setLiveFeedNotice('');
+            liveNoticeTimeoutRef.current = null;
+        }, LIVE_NOTICE_MS);
+    };
+
+    const highlightIncomingPost = (postId) => {
+        if (!postId) return;
+
+        setHighlightedPostIds((prev) => {
+            const next = new Set(prev);
+            next.add(postId);
+            return next;
+        });
+
+        const previousTimer = highlightTimeoutsRef.current.get(postId);
+        if (previousTimer) {
+            clearTimeout(previousTimer);
+        }
+
+        const timerId = setTimeout(() => {
+            setHighlightedPostIds((prev) => {
+                if (!prev.has(postId)) return prev;
+                const next = new Set(prev);
+                next.delete(postId);
+                return next;
+            });
+            highlightTimeoutsRef.current.delete(postId);
+        }, NEW_POST_EFFECT_MS);
+
+        highlightTimeoutsRef.current.set(postId, timerId);
+    };
+
+    const syncLikeRealtimeChange = (eventType, record) => {
+        const targetPostId = record?.post_id;
+        const likerNickname = String(record?.user_nickname || '').trim();
+        if (!targetPostId || !likerNickname) return;
+
+        setPosts((prevPosts) => {
+            let changed = false;
+
+            const nextPosts = prevPosts.map((post) => {
+                if (String(post.id) !== String(targetPostId)) return post;
+
+                const currentLikes = Array.isArray(post.likes) ? post.likes : [];
+
+                if (eventType === 'INSERT') {
+                    if (currentLikes.includes(likerNickname)) return post;
+                    changed = true;
+                    return {
+                        ...post,
+                        likes: [...currentLikes, likerNickname],
+                    };
+                }
+
+                if (eventType === 'DELETE') {
+                    if (!currentLikes.includes(likerNickname)) return post;
+                    changed = true;
+                    return {
+                        ...post,
+                        likes: currentLikes.filter((name) => name !== likerNickname),
+                    };
+                }
+
+                return post;
+            });
+
+            return changed ? nextPosts : prevPosts;
+        });
+    };
+
+    const syncCommentRealtimeChange = (eventType, record) => {
+        const targetPostId = record?.post_id;
+        const targetCommentId = record?.id;
+
+        if (eventType === 'DELETE' && targetCommentId && !targetPostId) {
+            setPosts((prevPosts) => {
+                let changed = false;
+
+                const nextPosts = prevPosts.map((post) => {
+                    const currentComments = Array.isArray(post.comments) ? post.comments : [];
+                    const filteredComments = currentComments.filter(
+                        (comment) => String(comment.id) !== String(targetCommentId)
+                    );
+                    if (filteredComments.length === currentComments.length) return post;
+
+                    changed = true;
+                    return {
+                        ...post,
+                        comments: filteredComments,
+                    };
+                });
+
+                return changed ? nextPosts : prevPosts;
+            });
+            return;
+        }
+
+        if (!targetPostId) return;
+
+        setPosts((prevPosts) => {
+            let changed = false;
+
+            const nextPosts = prevPosts.map((post) => {
+                if (String(post.id) !== String(targetPostId)) return post;
+
+                const currentComments = Array.isArray(post.comments) ? post.comments : [];
+
+                if (eventType === 'INSERT') {
+                    if (targetCommentId && currentComments.some((comment) => String(comment.id) === String(targetCommentId))) {
+                        return post;
+                    }
+
+                    const newComment = {
+                        id: targetCommentId || `realtime-${Date.now()}`,
+                        userName: String(record?.user_nickname || '').trim() || '익명',
+                        userHonorifics: [],
+                        userEmployeeId: null,
+                        content: String(record?.content || ''),
+                        timestamp: record?.created_at || new Date().toISOString(),
+                    };
+
+                    changed = true;
+                    return {
+                        ...post,
+                        comments: [...currentComments, newComment],
+                    };
+                }
+
+                if (eventType === 'DELETE') {
+                    if (!targetCommentId) return post;
+                    const filteredComments = currentComments.filter(
+                        (comment) => String(comment.id) !== String(targetCommentId)
+                    );
+                    if (filteredComments.length === currentComments.length) return post;
+
+                    changed = true;
+                    return {
+                        ...post,
+                        comments: filteredComments,
+                    };
+                }
+
+                return post;
+            });
+
+            return changed ? nextPosts : prevPosts;
+        });
+    };
 
     useEffect(() => {
         const root = document.querySelector('.main-content');
@@ -105,8 +294,11 @@ const Feed = ({ user }) => {
         await loadPostsPage(0, true);
     };
 
-    const refreshPosts = async () => {
-        const loadedCount = Math.max(page, 1) * PAGE_SIZE;
+    const refreshPosts = async ({
+        incomingPostId = null,
+        incomingAuthor = '',
+    } = {}) => {
+        const loadedCount = Math.max(pageRef.current, 1) * PAGE_SIZE;
         loadingRef.current = true;
         setIsLoadingMore(true);
         try {
@@ -121,11 +313,96 @@ const Feed = ({ user }) => {
             requestedPagesRef.current = new Set(
                 Array.from({ length: Math.ceil(uniquePosts.length / PAGE_SIZE) }, (_, i) => i)
             );
+
+            if (incomingPostId) {
+                const refreshedIncoming = uniquePosts.find((item) => item.id === incomingPostId);
+                const targetPostId = refreshedIncoming?.id || uniquePosts[0]?.id;
+                if (targetPostId) {
+                    highlightIncomingPost(targetPostId);
+                }
+            }
+
+            if (incomingAuthor) {
+                showLiveNotice(incomingAuthor);
+            }
         } finally {
             loadingRef.current = false;
             setIsLoadingMore(false);
         }
     };
+
+    useEffect(() => {
+        refreshPostsRef.current = refreshPosts;
+    });
+
+    useEffect(() => {
+        if (!user?.nickname) return undefined;
+
+        const channel = supabase
+            .channel(`feed-post-stream-${user.nickname}`)
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'posts' },
+                (payload) => {
+                    const incomingPostId = payload?.new?.id;
+                    if (!incomingPostId) return;
+
+                    const alreadyLoaded = postsRef.current.some((item) => item.id === incomingPostId);
+                    if (alreadyLoaded) return;
+
+                    const authorNickname = String(payload.new?.author_nickname || '').trim();
+                    const shouldNotify = authorNickname && authorNickname !== user.nickname;
+
+                    refreshPostsRef.current?.({
+                        incomingPostId,
+                        incomingAuthor: shouldNotify ? authorNickname : '',
+                    });
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'post_likes' },
+                (payload) => {
+                    syncLikeRealtimeChange('INSERT', payload?.new);
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'post_likes' },
+                (payload) => {
+                    const oldRow = payload?.old || {};
+                    if (!oldRow.post_id || !oldRow.user_nickname) {
+                        refreshPostsRef.current?.();
+                        return;
+                    }
+                    syncLikeRealtimeChange('DELETE', oldRow);
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'post_comments' },
+                (payload) => {
+                    syncCommentRealtimeChange('INSERT', payload?.new);
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'post_comments' },
+                (payload) => {
+                    const oldRow = payload?.old || {};
+                    if (!oldRow.id && !oldRow.post_id) {
+                        refreshPostsRef.current?.();
+                        return;
+                    }
+                    syncCommentRealtimeChange('DELETE', oldRow);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.nickname]);
 
     const loadTop3Volunteers = async () => {
         const top3 = await getTop3Volunteers();
@@ -164,14 +441,19 @@ const Feed = ({ user }) => {
         e.preventDefault();
         if (!newPost.trim()) return;
 
-        await addPost({
+        const createdPost = await addPost({
             content: newPost,
             author: user.nickname,
             isAdmin: isAdmin(),
         });
 
         setNewPost('');
-        loadInitialPosts();
+        if (createdPost?.id) {
+            await refreshPosts({ incomingPostId: createdPost.id });
+            return;
+        }
+
+        await loadInitialPosts();
     };
 
     const formatTimestamp = (timestamp) => {
@@ -439,6 +721,12 @@ const Feed = ({ user }) => {
 
             {/* Posts Feed */}
             <section className="posts-section">
+                {liveFeedNotice && (
+                    <div className="feed-live-notice animate-fade-in" role="status" aria-live="polite">
+                        <span className="material-symbols-outlined">auto_awesome</span>
+                        <span>{liveFeedNotice}</span>
+                    </div>
+                )}
                 <div className="posts-list">
                     {posts.length === 0 ? (
                         <div className="empty-state">
@@ -454,9 +742,14 @@ const Feed = ({ user }) => {
                             const isExpanded = expandedComments.has(post.id);
                             const canManage = canManagePost(post);
                             const isEditingPost = editingPostId === post.id;
+                            const isNewPost = highlightedPostIds.has(post.id);
 
                             return (
-                                <div key={post.id} className="post-item animate-fade-in">
+                                <div
+                                    key={post.id}
+                                    className={`post-item animate-fade-in ${isNewPost ? 'post-item--new' : ''}`}
+                                >
+                                    {isNewPost && <span className="post-afterimage-spray" aria-hidden="true" />}
                                     <div className="post-content">
                                         <div className="post-header">
                                             <button
