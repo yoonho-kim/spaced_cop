@@ -1,8 +1,6 @@
 // Google Gemini Vision API Service
 // 이미지를 분석하여 피드 글을 자동 생성합니다
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
 // Gemini 모델 후보 (접근 권한/지원 여부에 따라 fallback)
 const MODEL_CANDIDATES = [
     'gemini-2.5-flash',
@@ -36,13 +34,16 @@ const extractJson = (text) => {
 };
 
 const callGemini = async (modelName, body) => {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
+    const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': GEMINI_API_KEY,
         },
-        body: JSON.stringify(body),
+        credentials: 'include',
+        body: JSON.stringify({
+            model: modelName,
+            body
+        }),
     });
 
     let data;
@@ -53,7 +54,8 @@ const callGemini = async (modelName, body) => {
     }
 
     if (!response.ok) {
-        const error = new Error(data?.error?.message || 'API 요청에 실패했습니다.');
+        const errorMessage = data?.error?.message || data?.error || 'API 요청에 실패했습니다.';
+        const error = new Error(errorMessage);
         error.status = response.status;
         error.data = data;
         throw error;
@@ -129,10 +131,6 @@ const compressImage = (file) => {
  * @returns {Promise<string>} - 생성된 피드 글
  */
 export const generatePostFromImage = async (imageFile) => {
-    if (!GEMINI_API_KEY) {
-        throw new Error('Gemini API 키가 설정되지 않았습니다. .env 파일에 VITE_GEMINI_API_KEY를 추가해주세요.');
-    }
-
     try {
         // 이미지 압축 (모바일 대용량 사진 대응)
         console.log(`원본 파일 크기: ${(imageFile.size / 1024 / 1024).toFixed(2)}MB`);
@@ -215,10 +213,6 @@ export const generatePostFromImage = async (imageFile) => {
  * @returns {Promise<{ title: string, subtitle: string, bullets: string[], cta: string }>}
  */
 export const generateEventPamphlet = async (description) => {
-    if (!GEMINI_API_KEY) {
-        throw new Error('Gemini API 키가 설정되지 않았습니다. .env 파일에 VITE_GEMINI_API_KEY를 추가해주세요.');
-    }
-
     if (!description || !description.trim()) {
         throw new Error('이벤트 설명이 필요합니다.');
     }

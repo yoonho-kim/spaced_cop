@@ -1,37 +1,44 @@
+/* global process */
 import { del } from '@vercel/blob';
+import {
+  applyCors,
+  enforceRateLimit,
+  parseRequestBody,
+  requireSession,
+} from './_security.js';
 
-const setCorsHeaders = (response) => {
-  response.setHeader('Access-Control-Allow-Credentials', true);
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  response.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
-};
+const isAllowedEventBlobPath = (value) => {
+  if (!value) return false;
 
-const parseRequestBody = (request) => {
-  if (!request?.body) return {};
-  if (typeof request.body === 'string') {
-    try {
-      return JSON.parse(request.body);
-    } catch {
-      return {};
-    }
+  try {
+    const parsed = new URL(String(value));
+    if (parsed.protocol !== 'https:') return false;
+    if (!parsed.hostname.endsWith('.blob.vercel-storage.com')) return false;
+
+    const normalizedPath = parsed.pathname.replace(/^\/+/, '');
+    if (!normalizedPath.startsWith('event_img/')) return false;
+    if (normalizedPath.includes('..')) return false;
+
+    return true;
+  } catch {
+    return false;
   }
-  return request.body;
 };
 
 export default async function handler(request, response) {
-  setCorsHeaders(response);
-
-  if (request.method === 'OPTIONS') {
-    response.status(200).end();
+  if (!applyCors(request, response, { methods: 'POST,OPTIONS' })) {
     return;
   }
 
   if (request.method !== 'POST') {
     response.status(405).json({ success: false, error: 'Method Not Allowed' });
+    return;
+  }
+
+  const session = requireSession(request, response, { adminOnly: true });
+  if (!session) return;
+
+  if (!enforceRateLimit(request, response, { key: `event-image-delete:${session.uid}`, max: 20, windowMs: 60_000 })) {
     return;
   }
 
@@ -48,9 +55,8 @@ export default async function handler(request, response) {
     }
 
     const pathString = String(path);
-    if (!pathString.includes('.blob.vercel-storage.com/')) {
-      // Supabase 경로 등 이전 데이터는 Blob 삭제 대상이 아니므로 무시
-      response.status(200).json({ success: true, skipped: true });
+    if (!isAllowedEventBlobPath(pathString)) {
+      response.status(400).json({ success: false, error: '허용되지 않은 이미지 경로입니다.' });
       return;
     }
 

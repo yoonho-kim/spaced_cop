@@ -274,8 +274,12 @@ export const checkNicknameAvailability = async (nickname) => {
  * DB 인증 로그인
  */
 export const loginWithPassword = async (nickname, password) => {
-    try {
-        // 사용자 조회
+    const fallbackToDirectLogin = async () => {
+        // 개발 환경(Vite dev)에서는 /api 서버리스 라우트가 없을 수 있어 직접 DB 인증으로 폴백
+        if (!import.meta.env.DEV) {
+            return { success: false, error: '로그인에 실패했습니다.' };
+        }
+
         const { data: dbUser, error } = await supabase
             .from('users')
             .select('*')
@@ -286,13 +290,11 @@ export const loginWithPassword = async (nickname, password) => {
             return { success: false, error: '등록되지 않은 사용자입니다.' };
         }
 
-        // 비밀번호 확인
         const verified = await verifyPassword(password, dbUser.password_hash);
         if (!verified.valid) {
             return { success: false, error: '비밀번호가 일치하지 않습니다.' };
         }
 
-        // 세션 생성
         const user = {
             id: dbUser.id,
             nickname: dbUser.nickname,
@@ -313,7 +315,6 @@ export const loginWithPassword = async (nickname, password) => {
 
         setItem(STORAGE_KEYS.USER, user);
 
-        // Legacy hash를 사용 중이거나 iteration이 낮으면 로그인 시점에 자동 업그레이드
         if (verified.needsRehash) {
             const upgradedHash = await hashPassword(password);
             const { error: rehashError } = await supabase
@@ -327,8 +328,49 @@ export const loginWithPassword = async (nickname, password) => {
         }
 
         return { success: true, user };
+    };
+
+    try {
+        const response = await fetch('/api/auth-login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                nickname,
+                password,
+            }),
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload?.success || !payload?.user) {
+            if ((response.status === 404 || response.status === 405) && import.meta.env.DEV) {
+                return await fallbackToDirectLogin();
+            }
+            return { success: false, error: payload?.error || '로그인에 실패했습니다.' };
+        }
+
+        const user = {
+            ...payload.user,
+            loginTime: new Date().toISOString(),
+            expiresAt: payload.user.expiresAt || new Date(Date.now() + SESSION_DURATION).toISOString(),
+        };
+
+        if (user.isAdmin) {
+            markAdminSessionVerified(user);
+        } else {
+            clearAdminSessionVerification();
+        }
+
+        setItem(STORAGE_KEYS.USER, user);
+
+        return { success: true, user };
     } catch (error) {
         console.error('Login error:', error);
+        if (import.meta.env.DEV) {
+            return await fallbackToDirectLogin();
+        }
         return { success: false, error: error.message };
     }
 };
@@ -437,6 +479,12 @@ export const login = async (nickname, password = null) => {
 export const logout = () => {
     clearAdminSessionVerification();
     removeItem(STORAGE_KEYS.USER);
+    fetch('/api/auth-logout', {
+        method: 'POST',
+        credentials: 'include',
+    }).catch(() => {
+        // ignore logout network errors
+    });
 };
 
 export const getCurrentUser = () => {

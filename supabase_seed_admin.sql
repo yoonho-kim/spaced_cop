@@ -1,27 +1,17 @@
--- 1. 관리자(admin) 계정이 이미 존재하는지 확인 후, 없다면 추가합니다.
--- 비밀번호 해시는 'admin' 문자열을 SHA-256으로 해싱한 값입니다: 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
--- (직접 만든 hashPassword 함수와 동일한 로직입니다)
+-- SECURITY NOTE:
+-- 예측 가능한 기본 관리자 계정/비밀번호는 절대 시드하지 않습니다.
+-- (예: admin / 1234 / 0000 / 고정 해시값)
 
-INSERT INTO users (
-    nickname, 
-    password_hash, 
-    is_admin, 
-    employee_id
-)
-SELECT 
-    'admin', 
-    '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 
-    true, 
-    '000000'
-WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE nickname = 'admin'
-);
+-- 1) 권장 방식: 이미 생성된 사용자 계정을 관리자 권한으로 승격
+--    아래 닉네임을 실제 운영 관리자 계정으로 바꾼 뒤 실행하세요.
+UPDATE users
+SET is_admin = true
+WHERE nickname = 'replace_with_real_admin_nickname';
 
--- 2. 이미 존재하는 계정을 관리자로 승격시키고 싶은 경우 아래 쿼리를 사용하세요:
--- UPDATE users SET is_admin = true WHERE nickname = '원하는닉네임';
-
--- 3. 기존에 'admin' 계정이 있었는데 비밀번호를 초기화하고 싶은 경우:
--- UPDATE users SET 
---     password_hash = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',
---     is_admin = true
--- WHERE nickname = 'admin';
+-- 2) 비밀번호를 DB에서 직접 갱신해야 할 경우
+--    반드시 강한 비밀번호 정책을 만족하는 PBKDF2 해시를 생성해 수동으로 입력하세요.
+--    (고정값/예제값 사용 금지)
+--
+-- UPDATE users
+-- SET password_hash = 'pbkdf2_sha256$210000$<base64_salt>$<base64_hash>'
+-- WHERE nickname = 'replace_with_real_admin_nickname';

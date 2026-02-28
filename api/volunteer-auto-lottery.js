@@ -1,5 +1,6 @@
 /* global process */
 import { createClient } from '@supabase/supabase-js';
+import { applyCors, enforceRateLimit } from './_security.js';
 
 const KST_TIME_ZONE = 'Asia/Seoul';
 
@@ -41,16 +42,6 @@ const formatVolunteerDateLabel = (dateString) => {
 const buildLotteryFeedContent = (title, activityDate) =>
   `${title} 의 추첨이 완료되었습니다.\n - 봉사활동 일자 : ${formatVolunteerDateLabel(activityDate)}`;
 
-const setCorsHeaders = (response) => {
-  response.setHeader('Access-Control-Allow-Credentials', true);
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  response.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
-  );
-};
-
 const isAuthorizedCronRequest = (request, cronSecret) => {
   const authHeader = request.headers?.authorization || '';
   const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
@@ -58,15 +49,16 @@ const isAuthorizedCronRequest = (request, cronSecret) => {
 };
 
 export default async function handler(request, response) {
-  setCorsHeaders(response);
-
-  if (request.method === 'OPTIONS') {
-    response.status(200).end();
+  if (!applyCors(request, response, { methods: 'GET,POST,OPTIONS' })) {
     return;
   }
 
   if (!['GET', 'POST'].includes(request.method || '')) {
     response.status(405).json({ success: false, error: 'Method Not Allowed' });
+    return;
+  }
+
+  if (!enforceRateLimit(request, response, { key: 'volunteer-auto-lottery', max: 20, windowMs: 60_000 })) {
     return;
   }
 

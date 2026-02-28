@@ -1,57 +1,62 @@
+/* global process */
+import { applyCors, enforceRateLimit, parseRequestBody, requireSession } from './_security.js';
+
+const MODEL_ID_REGEX = /^[a-zA-Z0-9._-]+$/;
 
 export default async function handler(request, response) {
-    // CORS handling
-    response.setHeader('Access-Control-Allow-Credentials', true)
-    response.setHeader('Access-Control-Allow-Origin', '*')
-    response.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST')
-    response.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    )
+  if (!applyCors(request, response, { methods: 'POST,OPTIONS' })) {
+    return;
+  }
 
-    if (request.method === 'OPTIONS') {
-        response.status(200).end()
-        return
-    }
+  if (request.method !== 'POST') {
+    response.status(405).json({ success: false, error: 'Method Not Allowed' });
+    return;
+  }
 
-    if (request.method === 'GET') {
-        return response.status(200).json({ status: 'ok', message: 'Gemini Proxy is running' });
-    }
+  const session = requireSession(request, response);
+  if (!session) return;
 
-    if (request.method !== 'POST') {
-        return response.status(405).json({ error: 'Method Not Allowed' });
-    }
+  if (!enforceRateLimit(request, response, { key: `gemini:${session.uid}`, max: 15, windowMs: 60_000 })) {
+    return;
+  }
 
-    const API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    response.status(500).json({ success: false, error: 'GEMINI_API_KEY is not configured' });
+    return;
+  }
 
-    if (!API_KEY) {
-        return response.status(500).json({ error: 'GEMINI_API_KEY is not configured' });
-    }
+  const { model, body } = parseRequestBody(request);
+  const modelName = String(model || '').trim();
 
-    const { model, body } = request.body;
+  if (!modelName || !MODEL_ID_REGEX.test(modelName) || typeof body !== 'object' || body == null) {
+    response.status(400).json({
+      success: false,
+      error: 'Invalid request payload',
+    });
+    return;
+  }
 
-    if (!model || !body) {
-        return response.status(400).json({ error: 'Missing required fields: model, body' });
-    }
+  try {
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify(body),
+      },
+    );
 
-    try {
-        const geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-goog-api-key': API_KEY,
-                },
-                body: JSON.stringify(body),
-            }
-        );
-
-        const data = await geminiResponse.json().catch(() => ({}));
-
-        return response.status(geminiResponse.status).json(data);
-    } catch (error) {
-        console.error('Gemini Proxy Error:', error);
-        return response.status(500).json({ error: error.message });
-    }
+    const data = await geminiResponse.json().catch(() => ({}));
+    response.status(geminiResponse.status).json(data);
+  } catch (error) {
+    console.error('Gemini Proxy Error:', error);
+    response.status(500).json({
+      success: false,
+      error: 'Gemini 요청 처리 중 오류가 발생했습니다.',
+    });
+  }
 }

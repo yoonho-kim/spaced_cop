@@ -3,13 +3,59 @@
  * 인물 캐릭터 프로필 아이콘 생성
  */
 
-const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
 const MODEL_URL = '/api/huggingface';
+const DIRECT_MODEL_BASE_URL = 'https://router.huggingface.co/hf-inference/models';
+const MODEL_ID_REGEX = /^[\w.-]+\/[\w.-]+$/;
 
 const MODEL_CANDIDATES = [
     'black-forest-labs/FLUX.1-schnell',
     'stabilityai/stable-diffusion-2-1'
 ];
+
+const isDevMode = () => import.meta.env.DEV;
+
+const getModelId = (model) => {
+    const modelText = String(model || '').trim();
+    return MODEL_ID_REGEX.test(modelText) ? modelText : MODEL_CANDIDATES[0];
+};
+
+const requestImageViaLocalApi = async (model, prompt, parameters) => {
+    return fetch(MODEL_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+            model,
+            purpose: 'signup_profile_icon',
+            inputs: prompt,
+            parameters
+        })
+    });
+};
+
+const requestImageViaDevDirectApi = async (model, prompt, parameters) => {
+    if (!isDevMode()) return null;
+
+    const devApiKey = import.meta.env.VITE_HUGGINGFACE_API_KEY;
+    if (!devApiKey) return null;
+
+    const modelId = getModelId(model);
+    const modelUrl = `${DIRECT_MODEL_BASE_URL}/${modelId}`;
+
+    return fetch(modelUrl, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${devApiKey}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            inputs: prompt,
+            parameters,
+        }),
+    });
+};
 
 // 성향 질문 → 증명사진 프롬프트 매핑 (스타일 보조용)
 const PERSONALITY_MAPPINGS = {
@@ -89,7 +135,11 @@ const normalizeProfileInput = (input) => {
 };
 
 const buildIdentitySeed = ({ employeeId, nickname }) => {
-    const identitySource = `${toSafeText(employeeId)}|${toSafeText(nickname)}` || 'default';
+    const safeEmployeeId = toSafeText(employeeId);
+    const safeNickname = toSafeText(nickname);
+    const identitySource = (safeEmployeeId || safeNickname)
+        ? `${safeEmployeeId}|${safeNickname}`
+        : 'default';
     let hash = 2166136261;
     for (let i = 0; i < identitySource.length; i += 1) {
         hash ^= identitySource.charCodeAt(i);
@@ -503,22 +553,26 @@ export const generateProfileIcon = async (profileInput, options = {}) => {
                 seed: spec.seed
             };
 
-        const response = await fetch(MODEL_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model,
-                inputs: prompt,
-                parameters
-            })
-        });
+        let response = await requestImageViaLocalApi(model, prompt, parameters);
+
+        if (response.status === 404 && isDevMode()) {
+            const directResponse = await requestImageViaDevDirectApi(model, prompt, parameters);
+            if (directResponse) {
+                response = directResponse;
+            }
+        }
 
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Hugging Face API Error:', errorText);
+
+            if (response.status === 401 || response.status === 403) {
+                return {
+                    success: false,
+                    error: '로그인 후 아이콘을 생성할 수 있습니다.',
+                    status: response.status
+                };
+            }
 
             if (response.status === 503) {
                 return {
@@ -526,6 +580,22 @@ export const generateProfileIcon = async (profileInput, options = {}) => {
                     error: '모델을 불러오는 중입니다. 잠시 후 다시 시도해주세요.',
                     status: 503,
                     isLoading: true
+                };
+            }
+
+            if (response.status === 429) {
+                return {
+                    success: false,
+                    error: '요청이 많아 잠시 제한되었습니다. 잠시 후 다시 시도해주세요.',
+                    status: 429
+                };
+            }
+
+            if (response.status === 404 && isDevMode()) {
+                return {
+                    success: false,
+                    error: '개발환경에서 /api 라우트를 찾지 못했습니다. vercel dev 실행 또는 로컬 Hugging Face 키 설정이 필요합니다.',
+                    status: 404
                 };
             }
 
@@ -572,6 +642,10 @@ export const generateProfileIconWithRetry = async (profileInput, maxRetries = 5)
         }
 
         lastError = result;
+
+        if (result.status && result.status >= 400 && result.status < 500 && !result.isLoading) {
+            break;
+        }
 
         if (result.isLoading && attempt < maxRetries) {
             await sleep(2500 * attempt);

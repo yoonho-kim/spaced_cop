@@ -1,37 +1,26 @@
+/* global process, Buffer */
 import { put } from '@vercel/blob';
-
-const setCorsHeaders = (response) => {
-  response.setHeader('Access-Control-Allow-Credentials', true);
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  response.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
-};
-
-const parseRequestBody = (request) => {
-  if (!request?.body) return {};
-  if (typeof request.body === 'string') {
-    try {
-      return JSON.parse(request.body);
-    } catch {
-      return {};
-    }
-  }
-  return request.body;
-};
+import {
+  applyCors,
+  enforceRateLimit,
+  parseRequestBody,
+  requireSession,
+} from './_security.js';
 
 export default async function handler(request, response) {
-  setCorsHeaders(response);
-
-  if (request.method === 'OPTIONS') {
-    response.status(200).end();
+  if (!applyCors(request, response, { methods: 'POST,OPTIONS' })) {
     return;
   }
 
   if (request.method !== 'POST') {
     response.status(405).json({ success: false, error: 'Method Not Allowed' });
+    return;
+  }
+
+  const session = requireSession(request, response, { adminOnly: true });
+  if (!session) return;
+
+  if (!enforceRateLimit(request, response, { key: `event-image-upload:${session.uid}`, max: 10, windowMs: 60_000 })) {
     return;
   }
 
@@ -53,7 +42,7 @@ export default async function handler(request, response) {
       return;
     }
 
-    const safeName = String(fileName).replace(/[^\w.-]+/g, '-');
+    const safeName = String(fileName).replace(/[^\w.-]+/g, '-').slice(0, 80);
     const base64Payload = String(fileBase64).includes(',')
       ? String(fileBase64).split(',')[1]
       : String(fileBase64);

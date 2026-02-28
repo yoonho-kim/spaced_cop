@@ -131,6 +131,7 @@ export const uploadEventImage = async (file) => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({
         fileName: file.name,
         fileType: file.type,
@@ -168,6 +169,7 @@ export const deleteEventImage = async (path) => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({ path }),
     });
 

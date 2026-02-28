@@ -18,7 +18,12 @@ import {
     deleteEventImage,
     addPost,
 } from '../utils/storage';
-import { updateAdminPassword, adminGetUsers, adminUpdateUserBasicInfo, adminResetUserPassword } from '../utils/auth';
+import {
+    adminGetUsers,
+    adminResetUserPassword,
+    adminUpdateUserBasicInfo,
+    updateAdminPassword,
+} from '../utils/auth';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import RecurringReservationModal from '../components/RecurringReservationModal';
@@ -352,9 +357,14 @@ const Admin = () => {
         const confirmed = confirm(`${user.nickname} 사용자의 비밀번호를 초기화하시겠습니까?`);
         if (!confirmed) return;
 
-        const input = prompt('새 비밀번호를 입력하세요. 비워두면 0000으로 초기화됩니다.');
+        const input = prompt('새 비밀번호를 입력하세요.');
         if (input === null) return;
-        const newPassword = input.trim() || '0000';
+
+        const newPassword = input.trim();
+        if (!newPassword) {
+            alert('새 비밀번호를 입력해주세요.');
+            return;
+        }
 
         const result = await adminResetUserPassword(user.id, newPassword);
         if (result.success) {

@@ -273,10 +273,10 @@ const MainLayout = ({ user, onLogout }) => {
                     <div className="header-actions" ref={menuRef}>
                         <button
                             className="ai-card-button"
-                            aria-label="AI카드"
+                            aria-label="AI서비스"
                             onClick={() => window.open('https://cardtest-ivory.vercel.app/', '_blank')}
                         >
-                            <span className="ai-card-text">AI카드</span>
+                            <span className="ai-card-text">AI서비스</span>
                         </button>
                         <button
                             className="icon-button"
