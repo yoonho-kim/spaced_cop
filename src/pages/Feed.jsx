@@ -24,7 +24,7 @@ const Feed = ({ user }) => {
     const [editingContent, setEditingContent] = useState('');
     const [isUpdatingPost, setIsUpdatingPost] = useState(false);
     const [top3Volunteers, setTop3Volunteers] = useState([]);
-    const [voteModal, setVoteModal] = useState(null); // 'praise' | 'lunch' | 'coffee' | null
+    const [voteModal, setVoteModal] = useState(null); // 'praise' | 'lunch' | null
     const [highlightedPostIds, setHighlightedPostIds] = useState(new Set());
     const [liveFeedNotice, setLiveFeedNotice] = useState('');
     const loadMoreRef = useRef(null);
@@ -39,6 +39,7 @@ const Feed = ({ user }) => {
     const PAGE_SIZE = 10;
     const NEW_POST_EFFECT_MS = 1800;
     const LIVE_NOTICE_MS = 2400;
+    const AI_SERVICE_URL = 'https://cardtest-ivory.vercel.app/';
 
     const uniqueById = (items) => {
         const seen = new Set();
@@ -655,34 +656,26 @@ const Feed = ({ user }) => {
                         </div>
                     </button>
                 </div>
-                <button className="quick-card quick-card--coffee quick-card--wide" onClick={() => setVoteModal('coffee')}>
+                <button
+                    className="quick-card quick-card--ai quick-card--wide"
+                    onClick={() => window.open(AI_SERVICE_URL, '_blank')}
+                >
                     <div className="quick-card__text">
-                        <span className="quick-card__title">커피 투표</span>
-                        <span className="quick-card__subtitle">팀 커페 브레이크 타임!</span>
+                        <span className="quick-card__title">AI 서비스</span>
+                        <span className="quick-card__subtitle">우리팀 맞춤형 AI 서비스</span>
                     </div>
                     <div className="quick-card__illust quick-card__illust--row">
-                        <svg width="120" height="64" viewBox="0 0 120 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            {/* 아메리카노 */}
-                            <rect x="6" y="22" width="24" height="32" rx="5" fill="#8B5E3C"/>
-                            <rect x="8" y="24" width="20" height="28" rx="4" fill="#6F4E37"/>
-                            <rect x="8" y="24" width="20" height="8" rx="2" fill="#3E1C00" opacity="0.6"/>
-                            <path d="M30 30 Q36 33 30 36" stroke="#8B5E3C" strokeWidth="3" strokeLinecap="round" fill="none"/>
-                            <path d="M14 18 Q15 14 14 10" stroke="#C4956A" strokeWidth="1.5" strokeLinecap="round"/>
-                            <path d="M18 16 Q20 12 18 8" stroke="#C4956A" strokeWidth="1.5" strokeLinecap="round"/>
-                            {/* 라떼 */}
-                            <rect x="46" y="18" width="28" height="36" rx="6" fill="#D4A96A"/>
-                            <rect x="48" y="20" width="24" height="32" rx="5" fill="#E8C99A"/>
-                            <ellipse cx="60" cy="24" rx="10" ry="4" fill="#F5E6CA"/>
-                            <path d="M52 26 Q60 30 68 26" stroke="#D4A96A" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-                            <path d="M74 26 Q80 30 74 34" stroke="#D4A96A" strokeWidth="3" strokeLinecap="round" fill="none"/>
-                            {/* 버블티 */}
-                            <rect x="88" y="14" width="26" height="40" rx="6" fill="#C9A0DC"/>
-                            <rect x="90" y="16" width="22" height="36" rx="5" fill="#DDB8EE"/>
-                            <rect x="90" y="14" width="22" height="8" rx="4" fill="#B57BCC"/>
-                            <circle cx="96" cy="46" r="3" fill="#7B3F8C"/>
-                            <circle cx="104" cy="46" r="3" fill="#7B3F8C"/>
-                            <circle cx="100" cy="50" r="3" fill="#7B3F8C"/>
-                            <rect x="99" y="6" width="3" height="12" rx="1.5" fill="#9B6BB5"/>
+                        <svg width="120" height="64" viewBox="0 0 120 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <rect x="18" y="12" width="44" height="44" rx="12" fill="#2748A8"/>
+                            <rect x="24" y="18" width="32" height="32" rx="8" fill="#3B6BE0"/>
+                            <circle cx="40" cy="34" r="8" fill="#E1EBFF"/>
+                            <path d="M36 34H44M40 30V38" stroke="#3B6BE0" strokeWidth="2.2" strokeLinecap="round"/>
+                            <circle cx="76" cy="20" r="6" fill="#5ED1E8"/>
+                            <circle cx="76" cy="44" r="6" fill="#5ED1E8"/>
+                            <circle cx="100" cy="32" r="6" fill="#5ED1E8"/>
+                            <path d="M82 20L94 30M82 44L94 34" stroke="#2C9EB6" strokeWidth="2.2" strokeLinecap="round"/>
+                            <circle cx="100" cy="32" r="2.2" fill="#1E7E93"/>
+                            <path d="M106 13L107.5 9L109 13L113 14.5L109 16L107.5 20L106 16L102 14.5L106 13Z" fill="#8EE8F7"/>
                         </svg>
                     </div>
                 </button>

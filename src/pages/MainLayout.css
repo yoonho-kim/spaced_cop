@@ -152,33 +152,6 @@
     border: 2px solid white;
 }
 
-/* AI Card Button - Premium Gradient Style */
-.ai-card-button {
-    padding: 8px 16px;
-    border-radius: 20px;
-    background: var(--color-primary);
-    border: 1px solid rgba(41, 82, 204, 0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 6px 14px rgba(41, 82, 204, 0.25);
-}
-
-.ai-card-button:hover {
-    filter: brightness(1.05);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(41, 82, 204, 0.3);
-}
-
-.ai-card-text {
-    color: white;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-}
-
 /* Header Menu Dropdown */
 .header-menu {
     position: absolute;

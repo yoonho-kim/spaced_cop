@@ -15,6 +15,7 @@ const Statistics = React.lazy(() => import('./Statistics'));
 
 const MainLayout = ({ user, onLogout }) => {
     const [activeTab, setActiveTab] = useState('feed');
+    const [feedViewVersion, setFeedViewVersion] = useState(0);
     const [showMenu, setShowMenu] = useState(false);
     const [showPostModal, setShowPostModal] = useState(false);
     const [showStatistics, setShowStatistics] = useState(false);
@@ -207,20 +208,25 @@ const MainLayout = ({ user, onLogout }) => {
     const handleCreatePost = async () => {
         if (!newPost.trim()) return;
 
-        await addPost({
+        const createdPost = await addPost({
             content: newPost,
             author: user.nickname,
             isAdmin: userIsAdmin,
             postType: postType,
         });
 
+        if (!createdPost) {
+            alert('게시물 작성에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
         setNewPost('');
         setPostType('normal');
         clearImage();
         setShowPostModal(false);
         setActiveTab('feed'); // Navigate to feed to show the new post
-        // Force feed refresh by re-rendering
-        window.location.reload();
+        // Refresh feed without full page reload (keeps admin verification state intact)
+        setFeedViewVersion((prev) => prev + 1);
     };
 
     const tabs = [
@@ -236,6 +242,7 @@ const MainLayout = ({ user, onLogout }) => {
     }
 
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
+    const activeComponentKey = activeTab === 'feed' ? `feed-${feedViewVersion}` : activeTab;
     const isEventPage = activeTab === 'event';
 
     // Get greeting based on time of day
@@ -271,13 +278,6 @@ const MainLayout = ({ user, onLogout }) => {
                         </div>
                     </div>
                     <div className="header-actions" ref={menuRef}>
-                        <button
-                            className="ai-card-button"
-                            aria-label="AI서비스"
-                            onClick={() => window.open('https://cardtest-ivory.vercel.app/', '_blank')}
-                        >
-                            <span className="ai-card-text">AI서비스</span>
-                        </button>
                         <button
                             className="icon-button"
                             aria-label="메뉴"
@@ -354,6 +354,7 @@ const MainLayout = ({ user, onLogout }) => {
                 <Suspense fallback={<div style={{ padding: '16px', color: '#64748b', fontSize: '14px' }}>화면을 불러오는 중...</div>}>
                     {ActiveComponent && (
                         <ActiveComponent
+                            key={activeComponentKey}
                             user={user}
                             onNavigateToTab={setActiveTab}
                             onBack={() => setActiveTab(previousTab)}

@@ -124,9 +124,9 @@
     min-height: 160px;
 }
 
-/* 커피 투표 - 베이지 */
-.quick-card--coffee {
-    background: #f0e4d0;
+/* AI 서비스 - 소프트 블루 */
+.quick-card--ai {
+    background: linear-gradient(135deg, #d7e6ff 0%, #c9f0ff 100%);
     padding: 18px 20px;
 }
 
