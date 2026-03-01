@@ -938,6 +938,132 @@
     font-size: 18px;
 }
 
+.ai-service-view-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1250;
+    padding: 16px;
+    background: rgba(2, 6, 23, 0.58);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.ai-service-view-modal {
+    width: min(980px, 100%);
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: #ffffff;
+    box-shadow: 0 28px 70px rgba(15, 23, 42, 0.35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ai-service-view-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+    background: linear-gradient(180deg, #f8fbff 0%, #f1f7ff 100%);
+}
+
+.ai-service-view-title-wrap h3 {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.2;
+    color: #0f172a;
+    font-weight: 800;
+}
+
+.ai-service-view-title-wrap p {
+    margin: 4px 0 0;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.ai-service-view-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-service-view-action {
+    border: 1px solid rgba(41, 82, 204, 0.2);
+    background: #2952cc;
+    color: #ffffff;
+    height: 34px;
+    min-width: 34px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.ai-service-view-action--ghost {
+    background: #ffffff;
+    color: #1e40af;
+    border-color: rgba(30, 64, 175, 0.2);
+}
+
+.ai-service-view-action .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.ai-service-view-body {
+    position: relative;
+    flex: 1;
+    min-height: 420px;
+    background: #ffffff;
+}
+
+.ai-service-view-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.88);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    z-index: 2;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.ai-service-view-spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid rgba(41, 82, 204, 0.2);
+    border-top-color: #2952cc;
+    animation: ai-service-spin 0.9s linear infinite;
+}
+
+.ai-service-view-iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+    border: none;
+    display: block;
+}
+
+@keyframes ai-service-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .profile-preview-backdrop {
     position: fixed;
     inset: 0;
@@ -1272,5 +1398,26 @@
 
     .volunteer-card {
         min-width: 200px;
+    }
+
+    .ai-service-view-overlay {
+        padding: 8px;
+    }
+
+    .ai-service-view-modal {
+        border-radius: 14px;
+    }
+
+    .ai-service-view-header {
+        padding: 12px;
+    }
+
+    .ai-service-view-title-wrap h3 {
+        font-size: 16px;
+    }
+
+    .ai-service-view-body,
+    .ai-service-view-iframe {
+        min-height: 72vh;
     }
 }

@@ -57,6 +57,27 @@
     gap: 12px;
 }
 
+.header-user-info--clickable {
+    cursor: pointer;
+    padding: 4px 8px;
+    margin: -4px -8px;
+    border-radius: 12px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.header-user-info--clickable:hover {
+    background: rgba(41, 82, 204, 0.1);
+}
+
+.header-user-info--clickable:active {
+    transform: scale(0.99);
+}
+
+.header-user-info--clickable:focus-visible {
+    outline: 2px solid rgba(41, 82, 204, 0.45);
+    outline-offset: 2px;
+}
+
 .user-avatar-wrapper {
     position: relative;
 }

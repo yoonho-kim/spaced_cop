@@ -16,6 +16,8 @@ const Statistics = React.lazy(() => import('./Statistics'));
 const MainLayout = ({ user, onLogout }) => {
     const [activeTab, setActiveTab] = useState('feed');
     const [feedViewVersion, setFeedViewVersion] = useState(0);
+    const [isAiServiceViewOpen, setIsAiServiceViewOpen] = useState(false);
+    const [aiServiceCloseSignal, setAiServiceCloseSignal] = useState(0);
     const [showMenu, setShowMenu] = useState(false);
     const [showPostModal, setShowPostModal] = useState(false);
     const [showStatistics, setShowStatistics] = useState(false);
@@ -46,6 +48,12 @@ const MainLayout = ({ user, onLogout }) => {
             mainContentRef.current.scrollTop = 0;
         }
     }, [activeTab]);
+
+    useEffect(() => {
+        if (activeTab !== 'feed' && isAiServiceViewOpen) {
+            setIsAiServiceViewOpen(false);
+        }
+    }, [activeTab, isAiServiceViewOpen]);
 
     useEffect(() => {
         loadEventPopup();
@@ -166,6 +174,13 @@ const MainLayout = ({ user, onLogout }) => {
         openEventPage();
     };
 
+    const handleHeaderUserInfoClick = () => {
+        if (!isAiServiceViewOpen) return;
+        setShowMenu(false);
+        setActiveTab('feed');
+        setAiServiceCloseSignal((prev) => prev + 1);
+    };
+
     // Handle image selection and AI post generation
     const handleImageSelect = async (e) => {
         const file = e.target.files?.[0];
@@ -257,7 +272,20 @@ const MainLayout = ({ user, onLogout }) => {
         <div className="main-layout">
             <header className="main-header">
                 <div className="header-content">
-                    <div className="header-user-info">
+                    <div
+                        className={`header-user-info ${isAiServiceViewOpen ? 'header-user-info--clickable' : ''}`}
+                        onClick={handleHeaderUserInfoClick}
+                        role={isAiServiceViewOpen ? 'button' : undefined}
+                        tabIndex={isAiServiceViewOpen ? 0 : undefined}
+                        aria-label={isAiServiceViewOpen ? '메인 피드로 돌아가기' : undefined}
+                        onKeyDown={(e) => {
+                            if (!isAiServiceViewOpen) return;
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleHeaderUserInfoClick();
+                            }
+                        }}
+                    >
                         <div className="user-avatar-wrapper">
                             <div
                                 className="user-avatar"
@@ -356,6 +384,8 @@ const MainLayout = ({ user, onLogout }) => {
                         <ActiveComponent
                             key={activeComponentKey}
                             user={user}
+                            onAiServiceViewChange={setIsAiServiceViewOpen}
+                            aiServiceCloseSignal={aiServiceCloseSignal}
                             onNavigateToTab={setActiveTab}
                             onBack={() => setActiveTab(previousTab)}
                             eventData={eventPopup}
@@ -364,7 +394,7 @@ const MainLayout = ({ user, onLogout }) => {
                 </Suspense>
             </main>
 
-            <nav className={`bottom-nav ${isNavVisible && !isEventPage ? '' : 'hidden'}`}>
+            <nav className={`bottom-nav ${isNavVisible && !isEventPage && !isAiServiceViewOpen ? '' : 'hidden'}`}>
                 <div className="nav-container">
                     {tabs.slice(0, 2).map(tab => (
                         <button

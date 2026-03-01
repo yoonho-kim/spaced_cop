@@ -8,7 +8,7 @@ import WinnersModal from '../components/WinnersModal';
 import QuickVoteModal from '../components/QuickVoteModal';
 import './Feed.css';
 
-const Feed = ({ user }) => {
+const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal }) => {
     const [posts, setPosts] = useState([]);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
@@ -25,6 +25,8 @@ const Feed = ({ user }) => {
     const [isUpdatingPost, setIsUpdatingPost] = useState(false);
     const [top3Volunteers, setTop3Volunteers] = useState([]);
     const [voteModal, setVoteModal] = useState(null); // 'praise' | 'lunch' | null
+    const [showAiServiceView, setShowAiServiceView] = useState(false);
+    const [isAiServiceLoading, setIsAiServiceLoading] = useState(false);
     const [highlightedPostIds, setHighlightedPostIds] = useState(new Set());
     const [liveFeedNotice, setLiveFeedNotice] = useState('');
     const loadMoreRef = useRef(null);
@@ -63,6 +65,25 @@ const Feed = ({ user }) => {
     useEffect(() => {
         pageRef.current = page;
     }, [page]);
+
+    useEffect(() => {
+        if (typeof onAiServiceViewChange === 'function') {
+            onAiServiceViewChange(showAiServiceView);
+        }
+    }, [showAiServiceView, onAiServiceViewChange]);
+
+    useEffect(() => {
+        return () => {
+            if (typeof onAiServiceViewChange === 'function') {
+                onAiServiceViewChange(false);
+            }
+        };
+    }, [onAiServiceViewChange]);
+
+    useEffect(() => {
+        setShowAiServiceView(false);
+        setIsAiServiceLoading(false);
+    }, [aiServiceCloseSignal]);
 
     useEffect(() => {
         return () => {
@@ -613,6 +634,15 @@ const Feed = ({ user }) => {
         loadPublishedActivities();
     };
     const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(handleRefresh);
+    const openAiServiceView = () => {
+        setIsAiServiceLoading(true);
+        setShowAiServiceView(true);
+    };
+
+    const closeAiServiceView = () => {
+        setShowAiServiceView(false);
+        setIsAiServiceLoading(false);
+    };
 
     return (
         <div className="feed-container" style={{ position: 'relative' }}>
@@ -658,7 +688,7 @@ const Feed = ({ user }) => {
                 </div>
                 <button
                     className="quick-card quick-card--ai quick-card--wide"
-                    onClick={() => window.open(AI_SERVICE_URL, '_blank')}
+                    onClick={openAiServiceView}
                 >
                     <div className="quick-card__text">
                         <span className="quick-card__title">AI 서비스</span>
@@ -934,6 +964,58 @@ const Feed = ({ user }) => {
                     )}
                 </div>
             </section>
+
+            {showAiServiceView && (
+                <div
+                    className="ai-service-view-overlay"
+                    onClick={closeAiServiceView}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="AI 서비스"
+                >
+                    <div className="ai-service-view-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="ai-service-view-header">
+                            <div className="ai-service-view-title-wrap">
+                                <h3>AI 서비스</h3>
+                                <p>우리팀 맞춤형 AI 서비스</p>
+                            </div>
+                            <div className="ai-service-view-actions">
+                                <button
+                                    type="button"
+                                    className="ai-service-view-action ai-service-view-action--ghost"
+                                    onClick={() => window.open(AI_SERVICE_URL, '_blank', 'noopener,noreferrer')}
+                                >
+                                    새 창
+                                </button>
+                                <button
+                                    type="button"
+                                    className="ai-service-view-action"
+                                    onClick={closeAiServiceView}
+                                    aria-label="AI 서비스 닫기"
+                                >
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="ai-service-view-body">
+                            {isAiServiceLoading && (
+                                <div className="ai-service-view-loading">
+                                    <div className="ai-service-view-spinner" aria-hidden="true"></div>
+                                    <span>AI 서비스를 불러오는 중...</span>
+                                </div>
+                            )}
+
+                            <iframe
+                                title="AI 서비스"
+                                src={AI_SERVICE_URL}
+                                className="ai-service-view-iframe"
+                                onLoad={() => setIsAiServiceLoading(false)}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {selectedProfile && (
                 <div

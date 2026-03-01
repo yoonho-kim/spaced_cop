@@ -30,6 +30,8 @@ const Login = ({ onLogin }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isLoading) return;
+        setError('');
 
         if (!nickname.trim()) {
             setError('닉네임을 입력해주세요');
@@ -42,26 +44,19 @@ const Login = ({ onLogin }) => {
             return;
         }
 
-        // 관리자 로그인
-        if (nickname.toLowerCase() === 'admin') {
-            const result = await login(nickname, password);
+        setIsLoading(true);
+        try {
+            const result = nickname.toLowerCase() === 'admin'
+                ? await login(nickname, password)
+                : await loginWithPassword(nickname, password);
+
             if (result.success) {
                 onLogin(result.user);
             } else {
                 setError(result.error);
             }
-            return;
-        }
-
-        // DB 인증 로그인
-        setIsLoading(true);
-        const result = await loginWithPassword(nickname, password);
-        setIsLoading(false);
-
-        if (result.success) {
-            onLogin(result.user);
-        } else {
-            setError(result.error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -106,6 +101,7 @@ const Login = ({ onLogin }) => {
                                 className="login-input"
                                 autoFocus
                                 autoComplete="off"
+                                disabled={isLoading}
                             />
                         </div>
 
@@ -119,11 +115,13 @@ const Login = ({ onLogin }) => {
                                 placeholder="비밀번호"
                                 className="login-input"
                                 autoComplete="off"
+                                disabled={isLoading}
                             />
                             <button
                                 type="button"
                                 className="password-toggle"
                                 onClick={() => setShowPasswordText(!showPasswordText)}
+                                disabled={isLoading}
                             >
                                 <span className="material-icons-outlined">
                                     {showPasswordText ? 'visibility' : 'visibility_off'}
@@ -139,8 +137,8 @@ const Login = ({ onLogin }) => {
                         )}
 
                         {/* Login Button */}
-                        <button type="submit" className="login-button">
-                            로그인
+                        <button type="submit" className="login-button" disabled={isLoading}>
+                            {isLoading ? '로그인 중...' : '로그인'}
                         </button>
                     </form>
 
@@ -150,6 +148,7 @@ const Login = ({ onLogin }) => {
                             type="button"
                             className="footer-link-btn"
                             onClick={() => setShowPasswordModal(true)}
+                            disabled={isLoading}
                         >
                             비밀번호 변경
                         </button>
@@ -158,11 +157,21 @@ const Login = ({ onLogin }) => {
                             type="button"
                             className="footer-link-btn"
                             onClick={() => setShowSignUpModal(true)}
+                            disabled={isLoading}
                         >
                             회원가입
                         </button>
                     </div>
                 </div>
+
+                {isLoading && (
+                    <div className="login-loading-overlay" role="status" aria-live="polite">
+                        <div className="login-loading-panel">
+                            <div className="login-loading-spinner" aria-hidden="true"></div>
+                            <p>로그인 중입니다...</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Home Indicator */}
                 <div className="login-home-indicator"></div>
