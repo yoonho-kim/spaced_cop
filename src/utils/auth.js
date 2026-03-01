@@ -9,7 +9,20 @@ const PASSWORD_HASH_ITERATIONS = 210000;
 const PASSWORD_HASH_BYTES = 32;
 const PASSWORD_SALT_BYTES = 16;
 
-let verifiedAdminSession = null;
+// HMR(개발 환경 핫 리로드) 시 모듈이 재평가되어도 관리자 세션이 유지되도록
+// sessionStorage에 백업하고, 모듈 초기화 시 복원한다.
+const ADMIN_SESSION_STORAGE_KEY = 'spaced_admin_verified_session';
+
+const _loadAdminSession = () => {
+    try {
+        const raw = sessionStorage.getItem(ADMIN_SESSION_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
+let verifiedAdminSession = _loadAdminSession();
 
 const normalizeHonorifics = (value) => {
     if (!Array.isArray(value)) return [];
@@ -54,10 +67,22 @@ const markAdminSessionVerified = (user) => {
         fingerprint: createAdminSessionFingerprint(user),
         expiresAt: user?.expiresAt || new Date(Date.now() + SESSION_DURATION).toISOString(),
     };
+    // HMR 재평가 후에도 복원 가능하도록 sessionStorage에 저장
+    try {
+        sessionStorage.setItem(ADMIN_SESSION_STORAGE_KEY, JSON.stringify(verifiedAdminSession));
+    } catch {
+        // ignore sessionStorage errors (e.g. private mode)
+    }
 };
 
 const clearAdminSessionVerification = () => {
     verifiedAdminSession = null;
+    // 로그아웃 / 게스트 전환 시 sessionStorage에서도 제거
+    try {
+        sessionStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+    } catch {
+        // ignore sessionStorage errors
+    }
 };
 
 const hasVerifiedAdminSession = (user) => {
@@ -503,9 +528,8 @@ export const getCurrentUser = () => {
     }
 
     if (user.isAdmin === true && !hasVerifiedAdminSession(user)) {
-        const downgradedUser = { ...user, isAdmin: false };
-        setItem(STORAGE_KEYS.USER, downgradedUser);
-        return downgradedUser;
+        // localStorage를 영구적으로 오염시키지 않도록 기록 없이 현재 호출에만 반영
+        return { ...user, isAdmin: false };
     }
 
     return user;

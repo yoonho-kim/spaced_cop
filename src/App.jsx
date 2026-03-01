@@ -12,13 +12,22 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [showLoadingPage, setShowLoadingPage] = useState(false);
   const pendingUserRef = useRef(null);
+  // 세션 만료 체크 interval이 최신 user 값을 참조하도록 ref 사용
+  // (useEffect 의존성에 user를 넣지 않아도 항상 최신 상태 접근 가능)
+  const userRef = useRef(null);
+
+  // userRef를 user state와 동기화
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   useEffect(() => {
     const init = async () => {
       // Initialize storage with default data
       await initializeStorage();
 
-      // Check if user is already logged in (and not expired)
+      // 앱 최초 마운트 시 저장된 세션이 있으면 복원
+      // (이미 로그인된 상태라면 handleLogin/handleLoadingComplete에서 setUser가 호출됨)
       const currentUser = getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
@@ -29,8 +38,9 @@ function App() {
     init();
 
     // Check session expiration every minute
+    // userRef를 통해 최신 user 참조 → useEffect 재실행(무한 루프) 없이 동작
     const sessionCheckInterval = setInterval(() => {
-      if (user) {
+      if (userRef.current) {
         const currentUser = getCurrentUser();
         if (!currentUser) {
           // Session expired
@@ -40,7 +50,7 @@ function App() {
     }, 60000); // Check every 60 seconds
 
     return () => clearInterval(sessionCheckInterval);
-  }, [user]);
+  }, []); // 마운트 1회만 실행 — user 변경 시 재실행하지 않음
 
   const handleLogin = (userData) => {
     // Store user data in ref

@@ -20,7 +20,9 @@ const MainLayout = ({ user, onLogout }) => {
     const [showStatistics, setShowStatistics] = useState(false);
     const [newPost, setNewPost] = useState('');
     const [postType, setPostType] = useState('normal'); // 'normal', 'notice', 'volunteer'
-    const userIsAdmin = isAdmin();
+    // user prop(App state)의 isAdmin 값을 1차 기준으로,
+    // 인메모리 세션 검증(isAdmin())을 2차로 확인하여 렌더 시 오염된 값 반영 방지
+    const userIsAdmin = user?.isAdmin === true && isAdmin();
 
     // Image upload and AI generation states
     const [isGenerating, setIsGenerating] = useState(false);
