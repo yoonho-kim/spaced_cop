@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getPostsPage, addPost, addLike, removeLike, addComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers } from '../utils/storage';
+import { getPostsPage, addPost, addLike, removeLike, addComment, deleteComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import { supabase } from '../utils/supabase';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
@@ -23,6 +23,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal }) => {
     const [editingPostId, setEditingPostId] = useState(null);
     const [editingContent, setEditingContent] = useState('');
     const [isUpdatingPost, setIsUpdatingPost] = useState(false);
+    const [deletingCommentId, setDeletingCommentId] = useState(null);
     const [top3Volunteers, setTop3Volunteers] = useState([]);
     const [voteModal, setVoteModal] = useState(null); // 'praise' | 'lunch' | null
     const [showAiServiceView, setShowAiServiceView] = useState(false);
@@ -603,6 +604,53 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal }) => {
         refreshPosts();
     };
 
+    const canManageComment = (comment) => {
+        if (!comment) return false;
+        if (isAdmin()) return true;
+
+        const userNickname = String(user?.nickname || '').trim();
+        const commentUserName = String(comment.userName || '').trim();
+        const userEmployeeId = String(user?.employeeId || '').trim();
+        const commentUserEmployeeId = String(comment.userEmployeeId || '').trim();
+
+        if (userNickname && commentUserName && userNickname === commentUserName) {
+            return true;
+        }
+
+        if (userEmployeeId && commentUserEmployeeId && userEmployeeId === commentUserEmployeeId) {
+            return true;
+        }
+
+        return false;
+    };
+
+    const handleDeleteComment = async (comment) => {
+        const commentId = comment?.id;
+        if (!commentId || String(commentId).startsWith('realtime-')) {
+            window.alert('아직 저장 중인 댓글은 잠시 후 삭제해주세요.');
+            return;
+        }
+
+        if (!canManageComment(comment)) {
+            window.alert('작성자 또는 관리자만 댓글을 삭제할 수 있습니다.');
+            return;
+        }
+
+        const confirmed = window.confirm('이 댓글을 삭제하시겠습니까?');
+        if (!confirmed) return;
+
+        setDeletingCommentId(String(commentId));
+        const result = await deleteComment(commentId);
+        setDeletingCommentId(null);
+
+        if (!result?.success) {
+            window.alert('댓글 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        refreshPosts();
+    };
+
     const toggleComments = (postId) => {
         setExpandedComments(prev => {
             const newSet = new Set(prev);
@@ -920,7 +968,20 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal }) => {
                                                                                 </span>
                                                                             ))}
                                                                         </span>
-                                                                        <span className="comment-time">{formatTimestamp(comment.timestamp)}</span>
+                                                                        <div className="comment-meta">
+                                                                            <span className="comment-time">{formatTimestamp(comment.timestamp)}</span>
+                                                                            {canManageComment(comment) && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="comment-delete-btn"
+                                                                                    onClick={() => handleDeleteComment(comment)}
+                                                                                    disabled={deletingCommentId === String(comment.id)}
+                                                                                    title="댓글 삭제"
+                                                                                >
+                                                                                    <span className="material-symbols-outlined">delete</span>
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                     <p className="comment-text">{comment.content}</p>
                                                                 </div>

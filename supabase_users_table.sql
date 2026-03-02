@@ -43,6 +43,14 @@ BEGIN
   END IF;
 END $$;
 
+-- 7. 사번 중복 방지 인덱스
+-- 기존 중복 데이터가 있으면 실패할 수 있으니, 필요 시
+-- supabase_dedupe_users_by_employee_id.sql을 먼저 실행하세요.
+CREATE UNIQUE INDEX IF NOT EXISTS users_employee_id_unique_idx
+ON users(employee_id)
+WHERE employee_id IS NOT NULL
+  AND employee_id <> '';
+
 -- ============================================
 -- 기존 테이블 구조 확인용 쿼리
 -- ============================================

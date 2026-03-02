@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Modal from './Modal';
-import { getQuickVotes, getMyQuickVote, addQuickVote, removeQuickVote, getTeamMembers } from '../utils/storage';
+import { getQuickVotes, getMyQuickVote, addQuickVote, removeQuickVote, getTeamMembers, getQuickVotesAvailability } from '../utils/storage';
 import { supabase } from '../utils/supabase';
 import './QuickVoteModal.css';
 
@@ -41,6 +41,8 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isVoting, setIsVoting] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const quickVotesUnavailableRef = useRef(false);
 
   const config = VOTE_CONFIG[voteType];
   const counts = tally(votes);
@@ -48,6 +50,39 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
 
   const load = useCallback(async () => {
     setIsLoading(true);
+    setLoadError('');
+
+    if (quickVotesUnavailableRef.current) {
+      if (voteType === 'praise') {
+        const members = await getTeamMembers({ praiseOnly: true });
+        setTeamMembers(members.filter(m => m.employee_id !== user.employeeId));
+      }
+      setVotes([]);
+      setMyVote(null);
+      setIsLoading(false);
+      return;
+    }
+
+    const availability = await getQuickVotesAvailability();
+    if (!availability.available) {
+      if (availability.reason === 'missing_table') {
+        quickVotesUnavailableRef.current = true;
+        setLoadError('투표 테이블(quick_votes)이 없습니다. 관리자에게 DB SQL 적용을 요청해주세요.');
+      } else {
+        setLoadError('투표 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+      }
+      if (voteType === 'praise') {
+        const members = await getTeamMembers({ praiseOnly: true });
+        setTeamMembers(members.filter(m => m.employee_id !== user.employeeId));
+      } else {
+        setTeamMembers([]);
+      }
+      setVotes([]);
+      setMyVote(null);
+      setIsLoading(false);
+      return;
+    }
+
     const [allVotes, mine] = await Promise.all([
       getQuickVotes(voteType),
       getMyQuickVote(voteType, user.employeeId),
@@ -56,7 +91,7 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
     setMyVote(mine);
 
     if (voteType === 'praise') {
-      const members = await getTeamMembers();
+      const members = await getTeamMembers({ praiseOnly: true });
       setTeamMembers(members.filter(m => m.employee_id !== user.employeeId));
     }
     setIsLoading(false);
@@ -84,6 +119,10 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
   }, [load, voteType]);
 
   const handleVote = async (optionKey, optionLabel) => {
+    if (loadError) {
+      window.alert(loadError);
+      return;
+    }
     if (isVoting) return;
     setIsVoting(true);
 
@@ -107,8 +146,34 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
     return Math.round(((counts[key] || 0) / totalVotes) * 100);
   };
 
+  const praiseLiveRates = voteType === 'praise'
+    ? teamMembers
+      .map((member) => {
+        const voteCount = counts[member.employee_id] || 0;
+        const percent = totalVotes === 0 ? 0 : Math.round((voteCount / totalVotes) * 100);
+        return {
+          employeeId: member.employee_id,
+          nickname: member.nickname,
+          voteCount,
+          percent,
+        };
+      })
+      .sort((a, b) => {
+        if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount;
+        return String(a.nickname || '').localeCompare(String(b.nickname || ''), 'ko');
+      })
+    : [];
+
   const renderOptions = () => {
     if (voteType === 'praise') {
+      if (teamMembers.length === 0) {
+        return (
+          <div className="qvm-empty">
+            관리자가 지정한 칭찬 대상자가 아직 없습니다.
+          </div>
+        );
+      }
+
       return (
         <div className="qvm-praise-grid">
           {teamMembers.map(member => {
@@ -119,7 +184,7 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
                 key={member.employee_id}
                 className={`qvm-praise-item ${isVoted ? 'qvm-voted' : ''}`}
                 onClick={() => handleVote(member.employee_id, member.nickname)}
-                disabled={isVoting}
+                disabled={isVoting || !!loadError}
               >
                 <div className="qvm-praise-avatar">
                   {member.profile_icon_url ? (
@@ -150,7 +215,7 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
               key={opt.key}
               className={`qvm-option ${isVoted ? 'qvm-voted' : ''}`}
               onClick={() => handleVote(opt.key, opt.label)}
-              disabled={isVoting}
+              disabled={isVoting || !!loadError}
             >
               <div className="qvm-option-bar" style={{ width: `${percent}%` }} />
               <div className="qvm-option-content">
@@ -171,6 +236,34 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
   return (
     <Modal isOpen={true} onClose={onClose} title={`${config.emoji} ${config.title}`} maxWidth="420px">
       <div className="qvm-wrapper">
+        {voteType === 'praise' && !isLoading && (
+          <div className="qvm-live-rate">
+            <div className="qvm-live-rate__header">
+              <span className="material-symbols-outlined">monitoring</span>
+              <span>실시간 득표율</span>
+            </div>
+            {praiseLiveRates.length === 0 ? (
+              <p className="qvm-live-rate__empty">표시할 대상자가 없습니다.</p>
+            ) : (
+              <div className="qvm-live-rate__list">
+                {praiseLiveRates.map((item) => (
+                  <div key={item.employeeId} className="qvm-live-rate__item">
+                    <div className="qvm-live-rate__row">
+                      <span className="qvm-live-rate__name">{item.nickname}</span>
+                      <span className="qvm-live-rate__meta">{item.voteCount}표 · {item.percent}%</span>
+                    </div>
+                    <div className="qvm-live-rate__bar-track">
+                      <div
+                        className="qvm-live-rate__bar-fill"
+                        style={{ width: `${item.percent}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <p className="qvm-subtitle">{config.subtitle}</p>
         {myVote && (
           <p className="qvm-voted-notice">
@@ -182,6 +275,8 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
         )}
         {isLoading ? (
           <div className="qvm-loading">불러오는 중...</div>
+        ) : loadError ? (
+          <div className="qvm-error">{loadError}</div>
         ) : (
           renderOptions()
         )}

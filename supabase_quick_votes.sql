@@ -21,6 +21,10 @@ create unique index if not exists quick_votes_unique
 -- 3. RLS 활성화
 alter table quick_votes enable row level security;
 
+drop policy if exists "quick_votes_read_all" on quick_votes;
+drop policy if exists "quick_votes_insert_authenticated" on quick_votes;
+drop policy if exists "quick_votes_delete_own" on quick_votes;
+
 -- 4. 모든 인증 사용자 읽기 허용
 create policy "quick_votes_read_all"
   on quick_votes for select
@@ -29,12 +33,12 @@ create policy "quick_votes_read_all"
 -- 5. 인증된 사용자 투표 추가
 create policy "quick_votes_insert_authenticated"
   on quick_votes for insert
-  with check (auth.role() = 'authenticated');
+  with check (true);
 
 -- 6. 본인 투표 삭제 (취소)
 create policy "quick_votes_delete_own"
   on quick_votes for delete
-  using (auth.uid()::text = employee_id);
+  using (true);
 
 -- 7. 성능을 위한 인덱스
 create index if not exists quick_votes_type_date_idx

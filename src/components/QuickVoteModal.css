@@ -29,6 +29,103 @@
   font-size: 0.875rem;
 }
 
+.qvm-error {
+  text-align: center;
+  color: #b91c1c;
+  background: rgba(254, 226, 226, 0.8);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.qvm-empty {
+  text-align: center;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 12px;
+  font-size: 0.86rem;
+}
+
+.qvm-live-rate {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fbff;
+  border: 1px solid #dbe7ff;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.qvm-live-rate__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1d4ed8;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.qvm-live-rate__header .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.qvm-live-rate__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qvm-live-rate__empty {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.qvm-live-rate__item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.qvm-live-rate__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.qvm-live-rate__name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.qvm-live-rate__meta {
+  font-size: 0.74rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.qvm-live-rate__bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.3);
+}
+
+.qvm-live-rate__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2952cc 0%, #1d4ed8 100%);
+  transition: width 0.3s ease;
+  border-radius: 999px;
+}
+
 /* 투표 옵션 (점심/커피) */
 .qvm-options {
   display: flex;

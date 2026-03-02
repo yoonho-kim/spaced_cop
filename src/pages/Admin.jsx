@@ -14,6 +14,8 @@ import {
     updateVolunteerRegistration,
     getEventSettings,
     upsertEventSettings,
+    getQuickVoteSettings,
+    upsertQuickVoteSettings,
     uploadEventImage,
     deleteEventImage,
     addPost,
@@ -73,6 +75,8 @@ const Admin = () => {
     const [eventImageFile, setEventImageFile] = useState(null);
     const [eventImagePreview, setEventImagePreview] = useState('');
     const [eventImageRemovePath, setEventImageRemovePath] = useState('');
+    const [praiseMemberIds, setPraiseMemberIds] = useState([]);
+    const [isSavingPraiseMembers, setIsSavingPraiseMembers] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -85,6 +89,7 @@ const Admin = () => {
         const registrationsData = await getVolunteerRegistrations();
         const userResult = await adminGetUsers();
         const eventData = await getEventSettings();
+        const quickVoteSettings = await getQuickVoteSettings();
         setRooms(roomsData);
         setRecurringRules(recurringData);
         setActivities(activitiesData);
@@ -98,6 +103,7 @@ const Admin = () => {
                 imagePath: eventData.imagePath
             });
         }
+        setPraiseMemberIds(Array.isArray(quickVoteSettings?.praiseMemberIds) ? quickVoteSettings.praiseMemberIds.slice(0, 10) : []);
         setEventImageRemovePath('');
         setVisibleUserCount(20);
     };
@@ -284,6 +290,9 @@ const Admin = () => {
     });
 
     const visibleUsers = filteredUsers.slice(0, visibleUserCount);
+    const praiseCandidateUsers = users
+        .filter((item) => !item.isAdmin && item.employeeId)
+        .sort((a, b) => String(a.nickname || '').localeCompare(String(b.nickname || ''), 'ko'));
 
     const handleUsersScroll = (e) => {
         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -330,6 +339,41 @@ const Admin = () => {
             ...prev,
             honorifics: prev.honorifics.filter((item) => item !== target)
         }));
+    };
+
+    const handleTogglePraiseMember = (employeeId) => {
+        const normalizedId = String(employeeId || '').trim();
+        if (!normalizedId) return;
+
+        setPraiseMemberIds((prev) => {
+            if (prev.includes(normalizedId)) {
+                return prev.filter((id) => id !== normalizedId);
+            }
+            if (prev.length >= 10) {
+                alert('칭찬 대상자는 최대 10명까지 설정할 수 있습니다.');
+                return prev;
+            }
+            return [...prev, normalizedId];
+        });
+    };
+
+    const handleSavePraiseMembers = async () => {
+        setIsSavingPraiseMembers(true);
+        try {
+            const result = await upsertQuickVoteSettings({ praiseMemberIds });
+            if (!result.success) {
+                alert(result.error || '칭찬 대상자 설정 저장에 실패했습니다.');
+                return;
+            }
+
+            const savedIds = Array.isArray(result.data?.praiseMemberIds)
+                ? result.data.praiseMemberIds
+                : praiseMemberIds;
+            setPraiseMemberIds(savedIds.slice(0, 10));
+            alert('칭찬 대상자 설정이 저장되었습니다.');
+        } finally {
+            setIsSavingPraiseMembers(false);
+        }
     };
 
     const handleSaveUser = async (e) => {
@@ -766,6 +810,48 @@ const Admin = () => {
                                         disabled={isSavingEvent}
                                     >
                                         저장
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="event-config praise-config">
+                                <div className="praise-config-header">
+                                    <label>칭찬하기 대상자 지정 (최대 10명)</label>
+                                    <span className={`praise-count ${praiseMemberIds.length >= 10 ? 'is-limit' : ''}`}>
+                                        {praiseMemberIds.length}/10
+                                    </span>
+                                </div>
+                                <p className="text-secondary">선택한 사용자만 메인 피드의 칭찬하기에 노출됩니다.</p>
+
+                                {praiseCandidateUsers.length === 0 ? (
+                                    <p className="text-secondary">설정 가능한 사용자가 없습니다.</p>
+                                ) : (
+                                    <div className="praise-user-grid">
+                                        {praiseCandidateUsers.map((member) => {
+                                            const selected = praiseMemberIds.includes(String(member.employeeId));
+                                            return (
+                                                <button
+                                                    key={`${member.id}-${member.employeeId}`}
+                                                    type="button"
+                                                    className={`praise-user-chip ${selected ? 'selected' : ''}`}
+                                                    onClick={() => handleTogglePraiseMember(member.employeeId)}
+                                                >
+                                                    <span className="praise-user-chip__name">{member.nickname}</span>
+                                                    <span className="praise-user-chip__meta">{member.employeeId}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                <div className="event-actions">
+                                    <Button
+                                        variant="admin"
+                                        size="sm"
+                                        onClick={handleSavePraiseMembers}
+                                        disabled={isSavingPraiseMembers}
+                                    >
+                                        대상자 저장
                                     </Button>
                                 </div>
                             </div>

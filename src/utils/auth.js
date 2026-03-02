@@ -193,21 +193,47 @@ const verifyPassword = async (password, storedHash) => {
 export const register = async (userData) => {
     try {
         const { nickname, password, employeeId, gender, personality, profileIconUrl, profileIconPrompt } = userData;
+        const normalizedNickname = typeof nickname === 'string' ? nickname.trim() : '';
         const normalizedEmployeeId = typeof employeeId === 'string' ? employeeId.trim() : '';
+
+        if (!normalizedNickname) {
+            return { success: false, error: '닉네임을 입력해주세요.' };
+        }
 
         if (!normalizedEmployeeId) {
             return { success: false, error: '사번을 입력해주세요.' };
         }
 
-        // 닉네임 중복 체크
-        const { data: existingUser } = await supabase
-            .from('users')
-            .select('id')
-            .eq('nickname', nickname)
-            .single();
+        // 닉네임/사번 중복 체크
+        const [nicknameCheck, employeeIdCheck] = await Promise.all([
+            supabase
+                .from('users')
+                .select('id')
+                .eq('nickname', normalizedNickname)
+                .maybeSingle(),
+            supabase
+                .from('users')
+                .select('id')
+                .eq('employee_id', normalizedEmployeeId)
+                .maybeSingle(),
+        ]);
 
-        if (existingUser) {
+        if (nicknameCheck.error) {
+            console.error('Nickname duplicate check error:', nicknameCheck.error);
+            return { success: false, error: '회원가입 중 오류가 발생했습니다.' };
+        }
+
+        if (employeeIdCheck.error) {
+            console.error('Employee ID duplicate check error:', employeeIdCheck.error);
+            return { success: false, error: '회원가입 중 오류가 발생했습니다.' };
+        }
+
+        if (nicknameCheck.data) {
             return { success: false, error: '이미 사용 중인 닉네임입니다.' };
+        }
+
+        if (employeeIdCheck.data) {
+            return { success: false, error: '이미 등록된 사번입니다.' };
         }
 
         // 비밀번호 해시
@@ -217,7 +243,7 @@ export const register = async (userData) => {
         const { data, error } = await supabase
             .from('users')
             .insert([{
-                nickname,
+                nickname: normalizedNickname,
                 password_hash: passwordHash,
                 employee_id: normalizedEmployeeId,
                 gender: gender || null,
@@ -233,6 +259,15 @@ export const register = async (userData) => {
 
         if (error) {
             console.error('Registration error:', error);
+            if (error.code === '23505') {
+                const errorText = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+                if (errorText.includes('employee') || errorText.includes('employee_id')) {
+                    return { success: false, error: '이미 등록된 사번입니다.' };
+                }
+                if (errorText.includes('nickname')) {
+                    return { success: false, error: '이미 사용 중인 닉네임입니다.' };
+                }
+            }
             return { success: false, error: '회원가입 중 오류가 발생했습니다.' };
         }
 

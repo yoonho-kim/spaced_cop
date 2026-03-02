@@ -521,6 +521,25 @@ export const addComment = async (postId, userName, content) => {
   }
 };
 
+export const deleteComment = async (commentId) => {
+  const normalizedCommentId = commentId == null ? '' : String(commentId).trim();
+  if (!normalizedCommentId) {
+    return { success: false, error: '댓글 식별자가 없습니다.' };
+  }
+
+  const { error } = await supabase
+    .from('post_comments')
+    .delete()
+    .eq('id', normalizedCommentId);
+
+  if (error) {
+    console.error('Error deleting comment:', error);
+    return { success: false, error };
+  }
+
+  return { success: true };
+};
+
 // ============================================
 // MEETING ROOMS
 // ============================================
@@ -1378,6 +1397,121 @@ export const deleteVolunteerRegistration = async (registrationId) => {
 // ============================================
 
 const getTodayKey = () => new Date().toISOString().slice(0, 10);
+const QUICK_VOTE_PRAISE_LIMIT = 10;
+const QUICK_VOTE_SETTINGS_DEFAULT = {
+  id: 1,
+  praiseMemberIds: [],
+  updatedAt: null,
+};
+
+const normalizePraiseMemberIds = (ids) => {
+  if (!Array.isArray(ids)) return [];
+  return Array.from(
+    new Set(
+      ids
+        .map((id) => (id == null ? '' : String(id).trim()))
+        .filter(Boolean)
+    )
+  ).slice(0, QUICK_VOTE_PRAISE_LIMIT);
+};
+
+const mapQuickVoteSettings = (row) => ({
+  id: row?.id ?? QUICK_VOTE_SETTINGS_DEFAULT.id,
+  praiseMemberIds: normalizePraiseMemberIds(row?.praise_member_ids),
+  updatedAt: row?.updated_at || row?.created_at || null,
+});
+
+const isMissingTableError = (error, tableName) => {
+  if (!error) return false;
+  const message = String(error.message || '').toLowerCase();
+  const target = String(tableName || '').toLowerCase();
+  return message.includes(target) && (message.includes('does not exist') || message.includes('could not find'));
+};
+
+const isQuickVotesTableMissingError = (error) => {
+  if (!error) return false;
+  if (error.code === 'PGRST205' && String(error.message || '').includes('quick_votes')) {
+    return true;
+  }
+  return isMissingTableError(error, 'quick_votes');
+};
+
+export const getQuickVoteSettings = async () => {
+  const { data, error } = await supabase
+    .from('app_quick_vote_settings')
+    .select('*')
+    .eq('id', 1)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return { ...QUICK_VOTE_SETTINGS_DEFAULT };
+    }
+    if (isMissingTableError(error, 'app_quick_vote_settings')) {
+      console.warn('app_quick_vote_settings table not found. Falling back to default quick-vote settings.');
+      return { ...QUICK_VOTE_SETTINGS_DEFAULT };
+    }
+    console.error('Error fetching quick vote settings:', error);
+    return { ...QUICK_VOTE_SETTINGS_DEFAULT };
+  }
+
+  return mapQuickVoteSettings(data);
+};
+
+export const upsertQuickVoteSettings = async (settings = {}) => {
+  if (!ensureAdminAccess()) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
+  const praiseMemberIds = normalizePraiseMemberIds(settings.praiseMemberIds);
+  const payload = {
+    id: 1,
+    praise_member_ids: praiseMemberIds,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from('app_quick_vote_settings')
+    .upsert([payload])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error saving quick vote settings:', error);
+    if (isMissingTableError(error, 'app_quick_vote_settings')) {
+      return { success: false, error: 'quick vote 설정 테이블이 없습니다. supabase_quick_vote_settings.sql을 먼저 실행해주세요.' };
+    }
+    if (error.code === '42501') {
+      return {
+        success: false,
+        error: 'DB 권한 정책(RLS)으로 저장이 차단되었습니다. supabase_quick_vote_settings.sql을 다시 실행해 정책을 갱신해주세요.',
+      };
+    }
+    return { success: false, error: '칭찬하기 대상자 설정을 저장할 수 없습니다.' };
+  }
+
+  return {
+    success: true,
+    data: mapQuickVoteSettings(data),
+  };
+};
+
+export const getQuickVotesAvailability = async () => {
+  const { error } = await supabase
+    .from('quick_votes')
+    .select('id')
+    .limit(1);
+
+  if (!error) {
+    return { available: true };
+  }
+
+  if (isQuickVotesTableMissingError(error)) {
+    return { available: false, reason: 'missing_table' };
+  }
+
+  return { available: false, reason: 'query_error', error };
+};
 
 // 오늘 특정 타입의 전체 투표 목록 조회
 export const getQuickVotes = async (voteType) => {
@@ -1389,6 +1523,9 @@ export const getQuickVotes = async (voteType) => {
     .eq('vote_date', today);
 
   if (error) {
+    if (isQuickVotesTableMissingError(error)) {
+      return [];
+    }
     console.error('Error fetching quick votes:', error);
     return [];
   }
@@ -1407,6 +1544,9 @@ export const getMyQuickVote = async (voteType, employeeId) => {
     .maybeSingle();
 
   if (error) {
+    if (isQuickVotesTableMissingError(error)) {
+      return null;
+    }
     console.error('Error fetching my quick vote:', error);
     return null;
   }
@@ -1429,6 +1569,9 @@ export const addQuickVote = async (voteType, optionKey, optionLabel, employeeId)
     .single();
 
   if (error) {
+    if (isQuickVotesTableMissingError(error)) {
+      return null;
+    }
     console.error('Error adding quick vote:', error);
     return null;
   }
@@ -1446,6 +1589,9 @@ export const removeQuickVote = async (voteType, employeeId) => {
     .eq('vote_date', today);
 
   if (error) {
+    if (isQuickVotesTableMissingError(error)) {
+      return false;
+    }
     console.error('Error removing quick vote:', error);
     return false;
   }
@@ -1453,7 +1599,8 @@ export const removeQuickVote = async (voteType, employeeId) => {
 };
 
 // 팀원 목록 조회 (칭찬하기용)
-export const getTeamMembers = async () => {
+export const getTeamMembers = async (options = {}) => {
+  const praiseOnly = options?.praiseOnly === true;
   const { data, error } = await supabase
     .from('users')
     .select('employee_id, nickname, profile_icon_url')
@@ -1463,5 +1610,25 @@ export const getTeamMembers = async () => {
     console.error('Error fetching team members:', error);
     return [];
   }
-  return data;
+
+  const members = Array.isArray(data) ? data : [];
+  if (!praiseOnly) return members;
+
+  const settings = await getQuickVoteSettings();
+  const allowedIds = normalizePraiseMemberIds(settings?.praiseMemberIds);
+  if (allowedIds.length === 0) {
+    return [];
+  }
+
+  const orderMap = new Map(allowedIds.map((id, index) => [id, index]));
+  return members
+    .filter((member) => {
+      const employeeId = member?.employee_id == null ? '' : String(member.employee_id).trim();
+      return employeeId && orderMap.has(employeeId);
+    })
+    .sort((a, b) => {
+      const left = String(a?.employee_id || '').trim();
+      const right = String(b?.employee_id || '').trim();
+      return (orderMap.get(left) ?? 999) - (orderMap.get(right) ?? 999);
+    });
 };
