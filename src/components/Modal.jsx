@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import './Modal.css';
 
 const Modal = ({
@@ -15,8 +16,7 @@ const Modal = ({
     if (!isOpen) return null;
 
     const shouldShowHeader = showHeader && (title || showClose);
-
-    return (
+    const modalNode = (
         <div className="modal-overlay" onClick={onClose}>
             <div
                 className={`modal-content animate-slide-up ${contentClassName}`}
@@ -39,6 +39,12 @@ const Modal = ({
             </div>
         </div>
     );
+
+    if (typeof document === 'undefined') {
+        return modalNode;
+    }
+
+    return createPortal(modalNode, document.body);
 };
 
 export default Modal;

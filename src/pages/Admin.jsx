@@ -822,6 +822,7 @@ const Admin = () => {
                                     </span>
                                 </div>
                                 <p className="text-secondary">선택한 사용자만 메인 피드의 칭찬하기에 노출됩니다.</p>
+                                <p className="text-secondary">칭찬하기는 매주 일요일 00:00에 초기화되며, 대상자도 주간 단위로 다시 설정됩니다.</p>
 
                                 {praiseCandidateUsers.length === 0 ? (
                                     <p className="text-secondary">설정 가능한 사용자가 없습니다.</p>

@@ -47,6 +47,11 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
   const config = VOTE_CONFIG[voteType];
   const counts = tally(votes);
   const totalVotes = votes.length;
+  const votedNoticeText = myVote
+    ? (voteType === 'praise'
+      ? `${myVote.option_label}님을 칭찬했어요!`
+      : `${myVote.option_label}에 투표했어요!`)
+    : '';
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -164,6 +169,16 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
       })
     : [];
 
+  const topVoteCount = praiseLiveRates[0]?.voteCount || 0;
+  const leaders = topVoteCount > 0
+    ? praiseLiveRates.filter((item) => item.voteCount === topVoteCount)
+    : [];
+  const leaderStatusText = topVoteCount === 0
+    ? '아직 득표가 없어요. 첫 하트를 보내보세요!'
+    : leaders.length === 1
+      ? `현재 1위: ${leaders[0].nickname}님 (${leaders[0].percent}%)`
+      : `공동 1위 ${leaders.length}명 (${topVoteCount}표)`;
+
   const renderOptions = () => {
     if (voteType === 'praise') {
       if (teamMembers.length === 0) {
@@ -234,7 +249,14 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose} title={`${config.emoji} ${config.title}`} maxWidth="420px">
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={`${config.emoji} ${config.title}`}
+      maxWidth="420px"
+      contentClassName={voteType === 'praise' ? 'qvm-modal-content' : ''}
+      bodyClassName={voteType === 'praise' ? 'qvm-modal-body' : ''}
+    >
       <div className="qvm-wrapper">
         {voteType === 'praise' && !isLoading && (
           <div className="qvm-live-rate">
@@ -242,37 +264,64 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
               <span className="material-symbols-outlined">monitoring</span>
               <span>실시간 득표율</span>
             </div>
+            <div className="qvm-live-rate__status">
+              <span className="qvm-live-rate__status-badge">LIVE</span>
+              <span className="qvm-live-rate__status-text">{leaderStatusText}</span>
+            </div>
             {praiseLiveRates.length === 0 ? (
               <p className="qvm-live-rate__empty">표시할 대상자가 없습니다.</p>
             ) : (
               <div className="qvm-live-rate__list">
-                {praiseLiveRates.map((item) => (
-                  <div key={item.employeeId} className="qvm-live-rate__item">
+                {praiseLiveRates.map((item, index) => {
+                  const rank = index + 1;
+                  const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
+                  const isLeader = topVoteCount > 0 && item.voteCount === topVoteCount;
+                  const isMyPick = myVote?.option_key === item.employeeId;
+                  return (
+                  <div
+                    key={item.employeeId}
+                    className={[
+                      'qvm-live-rate__item',
+                      isLeader ? 'qvm-live-rate__item--leader' : '',
+                      isMyPick ? 'qvm-live-rate__item--my-pick' : '',
+                    ].filter(Boolean).join(' ')}
+                  >
                     <div className="qvm-live-rate__row">
-                      <span className="qvm-live-rate__name">{item.nickname}</span>
+                      <span className="qvm-live-rate__name">
+                        <span className={`qvm-live-rate__rank ${isLeader ? 'is-leader' : ''}`}>
+                          {rankEmoji || `${rank}위`}
+                        </span>
+                        <span>{item.nickname}</span>
+                        {isMyPick && <span className="qvm-live-rate__my-pick">내 선택</span>}
+                      </span>
                       <span className="qvm-live-rate__meta">{item.voteCount}표 · {item.percent}%</span>
                     </div>
                     <div className="qvm-live-rate__bar-track">
                       <div
-                        className="qvm-live-rate__bar-fill"
+                        className={`qvm-live-rate__bar-fill ${isLeader ? 'is-leader' : ''}`}
                         style={{ width: `${item.percent}%` }}
                       />
                     </div>
                   </div>
-                ))}
+                );
+                })}
               </div>
             )}
           </div>
         )}
         <p className="qvm-subtitle">{config.subtitle}</p>
-        {myVote && (
-          <p className="qvm-voted-notice">
-            {voteType === 'praise'
-              ? `${myVote.option_label}님을 칭찬했어요!`
-              : `${myVote.option_label}에 투표했어요!`}
-            &nbsp;(재클릭하면 취소)
-          </p>
-        )}
+        <div className="qvm-voted-notice-slot">
+          {votedNoticeText ? (
+            <p className="qvm-voted-notice">
+              {votedNoticeText}
+              &nbsp;(재클릭하면 취소)
+            </p>
+          ) : (
+            <p className="qvm-voted-notice qvm-voted-notice--placeholder" aria-hidden="true">
+              투표 안내 자리
+            </p>
+          )}
+        </div>
         {isLoading ? (
           <div className="qvm-loading">불러오는 중...</div>
         ) : loadError ? (

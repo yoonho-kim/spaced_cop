@@ -71,6 +71,27 @@ const hasVerifiedAdminSession = (user) => {
     return new Date(verifiedAdminSession.expiresAt) > new Date();
 };
 
+const isSessionExpired = (user) => {
+    if (!user?.expiresAt) return false;
+    return new Date() > new Date(user.expiresAt);
+};
+
+const syncAdminVerificationState = (user) => {
+    if (user?.isAdmin === true) {
+        markAdminSessionVerified(user);
+    } else {
+        clearAdminSessionVerification();
+    }
+};
+
+const buildClientUser = (baseUser = {}, nextUser = {}) => ({
+    ...baseUser,
+    ...nextUser,
+    isRegistered: nextUser.isRegistered ?? baseUser.isRegistered ?? true,
+    loginTime: baseUser.loginTime || new Date().toISOString(),
+    expiresAt: nextUser.expiresAt || baseUser.expiresAt || new Date(Date.now() + SESSION_DURATION).toISOString(),
+});
+
 const timingSafeEqualString = (left, right) => {
     if (typeof left !== 'string' || typeof right !== 'string') return false;
 
@@ -522,19 +543,119 @@ export const logout = () => {
     });
 };
 
+const revalidateStoredSessionInDev = async (storedUser) => {
+    if (!storedUser || storedUser.isRegistered !== true || !storedUser.id) {
+        syncAdminVerificationState(storedUser);
+        if (storedUser) {
+            setItem(STORAGE_KEYS.USER, storedUser);
+        }
+        return storedUser || null;
+    }
+
+    try {
+        const { data: dbUser, error } = await supabase
+            .from('users')
+            .select('id, nickname, employee_id, gender, profile_icon_url, is_admin')
+            .eq('id', storedUser.id)
+            .maybeSingle();
+
+        if (error || !dbUser) {
+            removeItem(STORAGE_KEYS.USER);
+            clearAdminSessionVerification();
+            return null;
+        }
+
+        const refreshedUser = buildClientUser(storedUser, {
+            id: dbUser.id,
+            nickname: dbUser.nickname,
+            employeeId: dbUser.employee_id,
+            gender: dbUser.gender,
+            profileIconUrl: dbUser.profile_icon_url,
+            isAdmin: dbUser.is_admin === true,
+            isRegistered: true,
+        });
+
+        syncAdminVerificationState(refreshedUser);
+        setItem(STORAGE_KEYS.USER, refreshedUser);
+        return refreshedUser;
+    } catch (error) {
+        console.warn('DEV session revalidation error:', error);
+        syncAdminVerificationState(storedUser);
+        setItem(STORAGE_KEYS.USER, storedUser);
+        return storedUser;
+    }
+};
+
+export const revalidateStoredSession = async () => {
+    const storedUser = getItem(STORAGE_KEYS.USER);
+    if (!storedUser) {
+        clearAdminSessionVerification();
+        return null;
+    }
+
+    if (isSessionExpired(storedUser)) {
+        logout();
+        return null;
+    }
+
+    if (storedUser.isRegistered !== true) {
+        clearAdminSessionVerification();
+        return storedUser;
+    }
+
+    try {
+        const response = await fetch('/api/auth-session', {
+            method: 'GET',
+            credentials: 'include',
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (response.ok && payload?.success && payload?.user) {
+            const refreshedUser = buildClientUser(storedUser, {
+                ...payload.user,
+                isRegistered: true,
+            });
+            syncAdminVerificationState(refreshedUser);
+            setItem(STORAGE_KEYS.USER, refreshedUser);
+            return refreshedUser;
+        }
+
+        if ((response.status === 404 || response.status === 405) && import.meta.env.DEV) {
+            return await revalidateStoredSessionInDev(storedUser);
+        }
+
+        if (response.status === 401 || response.status === 403) {
+            removeItem(STORAGE_KEYS.USER);
+            clearAdminSessionVerification();
+            return null;
+        }
+
+        syncAdminVerificationState(storedUser);
+        setItem(STORAGE_KEYS.USER, storedUser);
+        return storedUser;
+    } catch (error) {
+        console.warn('Session revalidation error:', error);
+
+        if (import.meta.env.DEV) {
+            return await revalidateStoredSessionInDev(storedUser);
+        }
+
+        syncAdminVerificationState(storedUser);
+        setItem(STORAGE_KEYS.USER, storedUser);
+        return storedUser;
+    }
+};
+
 export const getCurrentUser = () => {
     const user = getItem(STORAGE_KEYS.USER);
 
     if (!user) return null;
 
     // Check if session has expired
-    if (user.expiresAt) {
-        const expiresAt = new Date(user.expiresAt);
-        if (new Date() > expiresAt) {
-            // Session expired, clear user data
-            logout();
-            return null;
-        }
+    if (isSessionExpired(user)) {
+        // Session expired, clear user data
+        logout();
+        return null;
     }
 
     if (user.isAdmin === true && !hasVerifiedAdminSession(user)) {

@@ -1396,7 +1396,41 @@ export const deleteVolunteerRegistration = async (registrationId) => {
 // QUICK VOTES (칭찬하기 / 점심 투표 / 커피 투표)
 // ============================================
 
-const getTodayKey = () => new Date().toISOString().slice(0, 10);
+const toLocalDateKey = (inputDate = new Date()) => {
+  const date = new Date(inputDate);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getLocalStartOfDay = (inputDate = new Date()) => {
+  const date = new Date(inputDate);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+};
+
+const getWeekStartSundayDate = (inputDate = new Date()) => {
+  const localDayStart = getLocalStartOfDay(inputDate);
+  const dayOfWeek = localDayStart.getDay(); // Sunday = 0
+  localDayStart.setDate(localDayStart.getDate() - dayOfWeek);
+  return localDayStart;
+};
+
+const getQuickVoteDateKey = (voteType) => {
+  if (voteType === 'praise') {
+    // 칭찬하기는 매주 일요일 00:00 기준으로 초기화
+    return toLocalDateKey(getWeekStartSundayDate());
+  }
+  // 점심/커피 투표는 기존 일일 기준 유지
+  return toLocalDateKey(new Date());
+};
+
+const isSameSundayWeek = (leftDate, rightDate = new Date()) => {
+  if (!leftDate) return false;
+  const left = new Date(leftDate);
+  if (Number.isNaN(left.getTime())) return false;
+  return toLocalDateKey(getWeekStartSundayDate(left)) === toLocalDateKey(getWeekStartSundayDate(rightDate));
+};
 const QUICK_VOTE_PRAISE_LIMIT = 10;
 const QUICK_VOTE_SETTINGS_DEFAULT = {
   id: 1,
@@ -1455,7 +1489,17 @@ export const getQuickVoteSettings = async () => {
     return { ...QUICK_VOTE_SETTINGS_DEFAULT };
   }
 
-  return mapQuickVoteSettings(data);
+  const mapped = mapQuickVoteSettings(data);
+
+  // 칭찬 대상자 설정은 주간 단위로 관리 (매주 일요일 00:00 초기화)
+  if (!isSameSundayWeek(mapped.updatedAt)) {
+    return {
+      ...mapped,
+      praiseMemberIds: [],
+    };
+  }
+
+  return mapped;
 };
 
 export const upsertQuickVoteSettings = async (settings = {}) => {
@@ -1513,14 +1557,14 @@ export const getQuickVotesAvailability = async () => {
   return { available: false, reason: 'query_error', error };
 };
 
-// 오늘 특정 타입의 전체 투표 목록 조회
+// 현재 집계 기준(칭찬: 주간, 그 외: 일간)의 전체 투표 목록 조회
 export const getQuickVotes = async (voteType) => {
-  const today = getTodayKey();
+  const dateKey = getQuickVoteDateKey(voteType);
   const { data, error } = await supabase
     .from('quick_votes')
     .select('*')
     .eq('vote_type', voteType)
-    .eq('vote_date', today);
+    .eq('vote_date', dateKey);
 
   if (error) {
     if (isQuickVotesTableMissingError(error)) {
@@ -1532,15 +1576,15 @@ export const getQuickVotes = async (voteType) => {
   return data;
 };
 
-// 내 투표 조회 (오늘, 특정 타입)
+// 내 투표 조회 (현재 집계 기준, 특정 타입)
 export const getMyQuickVote = async (voteType, employeeId) => {
-  const today = getTodayKey();
+  const dateKey = getQuickVoteDateKey(voteType);
   const { data, error } = await supabase
     .from('quick_votes')
     .select('*')
     .eq('vote_type', voteType)
     .eq('employee_id', employeeId)
-    .eq('vote_date', today)
+    .eq('vote_date', dateKey)
     .maybeSingle();
 
   if (error) {
@@ -1555,7 +1599,7 @@ export const getMyQuickVote = async (voteType, employeeId) => {
 
 // 투표 추가
 export const addQuickVote = async (voteType, optionKey, optionLabel, employeeId) => {
-  const today = getTodayKey();
+  const dateKey = getQuickVoteDateKey(voteType);
   const { data, error } = await supabase
     .from('quick_votes')
     .insert([{
@@ -1563,7 +1607,7 @@ export const addQuickVote = async (voteType, optionKey, optionLabel, employeeId)
       option_key: optionKey,
       option_label: optionLabel,
       employee_id: employeeId,
-      vote_date: today,
+      vote_date: dateKey,
     }])
     .select()
     .single();
@@ -1580,13 +1624,13 @@ export const addQuickVote = async (voteType, optionKey, optionLabel, employeeId)
 
 // 투표 취소 (본인 투표 삭제)
 export const removeQuickVote = async (voteType, employeeId) => {
-  const today = getTodayKey();
+  const dateKey = getQuickVoteDateKey(voteType);
   const { error } = await supabase
     .from('quick_votes')
     .delete()
     .eq('vote_type', voteType)
     .eq('employee_id', employeeId)
-    .eq('vote_date', today);
+    .eq('vote_date', dateKey);
 
   if (error) {
     if (isQuickVotesTableMissingError(error)) {

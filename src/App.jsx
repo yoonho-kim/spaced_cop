@@ -1,5 +1,5 @@
 import React, { Suspense, useState, useEffect, useRef } from 'react';
-import { getCurrentUser } from './utils/auth';
+import { getCurrentUser, revalidateStoredSession } from './utils/auth';
 import { initializeStorage } from './utils/storage';
 import './index.css';
 
@@ -17,6 +17,7 @@ function App() {
     const init = async () => {
       // Initialize storage with default data
       await initializeStorage();
+      await revalidateStoredSession();
 
       // Check if user is already logged in (and not expired)
       const currentUser = getCurrentUser();
@@ -27,15 +28,16 @@ function App() {
     };
 
     init();
+  }, []);
 
+  useEffect(() => {
     // Check session expiration every minute
     const sessionCheckInterval = setInterval(() => {
-      if (user) {
-        const currentUser = getCurrentUser();
-        if (!currentUser) {
-          // Session expired
-          setUser(null);
-        }
+      if (!user) return;
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        // Session expired
+        setUser(null);
       }
     }, 60000); // Check every 60 seconds
 

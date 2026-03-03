@@ -8,7 +8,7 @@ import WinnersModal from '../components/WinnersModal';
 import QuickVoteModal from '../components/QuickVoteModal';
 import './Feed.css';
 
-const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal }) => {
+const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModalVisibilityChange }) => {
     const [posts, setPosts] = useState([]);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
@@ -85,6 +85,20 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal }) => {
         setShowAiServiceView(false);
         setIsAiServiceLoading(false);
     }, [aiServiceCloseSignal]);
+
+    useEffect(() => {
+        if (typeof onPraiseModalVisibilityChange === 'function') {
+            onPraiseModalVisibilityChange(voteModal === 'praise');
+        }
+    }, [voteModal, onPraiseModalVisibilityChange]);
+
+    useEffect(() => {
+        return () => {
+            if (typeof onPraiseModalVisibilityChange === 'function') {
+                onPraiseModalVisibilityChange(false);
+            }
+        };
+    }, [onPraiseModalVisibilityChange]);
 
     useEffect(() => {
         return () => {

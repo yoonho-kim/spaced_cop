@@ -21,6 +21,7 @@ const MainLayout = ({ user, onLogout }) => {
     const [showMenu, setShowMenu] = useState(false);
     const [showPostModal, setShowPostModal] = useState(false);
     const [showStatistics, setShowStatistics] = useState(false);
+    const [isPraiseQuickVoteOpen, setIsPraiseQuickVoteOpen] = useState(false);
     const [newPost, setNewPost] = useState('');
     const [postType, setPostType] = useState('normal'); // 'normal', 'notice', 'volunteer'
     const userIsAdmin = isAdmin();
@@ -54,6 +55,12 @@ const MainLayout = ({ user, onLogout }) => {
             setIsAiServiceViewOpen(false);
         }
     }, [activeTab, isAiServiceViewOpen]);
+
+    useEffect(() => {
+        if (activeTab !== 'feed' && isPraiseQuickVoteOpen) {
+            setIsPraiseQuickVoteOpen(false);
+        }
+    }, [activeTab, isPraiseQuickVoteOpen]);
 
     useEffect(() => {
         loadEventPopup();
@@ -386,6 +393,7 @@ const MainLayout = ({ user, onLogout }) => {
                             user={user}
                             onAiServiceViewChange={setIsAiServiceViewOpen}
                             aiServiceCloseSignal={aiServiceCloseSignal}
+                            onPraiseModalVisibilityChange={setIsPraiseQuickVoteOpen}
                             onNavigateToTab={setActiveTab}
                             onBack={() => setActiveTab(previousTab)}
                             eventData={eventPopup}
@@ -394,7 +402,7 @@ const MainLayout = ({ user, onLogout }) => {
                 </Suspense>
             </main>
 
-            <nav className={`bottom-nav ${isNavVisible && !isEventPage && !isAiServiceViewOpen ? '' : 'hidden'}`}>
+            <nav className={`bottom-nav ${isNavVisible && !isEventPage && !isAiServiceViewOpen && !isPraiseQuickVoteOpen ? '' : 'hidden'}`}>
                 <div className="nav-container">
                     {tabs.slice(0, 2).map(tab => (
                         <button
