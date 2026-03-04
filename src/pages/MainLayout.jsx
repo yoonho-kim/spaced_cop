@@ -182,10 +182,13 @@ const MainLayout = ({ user, onLogout }) => {
     };
 
     const handleHeaderUserInfoClick = () => {
-        if (!isAiServiceViewOpen) return;
         setShowMenu(false);
-        setActiveTab('feed');
-        setAiServiceCloseSignal((prev) => prev + 1);
+        if (activeTab !== 'feed') {
+            setActiveTab('feed');
+        }
+        if (isAiServiceViewOpen) {
+            setAiServiceCloseSignal((prev) => prev + 1);
+        }
     };
 
     // Handle image selection and AI post generation
@@ -280,13 +283,12 @@ const MainLayout = ({ user, onLogout }) => {
             <header className="main-header">
                 <div className="header-content">
                     <div
-                        className={`header-user-info ${isAiServiceViewOpen ? 'header-user-info--clickable' : ''}`}
+                        className="header-user-info header-user-info--clickable"
                         onClick={handleHeaderUserInfoClick}
-                        role={isAiServiceViewOpen ? 'button' : undefined}
-                        tabIndex={isAiServiceViewOpen ? 0 : undefined}
-                        aria-label={isAiServiceViewOpen ? '메인 피드로 돌아가기' : undefined}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="메인 피드로 돌아가기"
                         onKeyDown={(e) => {
-                            if (!isAiServiceViewOpen) return;
                             if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
                                 handleHeaderUserInfoClick();

@@ -4,6 +4,7 @@ import { isAdmin } from '../utils/auth';
 import { supabase } from '../utils/supabase';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
+import Modal from '../components/Modal';
 import WinnersModal from '../components/WinnersModal';
 import QuickVoteModal from '../components/QuickVoteModal';
 import './Feed.css';
@@ -1040,57 +1041,30 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                 </div>
             </section>
 
-            {showAiServiceView && (
-                <div
-                    className="ai-service-view-overlay"
-                    onClick={closeAiServiceView}
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="AI 서비스"
-                >
-                    <div className="ai-service-view-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="ai-service-view-header">
-                            <div className="ai-service-view-title-wrap">
-                                <h3>AI 서비스</h3>
-                                <p>우리팀 맞춤형 AI 서비스</p>
-                            </div>
-                            <div className="ai-service-view-actions">
-                                <button
-                                    type="button"
-                                    className="ai-service-view-action ai-service-view-action--ghost"
-                                    onClick={() => window.open(AI_SERVICE_URL, '_blank', 'noopener,noreferrer')}
-                                >
-                                    새 창
-                                </button>
-                                <button
-                                    type="button"
-                                    className="ai-service-view-action"
-                                    onClick={closeAiServiceView}
-                                    aria-label="AI 서비스 닫기"
-                                >
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
+            <Modal
+                isOpen={showAiServiceView}
+                onClose={closeAiServiceView}
+                title="AI 서비스"
+                maxWidth="980px"
+                contentClassName="ai-service-view-modal"
+                bodyClassName="ai-service-view-modal-body"
+            >
+                <div className="ai-service-view-body">
+                    {isAiServiceLoading && (
+                        <div className="ai-service-view-loading">
+                            <div className="ai-service-view-spinner" aria-hidden="true"></div>
+                            <span>AI 서비스를 불러오는 중...</span>
                         </div>
+                    )}
 
-                        <div className="ai-service-view-body">
-                            {isAiServiceLoading && (
-                                <div className="ai-service-view-loading">
-                                    <div className="ai-service-view-spinner" aria-hidden="true"></div>
-                                    <span>AI 서비스를 불러오는 중...</span>
-                                </div>
-                            )}
-
-                            <iframe
-                                title="AI 서비스"
-                                src={AI_SERVICE_URL}
-                                className="ai-service-view-iframe"
-                                onLoad={() => setIsAiServiceLoading(false)}
-                            />
-                        </div>
-                    </div>
+                    <iframe
+                        title="AI 서비스"
+                        src={AI_SERVICE_URL}
+                        className="ai-service-view-iframe"
+                        onLoad={() => setIsAiServiceLoading(false)}
+                    />
                 </div>
-            )}
+            </Modal>
 
             {selectedProfile && (
                 <div
