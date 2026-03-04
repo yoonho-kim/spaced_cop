@@ -24,6 +24,10 @@
             "handle": "filesystem"
         },
         {
+            "methods": [
+                "GET",
+                "HEAD"
+            ],
             "src": "/(.*)",
             "dest": "/index.html"
         }
