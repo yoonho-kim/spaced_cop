@@ -21,13 +21,13 @@
     ],
     "routes": [
         {
+            "src": "/api/(.*)",
+            "dest": "/api/$1.js"
+        },
+        {
             "handle": "filesystem"
         },
         {
-            "methods": [
-                "GET",
-                "HEAD"
-            ],
             "src": "/(.*)",
             "dest": "/index.html"
         }
