@@ -15,11 +15,13 @@ const MeetingRooms = ({ user }) => {
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [selectedDate, setSelectedDate] = useState('');
     const [showDateModal, setShowDateModal] = useState(false);
+    const [calendarViewDate, setCalendarViewDate] = useState(() => new Date());
     const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
     const [formData, setFormData] = useState({
         department: '',
         purpose: '',
     });
+    const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
     // 09:00 ~ 18:00 시간 옵션
     const timeOptions = Array.from({ length: 10 }, (_, i) => i + 9); // 9 to 18
@@ -84,6 +86,38 @@ const MeetingRooms = ({ user }) => {
             dates.push(new Date(cursor));
         }
         return dates;
+    };
+
+    const getCalendarDays = (monthDate) => {
+        const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+        const gridStart = new Date(monthStart);
+        gridStart.setDate(monthStart.getDate() - monthStart.getDay());
+
+        return Array.from({ length: 42 }, (_, index) => {
+            const day = new Date(gridStart);
+            day.setDate(gridStart.getDate() + index);
+            return day;
+        });
+    };
+
+    const isSameDate = (a, b) =>
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate();
+
+    const openDateModal = () => {
+        const baseDate = parseISODate(selectedDate) || normalizeDate(new Date());
+        setCalendarViewDate(new Date(baseDate.getFullYear(), baseDate.getMonth(), 1));
+        setShowDateModal(true);
+    };
+
+    const moveCalendarMonth = (delta) => {
+        setCalendarViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+    };
+
+    const handleSelectDateFromCalendar = (date) => {
+        setSelectedDate(formatISODate(date));
+        setShowDateModal(false);
     };
 
     useEffect(() => {
@@ -176,7 +210,7 @@ const MeetingRooms = ({ user }) => {
                             </div>
                         )}
                     </div>
-                    <button className="date-picker-button" onClick={() => setShowDateModal(true)}>
+                    <button className="date-picker-button" onClick={openDateModal}>
                         전체 날짜
                     </button>
                 </div>
@@ -320,18 +354,68 @@ const MeetingRooms = ({ user }) => {
             {/* Full Date Picker Modal */}
             <Modal isOpen={showDateModal} onClose={() => setShowDateModal(false)} title="날짜 선택">
                 <div className="date-picker-modal">
-                    <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="date-input"
-                    />
-                    <div className="form-actions">
+                    <div className="calendar-nav">
+                        <button
+                            type="button"
+                            className="calendar-nav-btn"
+                            onClick={() => moveCalendarMonth(-1)}
+                            aria-label="이전 달"
+                        >
+                            <span className="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <div className="calendar-month-label">
+                            {calendarViewDate.toLocaleDateString('ko-KR', {
+                                year: 'numeric',
+                                month: 'long',
+                            })}
+                        </div>
+                        <button
+                            type="button"
+                            className="calendar-nav-btn"
+                            onClick={() => moveCalendarMonth(1)}
+                            aria-label="다음 달"
+                        >
+                            <span className="material-symbols-outlined">chevron_right</span>
+                        </button>
+                    </div>
+
+                    <div className="calendar-weekdays">
+                        {WEEKDAY_LABELS.map((day) => (
+                            <div key={day} className="calendar-weekday">
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="calendar-grid">
+                        {getCalendarDays(calendarViewDate).map((date) => {
+                            const selectedDateObj = parseISODate(selectedDate);
+                            const isCurrentMonth = date.getMonth() === calendarViewDate.getMonth();
+                            const isSelected = selectedDateObj ? isSameDate(date, selectedDateObj) : false;
+                            const today = isSameDate(date, normalizeDate(new Date()));
+
+                            return (
+                                <button
+                                    key={formatISODate(date)}
+                                    type="button"
+                                    className={`calendar-day-btn ${isCurrentMonth ? '' : 'is-outside'} ${isSelected ? 'is-selected' : ''} ${today ? 'is-today' : ''}`}
+                                    onClick={() => handleSelectDateFromCalendar(date)}
+                                    aria-label={date.toLocaleDateString('ko-KR', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        weekday: 'long',
+                                    })}
+                                >
+                                    {date.getDate()}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="date-picker-footer">
                         <Button type="button" variant="secondary" onClick={() => setShowDateModal(false)}>
                             닫기
-                        </Button>
-                        <Button type="button" variant="primary" onClick={() => setShowDateModal(false)}>
-                            확인
                         </Button>
                     </div>
                 </div>

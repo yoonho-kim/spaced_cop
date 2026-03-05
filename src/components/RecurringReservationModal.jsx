@@ -66,7 +66,7 @@ const RecurringReservationModal = ({ isOpen, onClose, rooms, onAdd }) => {
             return;
         }
 
-        const selectedRoom = rooms.find(r => r.id === formData.roomId);
+        const selectedRoom = rooms.find(r => String(r.id) === String(formData.roomId));
         if (!selectedRoom) return;
 
         onAdd({
@@ -80,6 +80,32 @@ const RecurringReservationModal = ({ isOpen, onClose, rooms, onAdd }) => {
             department: formData.department,
             purpose: formData.purpose
         });
+    };
+
+    const handleStartHourChange = (event) => {
+        const nextStartHour = parseInt(event.target.value, 10);
+        if (isNaN(nextStartHour)) return;
+
+        setFormData((prev) => {
+            const currentEndHour = parseInt(prev.endHour, 10);
+            const minEndHour = nextStartHour + 1;
+            const maxEndHour = hours[hours.length - 1];
+            const nextEndHour = !isNaN(currentEndHour) && currentEndHour > nextStartHour
+                ? currentEndHour
+                : Math.min(minEndHour, maxEndHour);
+
+            return {
+                ...prev,
+                startHour: nextStartHour,
+                endHour: nextEndHour,
+            };
+        });
+    };
+
+    const handleEndHourChange = (event) => {
+        const nextEndHour = parseInt(event.target.value, 10);
+        if (isNaN(nextEndHour)) return;
+        setFormData((prev) => ({ ...prev, endHour: nextEndHour }));
     };
 
     return (
@@ -156,7 +182,7 @@ const RecurringReservationModal = ({ isOpen, onClose, rooms, onAdd }) => {
                         <label>시작 시간</label>
                         <select
                             value={formData.startHour}
-                            onChange={(e) => setFormData({ ...formData, startHour: e.target.value })}
+                            onChange={handleStartHourChange}
                         >
                             {hours.slice(0, -1).map(h => (
                                 <option key={h} value={h}>{h.toString().padStart(2, '0')}:00</option>
@@ -167,7 +193,7 @@ const RecurringReservationModal = ({ isOpen, onClose, rooms, onAdd }) => {
                         <label>종료 시간</label>
                         <select
                             value={formData.endHour}
-                            onChange={(e) => setFormData({ ...formData, endHour: e.target.value })}
+                            onChange={handleEndHourChange}
                         >
                             {hours.filter(h => h > parseInt(formData.startHour)).map(h => (
                                 <option key={h} value={h}>{h.toString().padStart(2, '0')}:00</option>
