@@ -378,24 +378,60 @@ export const getPosts = async () => {
 };
 
 export const getPostsPage = async ({ limit = 10, offset = 0 } = {}) => {
-  const fetchLimit = limit + 1;
-  const { data, error } = await supabase
-    .from('posts')
-    .select(`
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 10;
+  const safeOffset = Number.isFinite(offset) && offset > 0 ? Math.floor(offset) : 0;
+  const postSelect = `
       *,
       post_likes(user_nickname),
       post_comments(*)
-    `)
+    `;
+
+  // Always pin the latest admin notice to the top of the first page.
+  let pinnedNotice = null;
+  const { data: noticeData, error: noticeError } = await supabase
+    .from('posts')
+    .select(postSelect)
+    .eq('is_admin', true)
+    .eq('post_type', 'notice')
     .order('created_at', { ascending: false })
-    .range(offset, offset + fetchLimit - 1);
+    .limit(1);
+
+  if (noticeError) {
+    console.error('Error fetching pinned notice post:', noticeError);
+  } else if (Array.isArray(noticeData) && noticeData.length > 0) {
+    pinnedNotice = noticeData[0];
+  }
+
+  const shouldIncludePinnedNotice = Boolean(pinnedNotice) && safeOffset === 0;
+  const regularOffset = pinnedNotice ? Math.max(safeOffset - 1, 0) : safeOffset;
+  const regularLimit = shouldIncludePinnedNotice ? Math.max(safeLimit - 1, 0) : safeLimit;
+  const regularFetchLimit = regularLimit + 1;
+
+  let query = supabase
+    .from('posts')
+    .select(postSelect)
+    .order('created_at', { ascending: false });
+
+  if (pinnedNotice?.id) {
+    query = query.neq('id', pinnedNotice.id);
+  }
+
+  const { data, error } = await query.range(
+    regularOffset,
+    regularOffset + regularFetchLimit - 1
+  );
 
   if (error) {
     console.error('Error fetching paged posts:', error);
     return { posts: [], hasMore: false };
   }
 
-  const hasMore = (data || []).length > limit;
-  const pageData = hasMore ? data.slice(0, limit) : data;
+  const regularRows = data || [];
+  const hasMore = regularRows.length > regularLimit;
+  const regularPageData = hasMore ? regularRows.slice(0, regularLimit) : regularRows;
+  const pageData = shouldIncludePinnedNotice
+    ? [pinnedNotice, ...regularPageData]
+    : regularPageData;
   const posts = await buildPosts(pageData);
 
   return { posts, hasMore };
