@@ -74,7 +74,7 @@ create policy "app_lunch_menu_items_delete_authenticated"
 -- 슬롯 후보 5개 조회 예시
 -- 1) 25층 구내식당은 항상 포함
 -- 2) 나머지 활성 메뉴 중 랜덤 4개
--- 3) 실제 당첨 50% 보정은 프론트에서 적용
+-- 3) 실제 당첨 35% 보정은 프론트에서 적용
 -- --------------------------------------------
 -- with cafeteria as (
 --   select id, name, emoji, menu_tag, is_cafeteria, is_active

@@ -222,8 +222,95 @@
   padding: 24px 16px 32px;
 }
 
-.lpm-action-center .lpm-spin-button {
+.lpm-action-card {
+  position: relative;
+  width: 100%;
+  max-width: 348px;
+  padding: 22px 20px 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(246, 249, 255, 0.96) 100%);
+  box-shadow:
+    0 18px 36px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  overflow: hidden;
+}
+
+.lpm-action-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(75, 125, 255, 0.08), transparent 32%),
+    radial-gradient(circle at 84% 18%, rgba(83, 199, 168, 0.14), transparent 22%);
+  pointer-events: none;
+}
+
+.lpm-action-chip {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(75, 125, 255, 0.08);
+  color: var(--lpm-blue);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 auto;
+}
+
+.lpm-action-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #53c7a8;
+  box-shadow: 0 0 0 6px rgba(83, 199, 168, 0.15);
+  animation: lpm-chip-pulse 1.8s ease-in-out infinite;
+}
+
+.lpm-action-copy,
+.lpm-action-note {
+  position: relative;
+  z-index: 1;
+}
+
+.lpm-action-copy {
+  text-align: center;
+  margin-top: 18px;
+}
+
+.lpm-action-copy h3 {
+  margin: 0;
+  max-width: 284px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1.5;
+  color: var(--lpm-text);
+}
+
+.lpm-action-card .lpm-spin-button {
+  position: relative;
+  z-index: 1;
   max-width: 320px;
+  margin-top: 20px;
+}
+
+.lpm-action-note {
+  margin-top: 12px;
+  text-align: center;
+  color: var(--lpm-muted);
+  font-size: 12px;
+  letter-spacing: -0.01em;
 }
 
 .lpm-locked-card {
@@ -573,6 +660,19 @@
   }
 }
 
+@keyframes lpm-chip-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 6px rgba(83, 199, 168, 0.15);
+    opacity: 1;
+  }
+
+  50% {
+    box-shadow: 0 0 0 11px rgba(83, 199, 168, 0.08);
+    opacity: 0.82;
+  }
+}
+
 @media (max-width: 480px) {
   .lpm-shell,
   .lpm-main-screen {
@@ -582,6 +682,14 @@
 
   .lpm-top-title {
     font-size: 28px;
+  }
+
+  .lpm-action-card {
+    padding: 20px 18px 18px;
+  }
+
+  .lpm-action-copy h3 {
+    font-size: 22px;
   }
 
   .lpm-slot-item-name {

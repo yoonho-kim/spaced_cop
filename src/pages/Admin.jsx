@@ -923,7 +923,7 @@ const Admin = () => {
                                 <div className="lunch-menu-panel__header">
                                     <div>
                                         <label>등록된 메뉴 목록</label>
-                                        <p className="text-secondary">25층 구내식당은 고정 후보이며 당첨 확률 50%가 유지됩니다.</p>
+                                        <p className="text-secondary">25층 구내식당은 고정 후보이며 당첨 확률 35%가 유지됩니다.</p>
                                     </div>
                                     <span className="lunch-menu-stat">{activeLunchMenuCount}/{lunchMenus.length}</span>
                                 </div>
@@ -941,7 +941,7 @@ const Admin = () => {
                                                 <div className="lunch-menu-item__info">
                                                     <div className="lunch-menu-item__title-row">
                                                         <strong>{menu.name}</strong>
-                                                        {menu.isCafeteria && <span className="lunch-menu-badge fixed">고정 50%</span>}
+                                                        {menu.isCafeteria && <span className="lunch-menu-badge fixed">고정 35%</span>}
                                                         {!menu.isCafeteria && menu.isActive && <span className="lunch-menu-badge active">활성</span>}
                                                         {!menu.isCafeteria && !menu.isActive && <span className="lunch-menu-badge inactive">비활성</span>}
                                                     </div>

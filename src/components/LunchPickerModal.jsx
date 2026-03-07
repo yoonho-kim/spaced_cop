@@ -17,15 +17,25 @@ const DEFAULT_CAFETERIA_MENU = Object.freeze({
   isActive: true,
 });
 
+const SEOUL_COORDINATES = Object.freeze({
+  latitude: 37.5665,
+  longitude: 126.978,
+});
+
+const DEFAULT_WEATHER_BRIEF = Object.freeze({
+  message: '오늘 을지로 날씨에 맞게 점심메뉴를 추천해드릴게요.',
+});
+
 const BOOT_DURATION_MS = 2400;
+const CAFETERIA_WIN_RATE = 0.35;
 const RESULT_DELAY_MS = 420;
 const SLOT_ITEM_HEIGHT = 72;
 const SLOT_WINDOW_HEIGHT = 220;
 const MAX_CANDIDATES = 5;
 const BOOT_LOGS = [
   '> AI lunch model booting',
+  '> 을지로 실시간 날씨 수신 중...',
   '> 오늘의 점심 흐름 분석 중...',
-  '> 추천 엔진 준비 중...',
   '> 슬롯 실행 준비 완료',
 ];
 const SPEED_LINES = [
@@ -100,7 +110,7 @@ const pickWinningMenu = (candidateMenus = []) => {
     return cafeteria;
   }
 
-  if (Math.random() < 0.5) {
+  if (Math.random() < CAFETERIA_WIN_RATE) {
     return cafeteria;
   }
 
@@ -122,12 +132,57 @@ const buildTrackItems = (menusForTrack) => {
   return repeatedMenus;
 };
 
+const getWeatherConditionText = (weatherCode) => {
+  if (weatherCode === 0) return '맑고';
+  if ([1].includes(weatherCode)) return '대체로 맑고';
+  if ([2].includes(weatherCode)) return '구름이 조금 있고';
+  if ([3].includes(weatherCode)) return '흐리고';
+  if ([45, 48].includes(weatherCode)) return '안개가 끼고';
+  if ([51, 53, 55, 56, 57].includes(weatherCode)) return '이슬비가 내리고';
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(weatherCode)) return '비가 오고';
+  if ([71, 73, 75, 77, 85, 86].includes(weatherCode)) return '눈이 오고';
+  if ([95, 96, 99].includes(weatherCode)) return '비 소식이 있고';
+  return '날씨가 부드럽고';
+};
+
+const buildWeatherBrief = (current = {}) => {
+  const temperature = Number(current?.temperature_2m);
+  const weatherCode = Number(current?.weather_code);
+
+  if (!Number.isFinite(temperature) || !Number.isFinite(weatherCode)) {
+    return DEFAULT_WEATHER_BRIEF;
+  }
+
+  return {
+    message: `오늘 을지로 날씨는 ${getWeatherConditionText(weatherCode)} ${Math.round(temperature)}도예요. 이 날씨에 맞게 점심메뉴를 추천해드릴게요.`,
+  };
+};
+
+const fetchSeoulWeatherBrief = async () => {
+  const params = new URLSearchParams({
+    latitude: String(SEOUL_COORDINATES.latitude),
+    longitude: String(SEOUL_COORDINATES.longitude),
+    current: 'temperature_2m,precipitation,weather_code',
+    timezone: 'Asia/Seoul',
+    forecast_days: '1',
+  });
+
+  const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Weather API responded with ${response.status}`);
+  }
+
+  const payload = await response.json();
+  return buildWeatherBrief(payload?.current);
+};
+
 const getAccountKey = (user) => String(user?.employeeId || user?.id || '').trim();
 
 const LunchPickerModal = ({ isOpen, onClose, user }) => {
   const [screen, setScreen] = useState('booting');
   const [menus, setMenus] = useState([]);
   const [savedMenu, setSavedMenu] = useState(null);
+  const [weatherBrief, setWeatherBrief] = useState(DEFAULT_WEATHER_BRIEF);
   const [bootLines, setBootLines] = useState([]);
   const [bootProgress, setBootProgress] = useState(0);
   const [statusLabel, setStatusLabel] = useState('AI Lunch Pick');
@@ -197,6 +252,17 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
     setResultVisible(false);
     setIsSpinning(false);
     setStatusLabel('AI Lunch Pick');
+    setWeatherBrief(DEFAULT_WEATHER_BRIEF);
+
+    fetchSeoulWeatherBrief()
+      .then((nextWeatherBrief) => {
+        if (loadRunIdRef.current !== runId) return;
+        setWeatherBrief(nextWeatherBrief);
+      })
+      .catch(() => {
+        if (loadRunIdRef.current !== runId) return;
+        setWeatherBrief(DEFAULT_WEATHER_BRIEF);
+      });
 
     BOOT_LOGS.forEach((line, index) => {
       const timeoutId = window.setTimeout(() => {
@@ -457,14 +523,24 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
                 <div className="lpm-top-title">점심 메뉴 뽑기</div>
               </div>
               <div className="lpm-action-center">
-                <button
-                  type="button"
-                  className="lpm-spin-button"
-                  onClick={handleOpenRoulette}
-                  disabled={menus.length === 0}
-                >
-                  점심 메뉴 뽑기
-                </button>
+                <div className="lpm-action-card">
+                  <div className="lpm-action-chip">
+                    <span className="lpm-action-chip-dot" aria-hidden="true" />
+                    AI lunch mode
+                  </div>
+                  <div className="lpm-action-copy">
+                    <h3>{weatherBrief.message}</h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="lpm-spin-button"
+                    onClick={handleOpenRoulette}
+                    disabled={menus.length === 0}
+                  >
+                    점심 메뉴 뽑기
+                  </button>
+                  <div className="lpm-action-note">메뉴는 결과 화면에서 공개됩니다.</div>
+                </div>
               </div>
             </div>
           )}
