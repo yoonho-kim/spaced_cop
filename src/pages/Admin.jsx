@@ -16,6 +16,10 @@ import {
     upsertEventSettings,
     getQuickVoteSettings,
     upsertQuickVoteSettings,
+    getLunchMenuItems,
+    addLunchMenuItem,
+    updateLunchMenuItem,
+    deleteLunchMenuItem,
     uploadEventImage,
     deleteEventImage,
     addPost,
@@ -45,6 +49,12 @@ const formatVolunteerDateLabel = (dateString) => {
 const buildLotteryFeedContent = (activity) => (
     `${activity.title} 의 추첨이 완료되었습니다.\n - 봉사활동 일자 : ${formatVolunteerDateLabel(activity.date)}`
 );
+
+const INITIAL_LUNCH_MENU_FORM = {
+    name: '',
+    emoji: '🍽️',
+    menuTag: '',
+};
 
 const Admin = () => {
     const [activeSection, setActiveSection] = useState('rooms');
@@ -77,19 +87,35 @@ const Admin = () => {
     const [eventImageRemovePath, setEventImageRemovePath] = useState('');
     const [praiseMemberIds, setPraiseMemberIds] = useState([]);
     const [isSavingPraiseMembers, setIsSavingPraiseMembers] = useState(false);
+    const [lunchMenus, setLunchMenus] = useState([]);
+    const [lunchMenuForm, setLunchMenuForm] = useState(INITIAL_LUNCH_MENU_FORM);
+    const [isSavingLunchMenu, setIsSavingLunchMenu] = useState(false);
+    const [updatingLunchMenuId, setUpdatingLunchMenuId] = useState(null);
 
     useEffect(() => {
         loadData();
     }, []);
 
     const loadData = async () => {
-        const roomsData = await getMeetingRooms();
-        const recurringData = await getRecurringRules();
-        const activitiesData = await getVolunteerActivities();
-        const registrationsData = await getVolunteerRegistrations();
-        const userResult = await adminGetUsers();
-        const eventData = await getEventSettings();
-        const quickVoteSettings = await getQuickVoteSettings();
+        const [
+            roomsData,
+            recurringData,
+            activitiesData,
+            registrationsData,
+            userResult,
+            eventData,
+            quickVoteSettings,
+            lunchMenusData,
+        ] = await Promise.all([
+            getMeetingRooms(),
+            getRecurringRules(),
+            getVolunteerActivities(),
+            getVolunteerRegistrations(),
+            adminGetUsers(),
+            getEventSettings(),
+            getQuickVoteSettings(),
+            getLunchMenuItems({ includeInactive: true }),
+        ]);
         setRooms(roomsData);
         setRecurringRules(recurringData);
         setActivities(activitiesData);
@@ -104,6 +130,7 @@ const Admin = () => {
             });
         }
         setPraiseMemberIds(Array.isArray(quickVoteSettings?.praiseMemberIds) ? quickVoteSettings.praiseMemberIds.slice(0, 10) : []);
+        setLunchMenus(Array.isArray(lunchMenusData) ? lunchMenusData : []);
         setEventImageRemovePath('');
         setVisibleUserCount(20);
     };
@@ -293,6 +320,7 @@ const Admin = () => {
     const praiseCandidateUsers = users
         .filter((item) => !item.isAdmin && item.employeeId)
         .sort((a, b) => String(a.nickname || '').localeCompare(String(b.nickname || ''), 'ko'));
+    const activeLunchMenuCount = lunchMenus.filter((item) => item.isActive).length;
 
     const handleUsersScroll = (e) => {
         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -373,6 +401,86 @@ const Admin = () => {
             alert('칭찬 대상자 설정이 저장되었습니다.');
         } finally {
             setIsSavingPraiseMembers(false);
+        }
+    };
+
+    const handleLunchMenuFormChange = (field, value) => {
+        setLunchMenuForm((prev) => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
+    const handleSaveLunchMenu = async (e) => {
+        e.preventDefault();
+        setIsSavingLunchMenu(true);
+
+        try {
+            const result = await addLunchMenuItem({
+                name: lunchMenuForm.name,
+                emoji: lunchMenuForm.emoji,
+                menuTag: lunchMenuForm.menuTag,
+                isActive: true,
+                isCafeteria: false,
+            });
+
+            if (!result.success) {
+                alert(result.error || '점심 메뉴 저장에 실패했습니다.');
+                return;
+            }
+
+            setLunchMenuForm(INITIAL_LUNCH_MENU_FORM);
+            await loadData();
+            alert('점심 메뉴가 등록되었습니다.');
+        } finally {
+            setIsSavingLunchMenu(false);
+        }
+    };
+
+    const handleToggleLunchMenu = async (menu) => {
+        if (!menu || menu.isCafeteria) {
+            alert('25층 구내식당은 고정 메뉴라 상태를 변경할 수 없습니다.');
+            return;
+        }
+
+        setUpdatingLunchMenuId(menu.id);
+        try {
+            const result = await updateLunchMenuItem(menu.id, {
+                isActive: !menu.isActive,
+            });
+
+            if (!result.success) {
+                alert(result.error || '점심 메뉴 상태를 변경할 수 없습니다.');
+                return;
+            }
+
+            await loadData();
+        } finally {
+            setUpdatingLunchMenuId(null);
+        }
+    };
+
+    const handleDeleteLunchMenu = async (menu) => {
+        if (!menu) return;
+        if (menu.isCafeteria) {
+            alert('25층 구내식당은 고정 메뉴라 삭제할 수 없습니다.');
+            return;
+        }
+
+        const confirmed = confirm(`${menu.name} 메뉴를 삭제하시겠습니까?`);
+        if (!confirmed) return;
+
+        setUpdatingLunchMenuId(menu.id);
+        try {
+            const result = await deleteLunchMenuItem(menu.id);
+            if (!result.success) {
+                alert(result.error || '점심 메뉴 삭제에 실패했습니다.');
+                return;
+            }
+
+            await loadData();
+        } finally {
+            setUpdatingLunchMenuId(null);
         }
     };
 
@@ -551,6 +659,12 @@ const Admin = () => {
                     onClick={() => setActiveSection('users')}
                 >
                     사용자
+                </button>
+                <button
+                    className={`admin-tab ${activeSection === 'lunch' ? 'active' : ''}`}
+                    onClick={() => setActiveSection('lunch')}
+                >
+                    점심메뉴
                 </button>
                 <button
                     className={`admin-tab ${activeSection === 'settings' ? 'active' : ''}`}
@@ -735,6 +849,133 @@ const Admin = () => {
                                     </div>
                                 ))
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'lunch' && (
+                    <div className="admin-section">
+                        <div className="section-header">
+                            <div>
+                                <h3>점심메뉴</h3>
+                                <p className="text-secondary">메인 점심 슬롯 후보 메뉴를 관리합니다.</p>
+                            </div>
+                        </div>
+
+                        <div className="lunch-admin-layout">
+                            <form className="event-config lunch-menu-form" onSubmit={handleSaveLunchMenu}>
+                                <div className="lunch-menu-form__header">
+                                    <div>
+                                        <label>메뉴 등록</label>
+                                        <p className="text-secondary">추가한 메뉴는 점심 슬롯 후보군에 포함됩니다.</p>
+                                    </div>
+                                    <span className="lunch-menu-stat">{activeLunchMenuCount}개 활성</span>
+                                </div>
+
+                                <div className="lunch-menu-form__grid">
+                                    <div>
+                                        <label htmlFor="lunch-menu-name">메뉴명</label>
+                                        <input
+                                            id="lunch-menu-name"
+                                            type="text"
+                                            value={lunchMenuForm.name}
+                                            onChange={(e) => handleLunchMenuFormChange('name', e.target.value)}
+                                            placeholder="예) 순대국밥"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="lunch-menu-emoji">이모지</label>
+                                        <input
+                                            id="lunch-menu-emoji"
+                                            type="text"
+                                            value={lunchMenuForm.emoji}
+                                            onChange={(e) => handleLunchMenuFormChange('emoji', e.target.value)}
+                                            placeholder="🍲"
+                                            maxLength={4}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="lunch-menu-tag">태그</label>
+                                    <input
+                                        id="lunch-menu-tag"
+                                        type="text"
+                                        value={lunchMenuForm.menuTag}
+                                        onChange={(e) => handleLunchMenuFormChange('menuTag', e.target.value)}
+                                        placeholder="예) 한식 • 국밥"
+                                    />
+                                </div>
+
+                                <div className="event-actions">
+                                    <Button
+                                        variant="admin"
+                                        size="sm"
+                                        type="submit"
+                                        disabled={isSavingLunchMenu}
+                                    >
+                                        메뉴 등록
+                                    </Button>
+                                </div>
+                            </form>
+
+                            <div className="event-config lunch-menu-panel">
+                                <div className="lunch-menu-panel__header">
+                                    <div>
+                                        <label>등록된 메뉴 목록</label>
+                                        <p className="text-secondary">25층 구내식당은 고정 후보이며 당첨 확률 50%가 유지됩니다.</p>
+                                    </div>
+                                    <span className="lunch-menu-stat">{activeLunchMenuCount}/{lunchMenus.length}</span>
+                                </div>
+
+                                {lunchMenus.length === 0 ? (
+                                    <p className="text-secondary">등록된 메뉴가 없습니다. 먼저 SQL을 적용한 뒤 메뉴를 추가해주세요.</p>
+                                ) : (
+                                    <div className="lunch-menu-list">
+                                        {lunchMenus.map((menu) => (
+                                            <div
+                                                key={menu.id}
+                                                className={`lunch-menu-item ${menu.isActive ? 'is-active' : 'is-inactive'} ${menu.isCafeteria ? 'is-fixed' : ''}`}
+                                            >
+                                                <div className="lunch-menu-item__emoji">{menu.emoji || '🍽️'}</div>
+                                                <div className="lunch-menu-item__info">
+                                                    <div className="lunch-menu-item__title-row">
+                                                        <strong>{menu.name}</strong>
+                                                        {menu.isCafeteria && <span className="lunch-menu-badge fixed">고정 50%</span>}
+                                                        {!menu.isCafeteria && menu.isActive && <span className="lunch-menu-badge active">활성</span>}
+                                                        {!menu.isCafeteria && !menu.isActive && <span className="lunch-menu-badge inactive">비활성</span>}
+                                                    </div>
+                                                    <p>{menu.menuTag || (menu.isCafeteria ? '직원 할인 적용' : '태그 미입력')}</p>
+                                                </div>
+                                                <div className="lunch-menu-item__actions">
+                                                    {menu.isCafeteria ? (
+                                                        <span className="lunch-menu-fixed-note">항상 포함</span>
+                                                    ) : (
+                                                        <>
+                                                            <Button
+                                                                variant={menu.isActive ? 'secondary' : 'success'}
+                                                                size="sm"
+                                                                onClick={() => handleToggleLunchMenu(menu)}
+                                                                disabled={updatingLunchMenuId === menu.id}
+                                                            >
+                                                                {menu.isActive ? '비활성화' : '활성화'}
+                                                            </Button>
+                                                            <Button
+                                                                variant="danger"
+                                                                size="sm"
+                                                                onClick={() => handleDeleteLunchMenu(menu)}
+                                                                disabled={updatingLunchMenuId === menu.id}
+                                                            >
+                                                                삭제
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

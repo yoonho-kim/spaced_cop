@@ -7,6 +7,7 @@ import Button from '../components/Button';
 import Modal from '../components/Modal';
 import WinnersModal from '../components/WinnersModal';
 import QuickVoteModal from '../components/QuickVoteModal';
+import LunchPickerModal from '../components/LunchPickerModal';
 import './Feed.css';
 
 const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModalVisibilityChange }) => {
@@ -26,7 +27,8 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
     const [isUpdatingPost, setIsUpdatingPost] = useState(false);
     const [deletingCommentId, setDeletingCommentId] = useState(null);
     const [top3Volunteers, setTop3Volunteers] = useState([]);
-    const [voteModal, setVoteModal] = useState(null); // 'praise' | 'lunch' | null
+    const [voteModal, setVoteModal] = useState(null); // 'praise' | null
+    const [showLunchPicker, setShowLunchPicker] = useState(false);
     const [showAiServiceView, setShowAiServiceView] = useState(false);
     const [isAiServiceLoading, setIsAiServiceLoading] = useState(false);
     const [highlightedPostIds, setHighlightedPostIds] = useState(new Set());
@@ -730,21 +732,22 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                             <span className="quick-card__subtitle">우수한 팀원을 칭찬하자!</span>
                         </div>
                     </button>
-                    <button className="quick-card quick-card--lunch" onClick={() => setVoteModal('lunch')}>
-                        <div className="quick-card__title-top">점심 투표</div>
-                        <div className="quick-card__illust">
-                            <svg width="88" height="72" viewBox="0 0 88 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <ellipse cx="44" cy="56" rx="32" ry="10" fill="#C8EDCA" opacity="0.5"/>
-                                <rect x="18" y="28" width="36" height="26" rx="10" fill="#F5A623"/>
-                                <rect x="20" y="30" width="32" height="22" rx="9" fill="#FAB940"/>
-                                <path d="M24 38C26 34 32 32 36 36C38 38 40 36 42 34" stroke="#F5A623" strokeWidth="2" strokeLinecap="round"/>
-                                <circle cx="36" cy="41" r="5" fill="#FFD580"/>
-                                <rect x="30" y="20" width="12" height="10" rx="3" fill="#6DC070"/>
-                                <rect x="33" y="14" width="6" height="8" rx="2" fill="#5AAD5E"/>
-                                <rect x="58" y="20" width="14" height="20" rx="4" fill="#E8C5A0"/>
-                                <rect x="60" y="24" width="10" height="14" rx="3" fill="#F0D4B0"/>
-                                <line x1="63" y1="26" x2="63" y2="36" stroke="#D4A574" strokeWidth="1.5"/>
-                                <line x1="67" y1="26" x2="67" y2="36" stroke="#D4A574" strokeWidth="1.5"/>
+                    <button className="quick-card quick-card--lunch" onClick={() => setShowLunchPicker(true)}>
+                        <div className="quick-card__title-top">점심 뽑기</div>
+                        <div className="quick-card__illust" aria-hidden="true">
+                            <svg width="92" height="76" viewBox="0 0 92 76" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <ellipse cx="46" cy="61" rx="28" ry="9" fill="#B7DFC0" opacity="0.55"/>
+                                <path d="M23 38C23 30.82 28.82 25 36 25H56C63.18 25 69 30.82 69 38V42C69 53.046 60.046 62 49 62H43C31.954 62 23 53.046 23 42V38Z" fill="#FF9F5A"/>
+                                <path d="M27 37C27 31.477 31.477 27 37 27H55C60.523 27 65 31.477 65 37V40C65 49.389 57.389 57 48 57H44C34.611 57 27 49.389 27 40V37Z" fill="#FFB36F"/>
+                                <path d="M31 28.5C31 23.253 35.253 19 40.5 19H50.5C55.747 19 60 23.253 60 28.5V31H31V28.5Z" fill="#FFF8EA"/>
+                                <path d="M35 19.8C36.4 16.6 39.4 14.5 42.9 14.5C45.3 14.5 47.7 15.5 49.3 17.2C50.9 15.5 53.3 14.5 55.7 14.5C59.2 14.5 62.2 16.6 63.6 19.8C64.2 21.1 63.3 22.6 61.9 22.6H36.7C35.3 22.6 34.4 21.1 35 19.8Z" fill="#FFFDF6"/>
+                                <circle cx="41.5" cy="41.5" r="2.2" fill="#8B4A2D"/>
+                                <circle cx="50.5" cy="41.5" r="2.2" fill="#8B4A2D"/>
+                                <path d="M41.5 48C43 49.8 45 50.7 46.9 50.7C48.8 50.7 50.7 49.8 52.1 48" stroke="#8B4A2D" strokeWidth="2.2" strokeLinecap="round"/>
+                                <circle cx="36.5" cy="45.2" r="2.3" fill="#F78888" opacity="0.55"/>
+                                <circle cx="55.7" cy="45.2" r="2.3" fill="#F78888" opacity="0.55"/>
+                                <path d="M67 20C68.8 18.4 71.8 18.6 73.3 20.6C74.6 22.2 74.6 24.4 73.3 26L68 32.5L62.7 26C61.4 24.4 61.4 22.2 62.7 20.6C64.2 18.6 67.2 18.4 69 20Z" fill="#FF7E5D"/>
+                                <path d="M20 25L21.5 21.5L23 25L26.5 26.5L23 28L21.5 31.5L20 28L16.5 26.5L20 25Z" fill="#FFD166"/>
                             </svg>
                         </div>
                     </button>
@@ -1121,6 +1124,12 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                     onClose={() => setVoteModal(null)}
                 />
             )}
+
+            <LunchPickerModal
+                isOpen={showLunchPicker}
+                user={user}
+                onClose={() => setShowLunchPicker(false)}
+            />
         </div>
     );
 };

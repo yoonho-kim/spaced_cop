@@ -1,5 +1,6 @@
 export const STORAGE_KEYS = {
   USER: 'spaced_user',
+  LUNCH_PICK_RESULTS: 'spaced_lunch_pick_results',
 };
 
 export const getItem = (key) => {

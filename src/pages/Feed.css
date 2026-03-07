@@ -122,6 +122,8 @@
     flex-direction: column;
     align-items: center;
     min-height: 160px;
+    color: inherit;
+    box-shadow: none;
 }
 
 /* AI 서비스 - 소프트 블루 */

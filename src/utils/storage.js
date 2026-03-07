@@ -1498,6 +1498,269 @@ const isMissingTableError = (error, tableName) => {
   return message.includes(target) && (message.includes('does not exist') || message.includes('could not find'));
 };
 
+// ============================================
+// LUNCH PICKER MENUS
+// ============================================
+
+const mapLunchMenuItem = (row) => ({
+  id: row?.id,
+  name: row?.name || '',
+  emoji: row?.emoji || '🍽️',
+  menuTag: row?.menu_tag || '',
+  isCafeteria: !!row?.is_cafeteria,
+  isActive: row?.is_active !== false,
+  createdAt: row?.created_at || null,
+  updatedAt: row?.updated_at || row?.created_at || null,
+});
+
+const isLunchMenuTableMissingError = (error) => {
+  if (!error) return false;
+  if (error.code === 'PGRST205' && String(error.message || '').includes('app_lunch_menu_items')) {
+    return true;
+  }
+  return isMissingTableError(error, 'app_lunch_menu_items');
+};
+
+export const getLunchMenuItems = async (options = {}) => {
+  const includeInactive = options?.includeInactive === true;
+  let query = supabase
+    .from('app_lunch_menu_items')
+    .select('*')
+    .order('is_cafeteria', { ascending: false })
+    .order('is_active', { ascending: false })
+    .order('name', { ascending: true });
+
+  if (!includeInactive) {
+    query = query.eq('is_active', true);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    if (isLunchMenuTableMissingError(error)) {
+      console.warn('app_lunch_menu_items table not found. Apply supabase_lunch_menu_items.sql to enable lunch picker menus.');
+      return [];
+    }
+    console.error('Error fetching lunch menu items:', error);
+    return [];
+  }
+
+  return (data || []).map(mapLunchMenuItem);
+};
+
+export const addLunchMenuItem = async (menu = {}) => {
+  if (!ensureAdminAccess()) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
+  const name = String(menu?.name || '').trim();
+  const emoji = String(menu?.emoji || '').trim() || '🍽️';
+  const menuTag = String(menu?.menuTag || '').trim();
+
+  if (!name) {
+    return { success: false, error: '메뉴명을 입력해주세요.' };
+  }
+
+  const payload = {
+    name,
+    emoji,
+    menu_tag: menuTag,
+    is_active: menu?.isActive !== false,
+    is_cafeteria: !!menu?.isCafeteria,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from('app_lunch_menu_items')
+    .insert([payload])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding lunch menu item:', error);
+    if (isLunchMenuTableMissingError(error)) {
+      return { success: false, error: '점심 메뉴 테이블이 없습니다. supabase_lunch_menu_items.sql을 먼저 실행해주세요.' };
+    }
+    if (error.code === '42501') {
+      return {
+        success: false,
+        error: 'DB 권한 정책(RLS)으로 저장이 차단되었습니다. supabase_lunch_menu_items.sql을 다시 실행해 정책을 갱신해주세요.',
+      };
+    }
+    if (error.code === '23505') {
+      return { success: false, error: payload.is_cafeteria ? '구내식당 고정 메뉴는 하나만 등록할 수 있습니다.' : '이미 등록된 메뉴명입니다.' };
+    }
+    return { success: false, error: '점심 메뉴를 저장할 수 없습니다.' };
+  }
+
+  return {
+    success: true,
+    data: mapLunchMenuItem(data),
+  };
+};
+
+export const updateLunchMenuItem = async (menuId, updates = {}) => {
+  if (!ensureAdminAccess()) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
+  if (!menuId) {
+    return { success: false, error: '수정할 메뉴를 찾을 수 없습니다.' };
+  }
+
+  const payload = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (typeof updates.name === 'string') {
+    const nextName = updates.name.trim();
+    if (!nextName) {
+      return { success: false, error: '메뉴명은 비워둘 수 없습니다.' };
+    }
+    payload.name = nextName;
+  }
+
+  if (typeof updates.emoji === 'string') {
+    payload.emoji = updates.emoji.trim() || '🍽️';
+  }
+
+  if (typeof updates.menuTag === 'string') {
+    payload.menu_tag = updates.menuTag.trim();
+  }
+
+  if (typeof updates.isActive === 'boolean') {
+    payload.is_active = updates.isActive;
+  }
+
+  if (typeof updates.isCafeteria === 'boolean') {
+    payload.is_cafeteria = updates.isCafeteria;
+  }
+
+  const { data, error } = await supabase
+    .from('app_lunch_menu_items')
+    .update(payload)
+    .eq('id', menuId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating lunch menu item:', error);
+    if (isLunchMenuTableMissingError(error)) {
+      return { success: false, error: '점심 메뉴 테이블이 없습니다. supabase_lunch_menu_items.sql을 먼저 실행해주세요.' };
+    }
+    if (error.code === '42501') {
+      return {
+        success: false,
+        error: 'DB 권한 정책(RLS)으로 수정이 차단되었습니다. supabase_lunch_menu_items.sql을 다시 실행해 정책을 갱신해주세요.',
+      };
+    }
+    if (error.code === '23505') {
+      return { success: false, error: '같은 이름의 메뉴가 이미 등록되어 있습니다.' };
+    }
+    return { success: false, error: '점심 메뉴를 수정할 수 없습니다.' };
+  }
+
+  return {
+    success: true,
+    data: mapLunchMenuItem(data),
+  };
+};
+
+export const deleteLunchMenuItem = async (menuId) => {
+  if (!ensureAdminAccess()) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
+  if (!menuId) {
+    return { success: false, error: '삭제할 메뉴를 찾을 수 없습니다.' };
+  }
+
+  const { error } = await supabase
+    .from('app_lunch_menu_items')
+    .delete()
+    .eq('id', menuId);
+
+  if (error) {
+    console.error('Error deleting lunch menu item:', error);
+    if (isLunchMenuTableMissingError(error)) {
+      return { success: false, error: '점심 메뉴 테이블이 없습니다. supabase_lunch_menu_items.sql을 먼저 실행해주세요.' };
+    }
+    if (error.code === '42501') {
+      return {
+        success: false,
+        error: 'DB 권한 정책(RLS)으로 삭제가 차단되었습니다. supabase_lunch_menu_items.sql을 다시 실행해 정책을 갱신해주세요.',
+      };
+    }
+    return { success: false, error: '점심 메뉴를 삭제할 수 없습니다.' };
+  }
+
+  return { success: true };
+};
+
+const normalizeLunchPickMenu = (menu) => {
+  if (!menu || typeof menu !== 'object') return null;
+
+  const name = String(menu?.name || '').trim();
+  if (!name) return null;
+
+  return {
+    id: menu?.id ?? name,
+    name,
+    emoji: String(menu?.emoji || '🍽️').trim() || '🍽️',
+    menuTag: String(menu?.menuTag || '').trim(),
+    isCafeteria: !!menu?.isCafeteria,
+  };
+};
+
+const getLunchPickResultsMap = () => {
+  const stored = getItem(STORAGE_KEYS.LUNCH_PICK_RESULTS);
+  return stored && typeof stored === 'object' ? stored : {};
+};
+
+export const getLunchPickResultForEmployee = (employeeId) => {
+  const normalizedEmployeeId = String(employeeId || '').trim();
+  if (!normalizedEmployeeId) return null;
+
+  const stored = getLunchPickResultsMap()[normalizedEmployeeId];
+  if (!stored || stored.dateKey !== toLocalDateKey(new Date())) {
+    return null;
+  }
+
+  return normalizeLunchPickMenu(stored.menu);
+};
+
+export const saveLunchPickResultForEmployee = (employeeId, menu) => {
+  const normalizedEmployeeId = String(employeeId || '').trim();
+  const normalizedMenu = normalizeLunchPickMenu(menu);
+
+  if (!normalizedEmployeeId) {
+    return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
+  }
+
+  if (!normalizedMenu) {
+    return { success: false, error: '저장할 점심 메뉴 정보가 올바르지 않습니다.' };
+  }
+
+  const nextMap = {
+    ...getLunchPickResultsMap(),
+    [normalizedEmployeeId]: {
+      dateKey: toLocalDateKey(new Date()),
+      confirmedAt: new Date().toISOString(),
+      menu: normalizedMenu,
+    },
+  };
+
+  const saved = setItem(STORAGE_KEYS.LUNCH_PICK_RESULTS, nextMap);
+  if (!saved) {
+    return { success: false, error: '오늘의 점심을 저장할 수 없습니다.' };
+  }
+
+  return {
+    success: true,
+    data: normalizedMenu,
+  };
+};
+
 const isQuickVotesTableMissingError = (error) => {
   if (!error) return false;
   if (error.code === 'PGRST205' && String(error.message || '').includes('quick_votes')) {
