@@ -9,6 +9,13 @@ import './MeetingRooms.css';
 const MeetingRooms = ({ user }) => {
     const [rooms, setRooms] = useState([]);
     const [reservations, setReservations] = useState([]);
+    const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
+    const [noticeModal, setNoticeModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        icon: 'info',
+    });
     const [showModal, setShowModal] = useState(false);
     const [showReservationInfo, setShowReservationInfo] = useState(false);
     const [selectedReservation, setSelectedReservation] = useState(null);
@@ -54,6 +61,68 @@ const MeetingRooms = ({ user }) => {
         if (!value) return null;
         const [y, m, d] = value.split('-').map(Number);
         return new Date(y, m - 1, d);
+    };
+
+    const parseReservationTime = (value) => {
+        const [hourText = '0', minuteText = '0'] = String(value ?? '').split(':');
+        return {
+            hours: Number.parseInt(hourText, 10) || 0,
+            minutes: Number.parseInt(minuteText, 10) || 0,
+        };
+    };
+
+    const formatReservationTime = (value) => {
+        const { hours, minutes } = parseReservationTime(value);
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    };
+
+    const getReservationStartTimestamp = (reservation) => {
+        if (!reservation?.date) return null;
+        const [year, month, day] = String(reservation.date).split('-').map((part) => Number.parseInt(part, 10));
+        if (!year || !month || !day) return null;
+        const { hours, minutes } = parseReservationTime(reservation.startTime);
+        return new Date(year, month - 1, day, hours, minutes, 0, 0).getTime();
+    };
+
+    const canCancelReservation = (reservation, referenceTimeMs = currentTimeMs) => {
+        const reservationStartTimestamp = getReservationStartTimestamp(reservation);
+        if (reservationStartTimestamp == null) return false;
+        return referenceTimeMs < reservationStartTimestamp + (30 * 60 * 1000);
+    };
+
+    const openNoticeModal = ({ title, message, icon = 'info' }) => {
+        setNoticeModal({
+            isOpen: true,
+            title,
+            message,
+            icon,
+        });
+    };
+
+    const closeNoticeModal = () => {
+        setNoticeModal((prev) => ({
+            ...prev,
+            isOpen: false,
+        }));
+    };
+
+    const isPastBookingTime = (dateValue, hour, referenceTimeMs = currentTimeMs) => {
+        const selectedDateObj = parseISODate(dateValue);
+        if (!selectedDateObj) return false;
+
+        const now = new Date(referenceTimeMs);
+        const today = normalizeDate(now);
+        const targetDate = normalizeDate(selectedDateObj);
+
+        if (targetDate.getTime() < today.getTime()) {
+            return true;
+        }
+
+        if (targetDate.getTime() > today.getTime()) {
+            return false;
+        }
+
+        return hour < now.getHours();
     };
 
     const getNextBusinessDay = (date) => {
@@ -127,6 +196,14 @@ const MeetingRooms = ({ user }) => {
         setSelectedDate(formatISODate(initialDate));
     }, []);
 
+    useEffect(() => {
+        const timerId = window.setInterval(() => {
+            setCurrentTimeMs(Date.now());
+        }, 1000);
+
+        return () => window.clearInterval(timerId);
+    }, []);
+
     const handleTimeSlotClick = (room, hour) => {
         // Check if this time slot is available
         const reservation = reservations.find(r =>
@@ -140,6 +217,15 @@ const MeetingRooms = ({ user }) => {
             // Show reservation info
             setSelectedReservation(reservation);
             setShowReservationInfo(true);
+            return;
+        }
+
+        if (isPastBookingTime(selectedDate, hour)) {
+            openNoticeModal({
+                title: '예약 불가 시간',
+                message: '이전시간은 회의실 예약이 불가능 합니다.',
+                icon: 'schedule',
+            });
             return;
         }
 
@@ -167,14 +253,28 @@ const MeetingRooms = ({ user }) => {
         loadData();
     };
 
-    const handleCancelReservation = async (reservationId) => {
+    const handleCancelReservation = async (reservation) => {
+        if (!reservation) return;
+
+        if (!canCancelReservation(reservation)) {
+            openNoticeModal({
+                title: '취소 가능 시간 초과',
+                message: '예약 시작 30분 이후에는 취소할 수 없습니다.',
+                icon: 'timer_off',
+            });
+            await loadData();
+            return;
+        }
+
         if (confirm('이 예약을 취소하시겠습니까?')) {
-            await deleteReservation(reservationId);
+            await deleteReservation(reservation.id);
             loadData();
         }
     };
 
-    const myReservations = reservations.filter(r => r.userName === user.nickname);
+    const myReservations = reservations.filter((reservation) =>
+        reservation.userName === user.nickname && canCancelReservation(reservation, currentTimeMs)
+    );
 
     // Check if a time slot is occupied for a specific room
     const isTimeSlotOccupied = (roomId, hour) => {
@@ -281,8 +381,8 @@ const MeetingRooms = ({ user }) => {
                                 <div className="reservation-info">
                                     <h4>{reservation.roomName}</h4>
                                     <p className="text-secondary">
-                                        {new Date(reservation.date).toLocaleDateString('ko-KR')} ·
-                                        {reservation.startTime}:00 - {reservation.endTime}:00
+                                        {parseISODate(reservation.date)?.toLocaleDateString('ko-KR')} ·
+                                        {formatReservationTime(reservation.startTime)} - {formatReservationTime(reservation.endTime)}
                                     </p>
                                     <p className="reservation-purpose">
                                         {reservation.department} · {reservation.purpose}
@@ -291,7 +391,7 @@ const MeetingRooms = ({ user }) => {
                                 <Button
                                     variant="danger"
                                     size="sm"
-                                    onClick={() => handleCancelReservation(reservation.id)}
+                                    onClick={() => handleCancelReservation(reservation)}
                                 >
                                     취소
                                 </Button>
@@ -349,6 +449,27 @@ const MeetingRooms = ({ user }) => {
                         </Button>
                     </div>
                 </form>
+            </Modal>
+
+            <Modal
+                isOpen={noticeModal.isOpen}
+                onClose={closeNoticeModal}
+                showHeader={false}
+                maxWidth="360px"
+                contentClassName="meeting-notice-modal"
+                bodyClassName="meeting-notice-modal-body"
+            >
+                <div className="meeting-notice-card">
+                    <div className="meeting-notice-icon-wrap">
+                        <span className="material-symbols-outlined">{noticeModal.icon}</span>
+                    </div>
+                    <p className="meeting-notice-eyebrow">회의실 안내</p>
+                    <h3>{noticeModal.title}</h3>
+                    <p className="meeting-notice-message">{noticeModal.message}</p>
+                    <Button type="button" variant="primary" fullWidth onClick={closeNoticeModal}>
+                        확인
+                    </Button>
+                </div>
             </Modal>
 
             {/* Full Date Picker Modal */}
@@ -451,7 +572,7 @@ const MeetingRooms = ({ user }) => {
                         {/* 시간 강조 블록 */}
                         <div className="reservation-info-time">
                             <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>schedule</span>
-                            {selectedReservation.startTime} ~ {selectedReservation.endTime}
+                            {formatReservationTime(selectedReservation.startTime)} ~ {formatReservationTime(selectedReservation.endTime)}
                         </div>
 
                         {/* 상세 정보 행 */}
