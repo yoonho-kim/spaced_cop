@@ -326,31 +326,101 @@ export const checkNicknameAvailability = async (nickname) => {
     }
 };
 
+const collectDistinctUsers = (...candidates) => {
+    const seen = new Set();
+    return candidates.filter((candidate) => {
+        if (!candidate?.id || seen.has(candidate.id)) {
+            return false;
+        }
+        seen.add(candidate.id);
+        return true;
+    });
+};
+
+const findUsersByLoginIdentifier = async (identifier, selectClause = '*') => {
+    const normalizedIdentifier = typeof identifier === 'string' ? identifier.trim() : '';
+    if (!normalizedIdentifier) {
+        return { users: [] };
+    }
+
+    const [nicknameResult, employeeIdResult] = await Promise.all([
+        supabase
+            .from('users')
+            .select(selectClause)
+            .eq('nickname', normalizedIdentifier)
+            .maybeSingle(),
+        supabase
+            .from('users')
+            .select(selectClause)
+            .eq('employee_id', normalizedIdentifier)
+            .maybeSingle(),
+    ]);
+
+    if (nicknameResult.error) {
+        return { users: [], error: nicknameResult.error };
+    }
+
+    if (employeeIdResult.error) {
+        return { users: [], error: employeeIdResult.error };
+    }
+
+    return {
+        users: collectDistinctUsers(nicknameResult.data, employeeIdResult.data),
+    };
+};
+
+const authenticateUserByLoginIdentifier = async (identifier, password, selectClause = '*') => {
+    const { users, error } = await findUsersByLoginIdentifier(identifier, selectClause);
+    if (error) {
+        return { success: false, error: '로그인에 실패했습니다.' };
+    }
+
+    if (!users.length) {
+        return { success: false, error: '등록되지 않은 사용자입니다.' };
+    }
+
+    const matches = [];
+    for (const dbUser of users) {
+        const verified = await verifyPassword(password, dbUser.password_hash);
+        if (verified.valid) {
+            matches.push({ dbUser, verified });
+        }
+    }
+
+    if (!matches.length) {
+        return { success: false, error: '비밀번호가 일치하지 않습니다.' };
+    }
+
+    if (matches.length > 1) {
+        return {
+            success: false,
+            error: '닉네임과 사번이 다른 계정과 겹칩니다. 닉네임으로 로그인해주세요.',
+        };
+    }
+
+    return {
+        success: true,
+        dbUser: matches[0].dbUser,
+        verified: matches[0].verified,
+    };
+};
+
 /**
  * DB 인증 로그인
  */
-export const loginWithPassword = async (nickname, password) => {
+export const loginWithPassword = async (loginIdentifier, password) => {
     const fallbackToDirectLogin = async () => {
         // 개발 환경(Vite dev)에서는 /api 서버리스 라우트가 없을 수 있어 직접 DB 인증으로 폴백
         if (!import.meta.env.DEV) {
             return { success: false, error: '로그인에 실패했습니다.' };
         }
 
-        const { data: dbUser, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('nickname', nickname)
-            .single();
-
-        if (error || !dbUser) {
-            return { success: false, error: '등록되지 않은 사용자입니다.' };
+        const authenticated = await authenticateUserByLoginIdentifier(loginIdentifier, password);
+        if (!authenticated.success) {
+            return authenticated;
         }
 
-        const verified = await verifyPassword(password, dbUser.password_hash);
-        if (!verified.valid) {
-            return { success: false, error: '비밀번호가 일치하지 않습니다.' };
-        }
-
+        const { dbUser, verified } = authenticated;
         const user = {
             id: dbUser.id,
             nickname: dbUser.nickname,
@@ -394,7 +464,7 @@ export const loginWithPassword = async (nickname, password) => {
             },
             credentials: 'include',
             body: JSON.stringify({
-                nickname,
+                identifier: loginIdentifier,
                 password,
             }),
         });

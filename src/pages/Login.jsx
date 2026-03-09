@@ -5,27 +5,17 @@ import ChangePasswordModal from '../components/ChangePasswordModal';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
-    const [nickname, setNickname] = useState('');
+    const [loginIdentifier, setLoginIdentifier] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [showPasswordText, setShowPasswordText] = useState(false);
     const [error, setError] = useState('');
     const [showSignUpModal, setShowSignUpModal] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleNicknameChange = (e) => {
-        const value = e.target.value;
-        setNickname(value);
+    const handleLoginIdentifierChange = (e) => {
+        setLoginIdentifier(e.target.value);
         setError('');
-
-        // Show password field if nickname is 'admin'
-        if (value.toLowerCase() === 'admin') {
-            setShowPassword(true);
-        } else {
-            setShowPassword(false);
-            setPassword('');
-        }
     };
 
     const handleSubmit = async (e) => {
@@ -33,12 +23,12 @@ const Login = ({ onLogin }) => {
         if (isLoading) return;
         setError('');
 
-        if (!nickname.trim()) {
-            setError('닉네임을 입력해주세요');
+        const normalizedLoginIdentifier = loginIdentifier.trim();
+        if (!normalizedLoginIdentifier) {
+            setError('닉네임 또는 사번을 입력해주세요');
             return;
         }
 
-        // 비밀번호 필수 (게스트 로그인 제거)
         if (!password) {
             setError('비밀번호를 입력해주세요');
             return;
@@ -46,9 +36,9 @@ const Login = ({ onLogin }) => {
 
         setIsLoading(true);
         try {
-            const result = nickname.toLowerCase() === 'admin'
-                ? await login(nickname, password)
-                : await loginWithPassword(nickname, password);
+            const result = normalizedLoginIdentifier.toLowerCase() === 'admin'
+                ? await login(normalizedLoginIdentifier, password)
+                : await loginWithPassword(normalizedLoginIdentifier, password);
 
             if (result.success) {
                 onLogin(result.user);
@@ -61,9 +51,8 @@ const Login = ({ onLogin }) => {
     };
 
     const handleSignUpSuccess = (registeredNickname) => {
-        setNickname(registeredNickname);
+        setLoginIdentifier(registeredNickname);
         setPassword('');
-        setShowPassword(false);
     };
 
     return (
@@ -90,14 +79,14 @@ const Login = ({ onLogin }) => {
 
                     {/* Login Form */}
                     <form onSubmit={handleSubmit} className="login-form">
-                        {/* Nickname Input */}
+                        {/* Login Identifier Input */}
                         <div className="input-wrapper">
                             <span className="material-icons-outlined input-icon">person</span>
                             <input
                                 type="text"
-                                value={nickname}
-                                onChange={handleNicknameChange}
-                                placeholder="닉네임 (또는 사번)"
+                                value={loginIdentifier}
+                                onChange={handleLoginIdentifierChange}
+                                placeholder="닉네임 또는 사번"
                                 className="login-input"
                                 autoFocus
                                 autoComplete="off"
@@ -105,7 +94,7 @@ const Login = ({ onLogin }) => {
                             />
                         </div>
 
-                        {/* Password Input - 회원은 필수, 게스트는 선택 */}
+                        {/* Password Input */}
                         <div className="input-wrapper password-wrapper">
                             <span className="material-icons-outlined input-icon">lock</span>
                             <input

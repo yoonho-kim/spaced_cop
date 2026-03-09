@@ -65,6 +65,40 @@ const verifyPassword = (password, storedHash) => {
   return { valid, needsRehash: valid };
 };
 
+const collectDistinctUsers = (...candidates) => {
+  const seen = new Set();
+  return candidates.filter((candidate) => {
+    if (!candidate?.id || seen.has(candidate.id)) return false;
+    seen.add(candidate.id);
+    return true;
+  });
+};
+
+const findUsersByLoginIdentifier = async (supabase, identifier) => {
+  const [nicknameResult, employeeIdResult] = await Promise.all([
+    supabase
+      .from('users')
+      .select('id, nickname, employee_id, gender, profile_icon_url, is_admin, password_hash')
+      .eq('nickname', identifier)
+      .maybeSingle(),
+    supabase
+      .from('users')
+      .select('id, nickname, employee_id, gender, profile_icon_url, is_admin, password_hash')
+      .eq('employee_id', identifier)
+      .maybeSingle(),
+  ]);
+
+  if (nicknameResult.error) {
+    throw nicknameResult.error;
+  }
+
+  if (employeeIdResult.error) {
+    throw employeeIdResult.error;
+  }
+
+  return collectDistinctUsers(nicknameResult.data, employeeIdResult.data);
+};
+
 export default async function handler(request, response) {
   if (!applyCors(request, response, { methods: 'POST,OPTIONS' })) {
     return;
@@ -80,11 +114,11 @@ export default async function handler(request, response) {
   }
 
   const body = parseRequestBody(request);
-  const nickname = String(body?.nickname || '').trim();
+  const identifier = String(body?.identifier ?? body?.nickname ?? '').trim();
   const password = String(body?.password || '');
 
-  if (!nickname || !password) {
-    response.status(400).json({ success: false, error: '닉네임과 비밀번호를 입력해주세요.' });
+  if (!identifier || !password) {
+    response.status(400).json({ success: false, error: '닉네임 또는 사번과 비밀번호를 입력해주세요.' });
     return;
   }
 
@@ -112,23 +146,30 @@ export default async function handler(request, response) {
   });
 
   try {
-    const { data: dbUser, error: userError } = await supabase
-      .from('users')
-      .select('id, nickname, employee_id, gender, profile_icon_url, is_admin, password_hash')
-      .eq('nickname', nickname)
-      .single();
-
-    if (userError || !dbUser) {
+    const loginCandidates = await findUsersByLoginIdentifier(supabase, identifier);
+    if (!loginCandidates.length) {
       response.status(401).json({ success: false, error: '등록되지 않은 사용자입니다.' });
       return;
     }
 
-    const verified = verifyPassword(password, dbUser.password_hash);
-    if (!verified.valid) {
+    const matchingUsers = loginCandidates
+      .map((dbUser) => ({ dbUser, verified: verifyPassword(password, dbUser.password_hash) }))
+      .filter(({ verified }) => verified.valid);
+
+    if (!matchingUsers.length) {
       response.status(401).json({ success: false, error: '비밀번호가 일치하지 않습니다.' });
       return;
     }
 
+    if (matchingUsers.length > 1) {
+      response.status(409).json({
+        success: false,
+        error: '닉네임과 사번이 다른 계정과 겹칩니다. 닉네임으로 로그인해주세요.',
+      });
+      return;
+    }
+
+    const { dbUser, verified } = matchingUsers[0];
     if (verified.needsRehash) {
       const upgradedHash = buildPasswordHash(password);
       const { error: rehashError } = await supabase
