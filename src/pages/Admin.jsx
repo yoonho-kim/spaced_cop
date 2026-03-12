@@ -79,7 +79,8 @@ const Admin = () => {
         isActive: false,
         description: '',
         imageUrl: '',
-        imagePath: ''
+        imagePath: '',
+        showWinnerList: true,
     });
     const [isSavingEvent, setIsSavingEvent] = useState(false);
     const [eventImageFile, setEventImageFile] = useState(null);
@@ -126,7 +127,8 @@ const Admin = () => {
                 isActive: eventData.isActive,
                 description: eventData.description,
                 imageUrl: eventData.imageUrl,
-                imagePath: eventData.imagePath
+                imagePath: eventData.imagePath,
+                showWinnerList: eventData.showWinnerList !== false,
             });
         }
         setPraiseMemberIds(Array.isArray(quickVoteSettings?.praiseMemberIds) ? quickVoteSettings.praiseMemberIds.slice(0, 10) : []);
@@ -1007,6 +1009,21 @@ const Admin = () => {
                                         type="checkbox"
                                         checked={eventSettings.isActive}
                                         onChange={(e) => setEventSettings(prev => ({ ...prev, isActive: e.target.checked }))}
+                                    />
+                                    <span className="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="setting-item event-setting">
+                                <div className="setting-info">
+                                    <h4>당첨자 목록 공개</h4>
+                                    <p className="text-secondary">이벤트 페이지에서 당첨자 현황 노출</p>
+                                </div>
+                                <label className="toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={eventSettings.showWinnerList !== false}
+                                        onChange={(e) => setEventSettings(prev => ({ ...prev, showWinnerList: e.target.checked }))}
                                     />
                                     <span className="toggle-slider"></span>
                                 </label>

@@ -47,14 +47,15 @@ BEGIN
 
   IF to_regclass('public.app_event_settings') IS NOT NULL THEN
     EXECUTE $q$
-      INSERT INTO public.app_event_settings (id, is_active, description, image_url, image_path, updated_at)
-      VALUES (1, false, NULL, NULL, NULL, now())
+      INSERT INTO public.app_event_settings (id, is_active, description, image_url, image_path, show_winner_list, updated_at)
+      VALUES (1, false, NULL, NULL, NULL, true, now())
       ON CONFLICT (id)
       DO UPDATE SET
         is_active = EXCLUDED.is_active,
         description = EXCLUDED.description,
         image_url = EXCLUDED.image_url,
         image_path = EXCLUDED.image_path,
+        show_winner_list = EXCLUDED.show_winner_list,
         updated_at = EXCLUDED.updated_at
     $q$;
   END IF;

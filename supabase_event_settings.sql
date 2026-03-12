@@ -8,6 +8,7 @@ create table if not exists app_event_settings (
   description text,
   image_url text,
   image_path text,
+  show_winner_list boolean default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -17,6 +18,9 @@ alter table app_event_settings
 
 alter table app_event_settings
   add column if not exists image_path text;
+
+alter table app_event_settings
+  add column if not exists show_winner_list boolean default true;
 
 -- Enable RLS
 alter table app_event_settings enable row level security;

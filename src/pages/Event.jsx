@@ -78,6 +78,7 @@ const Event = ({ onBack, eventData, user }) => {
     const eventKey = currentEvent ? getEventKey(currentEvent) : null;
     const employeeId = user?.employeeId;
     const nickname = user?.nickname;
+    const shouldShowWinnerList = currentEvent?.showWinnerList !== false;
 
     const isLocked =
         isPulling ||
@@ -124,7 +125,7 @@ const Event = ({ onBack, eventData, user }) => {
     }, []);
 
     const loadWinners = useCallback(async () => {
-        if (!eventKey) {
+        if (!eventKey || !shouldShowWinnerList) {
             setWinnerEntries([]);
             setIsLoadingWinners(false);
             return;
@@ -135,7 +136,7 @@ const Event = ({ onBack, eventData, user }) => {
         const winners = entries.filter((entry) => entry.isWinner);
         setWinnerEntries(winners);
         setIsLoadingWinners(false);
-    }, [eventKey]);
+    }, [eventKey, shouldShowWinnerList]);
 
     const doPull = useCallback(async () => {
         if (isLocked || isPulling) return;
@@ -573,35 +574,37 @@ const Event = ({ onBack, eventData, user }) => {
 
                     <div className="event-status">{statusMessage}</div>
 
-                    <Card className="event-winners-card">
-                        <CardContent className="pt-4">
-                            <div className="event-winners-header">
-                                <div className="text-sm font-medium">당첨자 현황</div>
-                                <span className="event-footnote">사번별 이벤트 1회 참여</span>
-                            </div>
-
-                            {isLoadingWinners ? (
-                                <div className="event-winners-empty">당첨자 정보를 불러오는 중입니다...</div>
-                            ) : winnerEntries.length === 0 ? (
-                                <div className="event-winners-empty">현재까지 당첨자가 없습니다.</div>
-                            ) : (
-                                <div className="event-winners-list">
-                                    {winnerEntries.map((entry) => (
-                                        <div key={entry.id} className="event-winner-item">
-                                            <div className="event-winner-main">
-                                                <strong>{entry.nickname || '익명'}</strong>
-                                                <span>사번: {entry.employeeId || '-'}</span>
-                                            </div>
-                                            <div className="event-winner-sub">
-                                                <span>{entry.result}</span>
-                                                <span>{formatWinnerTime(entry.createdAt)}</span>
-                                            </div>
-                                        </div>
-                                    ))}
+                    {shouldShowWinnerList && (
+                        <Card className="event-winners-card">
+                            <CardContent className="pt-4">
+                                <div className="event-winners-header">
+                                    <div className="text-sm font-medium">당첨자 현황</div>
+                                    <span className="event-footnote">사번별 이벤트 1회 참여</span>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
+
+                                {isLoadingWinners ? (
+                                    <div className="event-winners-empty">당첨자 정보를 불러오는 중입니다...</div>
+                                ) : winnerEntries.length === 0 ? (
+                                    <div className="event-winners-empty">현재까지 당첨자가 없습니다.</div>
+                                ) : (
+                                    <div className="event-winners-list">
+                                        {winnerEntries.map((entry) => (
+                                            <div key={entry.id} className="event-winner-item">
+                                                <div className="event-winner-main">
+                                                    <strong>{entry.nickname || '익명'}</strong>
+                                                    <span>사번: {entry.employeeId || '-'}</span>
+                                                </div>
+                                                <div className="event-winner-sub">
+                                                    <span>{entry.result}</span>
+                                                    <span>{formatWinnerTime(entry.createdAt)}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
                 </CardContent>
             </Card>
 

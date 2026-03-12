@@ -49,6 +49,7 @@ export const getEventSettings = async () => {
         description: '',
         imageUrl: '',
         imagePath: '',
+        showWinnerList: true,
         updatedAt: null,
       };
     }
@@ -62,6 +63,7 @@ export const getEventSettings = async () => {
     description: data.description || '',
     imageUrl: data.image_url || '',
     imagePath: data.image_path || '',
+    showWinnerList: data.show_winner_list !== false,
     updatedAt: data.updated_at || data.created_at || null,
   };
 };
@@ -77,6 +79,7 @@ export const upsertEventSettings = async (settings) => {
     description: settings.description || '',
     image_url: settings.imageUrl || '',
     image_path: settings.imagePath || '',
+    show_winner_list: settings.showWinnerList !== false,
     updated_at: new Date().toISOString(),
   };
 
