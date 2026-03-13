@@ -32,6 +32,9 @@ const RESULT_DELAY_MS = 420;
 const SLOT_ITEM_HEIGHT = 72;
 const SLOT_WINDOW_HEIGHT = 220;
 const MAX_CANDIDATES = 5;
+const WEATHER_TYPE_START_DELAY_MS = 180;
+const WEATHER_TYPE_DELAY_MS = 78;
+const WEATHER_TYPE_SPACE_DELAY_MS = 42;
 const BOOT_LOGS = [
   '> AI lunch model booting',
   '> 을지로 실시간 날씨 수신 중...',
@@ -183,6 +186,7 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
   const [menus, setMenus] = useState([]);
   const [savedMenu, setSavedMenu] = useState(null);
   const [weatherBrief, setWeatherBrief] = useState(DEFAULT_WEATHER_BRIEF);
+  const [typedWeatherMessage, setTypedWeatherMessage] = useState('');
   const [bootLines, setBootLines] = useState([]);
   const [bootProgress, setBootProgress] = useState(0);
   const [statusLabel, setStatusLabel] = useState('AI Lunch Pick');
@@ -194,10 +198,16 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
   const trackRef = useRef(null);
   const particlesRef = useRef(null);
   const rafRef = useRef(null);
+  const weatherTypingTimeoutRef = useRef(null);
   const timeoutRefs = useRef([]);
   const loadRunIdRef = useRef(0);
 
   const clearPendingWork = useCallback(() => {
+    if (weatherTypingTimeoutRef.current) {
+      window.clearTimeout(weatherTypingTimeoutRef.current);
+      weatherTypingTimeoutRef.current = null;
+    }
+
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -253,6 +263,7 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
     setIsSpinning(false);
     setStatusLabel('AI Lunch Pick');
     setWeatherBrief(DEFAULT_WEATHER_BRIEF);
+    setTypedWeatherMessage('');
 
     fetchSeoulWeatherBrief()
       .then((nextWeatherBrief) => {
@@ -310,6 +321,55 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
       resetTrack();
     };
   }, [clearPendingWork, isOpen, loadState, resetTrack]);
+
+  useEffect(() => {
+    if (!isOpen || screen !== 'ready') {
+      setTypedWeatherMessage('');
+      return undefined;
+    }
+
+    if (savedMenu) {
+      setTypedWeatherMessage(weatherBrief.message);
+      return undefined;
+    }
+
+    const fullMessage = weatherBrief.message || '';
+    if (!fullMessage) {
+      setTypedWeatherMessage('');
+      return undefined;
+    }
+
+    if (weatherTypingTimeoutRef.current) {
+      window.clearTimeout(weatherTypingTimeoutRef.current);
+      weatherTypingTimeoutRef.current = null;
+    }
+
+    setTypedWeatherMessage('');
+    let nextIndex = 0;
+
+    const typeNextCharacter = () => {
+      nextIndex += 1;
+      setTypedWeatherMessage(fullMessage.slice(0, nextIndex));
+
+      if (nextIndex >= fullMessage.length) {
+        weatherTypingTimeoutRef.current = null;
+        return;
+      }
+
+      const currentCharacter = fullMessage[nextIndex - 1];
+      const delay = /\s/.test(currentCharacter) ? WEATHER_TYPE_SPACE_DELAY_MS : WEATHER_TYPE_DELAY_MS;
+      weatherTypingTimeoutRef.current = window.setTimeout(typeNextCharacter, delay);
+    };
+
+    weatherTypingTimeoutRef.current = window.setTimeout(typeNextCharacter, WEATHER_TYPE_START_DELAY_MS);
+
+    return () => {
+      if (weatherTypingTimeoutRef.current) {
+        window.clearTimeout(weatherTypingTimeoutRef.current);
+        weatherTypingTimeoutRef.current = null;
+      }
+    };
+  }, [isOpen, savedMenu, screen, weatherBrief.message]);
 
   const finishSpin = useCallback((winner) => {
     setStatusLabel('추천 완료');
@@ -529,7 +589,10 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
                     AI lunch mode
                   </div>
                   <div className="lpm-action-copy">
-                    <h3>{weatherBrief.message}</h3>
+                    <h3 aria-label={weatherBrief.message}>
+                      <span className="lpm-typed-copy">{typedWeatherMessage}</span>
+                      <span className="lpm-typed-cursor" aria-hidden="true" />
+                    </h3>
                   </div>
                   <button
                     type="button"
