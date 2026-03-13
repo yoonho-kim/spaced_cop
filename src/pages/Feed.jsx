@@ -471,7 +471,11 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         }).map(activity => {
             const activityRegs = registrations.filter(r => r.activityId === activity.id);
             const winners = activityRegs.filter(r => r.status === 'confirmed');
-            return { ...activity, winners };
+            return {
+                ...activity,
+                registrations: activityRegs,
+                winners,
+            };
         });
 
         setPublishedActivities(published);
@@ -1114,6 +1118,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                 isOpen={showWinnersModal}
                 onClose={() => setShowWinnersModal(false)}
                 activity={selectedActivity}
+                user={user}
             />
 
             {/* Quick Vote Modal */}

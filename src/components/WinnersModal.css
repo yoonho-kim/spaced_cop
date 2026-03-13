@@ -177,18 +177,69 @@
     position: absolute;
     inset: 0;
     padding: 16px;
-    overflow-y: auto;
     background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.winners-congrats {
+.scratch-result-card {
+    width: 100%;
+    min-height: 100%;
+    border-radius: 14px;
+    padding: 24px 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.scratch-result-card.is-win {
+    background: linear-gradient(180deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.04) 100%);
+}
+
+.scratch-result-card.is-lose {
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.14) 0%, rgba(245, 158, 11, 0.05) 100%);
+}
+
+.scratch-result-card.is-idle {
+    background: linear-gradient(180deg, rgba(41, 82, 204, 0.12) 0%, rgba(41, 82, 204, 0.04) 100%);
+}
+
+.scratch-result-card.is-pending {
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.16) 0%, rgba(148, 163, 184, 0.06) 100%);
+}
+
+.scratch-result-label {
     font-size: 12px;
     font-weight: 700;
     color: var(--color-primary);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 12px;
-    text-align: center;
+}
+
+.scratch-result-status {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--color-text-main);
+    line-height: 1.15;
+    word-break: keep-all;
+}
+
+.scratch-result-description {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+.scratch-result-footnote {
+    margin: 0;
+    font-size: 12px;
+    color: var(--color-primary);
+    font-weight: 600;
 }
 
 .winners-grid {
@@ -282,6 +333,12 @@
 
 .winners-btn-primary:hover {
     background-color: var(--color-accent-hover);
+}
+
+.winners-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    box-shadow: none;
 }
 
 /* Detail Modal */
@@ -389,6 +446,42 @@
 .winners-detail-description p {
     margin: 0;
     font-size: 13px;
+}
+
+.winners-detail-winners {
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(15, 23, 42, 0.03);
+}
+
+.winners-detail-winners-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.winners-detail-winners-header strong {
+    color: var(--color-text-main);
+    font-size: 14px;
+}
+
+.winners-detail-list {
+    display: grid;
+    gap: 8px;
+}
+
+.winners-detail-empty {
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.04);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    text-align: center;
 }
 
 /* Animations */
