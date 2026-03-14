@@ -1,30 +1,32 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Modal from './Modal';
+import VectorIcon from './VectorIcon';
 import { getQuickVotes, getMyQuickVote, addQuickVote, removeQuickVote, getTeamMembers, getQuickVotesAvailability } from '../utils/storage';
+import { getQuickVoteIconSpec } from '../utils/iconSpecs';
 import { supabase } from '../utils/supabase';
 import './QuickVoteModal.css';
 
 const LUNCH_OPTIONS = [
-  { key: 'kimbap', label: '김밥+라면', emoji: '🍱' },
-  { key: 'gukbap', label: '국밥', emoji: '🥘' },
-  { key: 'bibimbap', label: '비빔밥', emoji: '🍚' },
-  { key: 'naengmyeon', label: '냉면', emoji: '🍜' },
-  { key: 'pasta', label: '파스타', emoji: '🍝' },
-  { key: 'sandwich', label: '샌드위치', emoji: '🥪' },
+  { key: 'kimbap', label: '김밥+라면' },
+  { key: 'gukbap', label: '국밥' },
+  { key: 'bibimbap', label: '비빔밥' },
+  { key: 'naengmyeon', label: '냉면' },
+  { key: 'pasta', label: '파스타' },
+  { key: 'sandwich', label: '샌드위치' },
 ];
 
 const COFFEE_OPTIONS = [
-  { key: 'americano', label: '아메리카노', emoji: '☕' },
-  { key: 'latte', label: '카페라떼', emoji: '🥛' },
-  { key: 'cappuccino', label: '카푸치노', emoji: '☕' },
-  { key: 'milktea', label: '밀크티', emoji: '🧋' },
-  { key: 'bubbletea', label: '버블티', emoji: '🧋' },
+  { key: 'americano', label: '아메리카노' },
+  { key: 'latte', label: '카페라떼' },
+  { key: 'cappuccino', label: '카푸치노' },
+  { key: 'milktea', label: '밀크티' },
+  { key: 'bubbletea', label: '버블티' },
 ];
 
 const VOTE_CONFIG = {
-  praise: { title: '칭찬하기', subtitle: '오늘의 팀원을 칭찬해주세요!', emoji: '❤️' },
-  lunch: { title: '점심 투표', subtitle: '오늘 점심 뭐 먹을까요?', emoji: '🍱', options: LUNCH_OPTIONS },
-  coffee: { title: '커피 투표', subtitle: '팀 커페 브레이크 타임!', emoji: '☕', options: COFFEE_OPTIONS },
+  praise: { title: '칭찬하기', subtitle: '오늘의 팀원을 칭찬해주세요!' },
+  lunch: { title: '점심 투표', subtitle: '오늘 점심 뭐 먹을까요?', options: LUNCH_OPTIONS },
+  coffee: { title: '커피 투표', subtitle: '팀 커페 브레이크 타임!', options: COFFEE_OPTIONS },
 };
 
 // 투표 집계: { [optionKey]: count }
@@ -45,6 +47,7 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
   const quickVotesUnavailableRef = useRef(false);
 
   const config = VOTE_CONFIG[voteType];
+  const titleIconSpec = getQuickVoteIconSpec(voteType);
   const counts = tally(votes);
   const totalVotes = votes.length;
   const votedNoticeText = myVote
@@ -210,7 +213,13 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
                 </div>
                 <span className="qvm-praise-name">{member.nickname}</span>
                 <div className={`qvm-praise-heart ${isVoted ? 'qvm-heart-active' : ''}`}>
-                  ❤️ {count > 0 && <span>{count}</span>}
+                  <VectorIcon
+                    spec={getQuickVoteIconSpec('praise')}
+                    className="qvm-praise-heart-icon"
+                    boxSize={22}
+                    iconSize={13}
+                  />
+                  {count > 0 && <span className="qvm-praise-heart-count">{count}</span>}
                 </div>
               </button>
             );
@@ -225,6 +234,7 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
           const isVoted = myVote?.option_key === opt.key;
           const percent = getPercent(opt.key);
           const count = counts[opt.key] || 0;
+          const optionIconSpec = getQuickVoteIconSpec(voteType, opt.key);
           return (
             <button
               key={opt.key}
@@ -234,7 +244,12 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
             >
               <div className="qvm-option-bar" style={{ width: `${percent}%` }} />
               <div className="qvm-option-content">
-                <span className="qvm-option-emoji">{opt.emoji}</span>
+                <VectorIcon
+                  spec={optionIconSpec}
+                  className="qvm-option-icon"
+                  boxSize={34}
+                  iconSize={18}
+                />
                 <span className="qvm-option-label">{opt.label}</span>
                 <div className="qvm-option-right">
                   {isVoted && <span className="qvm-check">✓</span>}
@@ -252,7 +267,12 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
     <Modal
       isOpen={true}
       onClose={onClose}
-      title={`${config.emoji} ${config.title}`}
+      title={(
+        <span className="qvm-title">
+          <VectorIcon spec={titleIconSpec} className="qvm-title-icon" boxSize={28} iconSize={16} />
+          <span>{config.title}</span>
+        </span>
+      )}
       maxWidth="420px"
       contentClassName={voteType === 'praise' ? 'qvm-modal-content' : ''}
       bodyClassName={voteType === 'praise' ? 'qvm-modal-body' : ''}
@@ -274,7 +294,6 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
               <div className="qvm-live-rate__list">
                 {praiseLiveRates.map((item, index) => {
                   const rank = index + 1;
-                  const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
                   const isLeader = topVoteCount > 0 && item.voteCount === topVoteCount;
                   const isMyPick = myVote?.option_key === item.employeeId;
                   return (
@@ -289,7 +308,7 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
                     <div className="qvm-live-rate__row">
                       <span className="qvm-live-rate__name">
                         <span className={`qvm-live-rate__rank ${isLeader ? 'is-leader' : ''}`}>
-                          {rankEmoji || `${rank}위`}
+                          {`${rank}위`}
                         </span>
                         <span>{item.nickname}</span>
                         {isMyPick && <span className="qvm-live-rate__my-pick">내 선택</span>}

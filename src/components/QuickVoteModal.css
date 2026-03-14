@@ -14,6 +14,16 @@
   gap: 12px;
 }
 
+.qvm-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.qvm-title-icon {
+  vertical-align: middle;
+}
+
 .qvm-subtitle {
   font-size: 0.875rem;
   color: #64748b;
@@ -266,9 +276,8 @@
   padding: 12px 14px;
 }
 
-.qvm-option-emoji {
-  font-size: 1.3rem;
-  flex-shrink: 0;
+.qvm-option-icon {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
 }
 
 .qvm-option-label {
@@ -358,7 +367,6 @@
 }
 
 .qvm-praise-heart {
-  font-size: 1rem;
   display: flex;
   align-items: center;
   gap: 3px;
@@ -366,7 +374,11 @@
   transition: transform 0.2s;
 }
 
-.qvm-praise-heart span {
+.qvm-praise-heart-icon {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+.qvm-praise-heart-count {
   font-size: 0.78rem;
   font-weight: 700;
   color: #e879a0;

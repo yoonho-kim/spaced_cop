@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import Modal from './Modal';
+import VectorIcon from './VectorIcon';
 import {
   getLunchMenuItems,
   getLunchPickResultForEmployee,
   saveLunchPickResultForEmployee,
 } from '../utils/storage';
+import { getLunchMenuIconSpec } from '../utils/iconSpecs';
 import './LunchPickerModal.css';
 
 const DEFAULT_CAFETERIA_MENU = Object.freeze({
@@ -561,7 +563,12 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
               </div>
               <div className="lpm-locked-card">
                 <div className="lpm-locked-kicker">오늘 확정됨</div>
-                <div className="lpm-locked-emoji">{savedMenu.emoji}</div>
+                <VectorIcon
+                  spec={getLunchMenuIconSpec(savedMenu)}
+                  className="lpm-locked-icon"
+                  boxSize={72}
+                  iconSize={34}
+                />
                 <h3>{savedMenu.name}</h3>
                 <p>{savedMenu.menuTag || '오늘 선택한 점심 메뉴입니다.'}</p>
               </div>
@@ -633,7 +640,12 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
               <div ref={trackRef} className="lpm-slot-track">
                 {trackItems.map((menu) => (
                   <div key={menu.trackKey} className="lpm-slot-item">
-                    <span className="lpm-slot-item-emoji">{menu.emoji}</span>
+                    <VectorIcon
+                      spec={getLunchMenuIconSpec(menu)}
+                      className="lpm-slot-item-icon"
+                      boxSize={48}
+                      iconSize={24}
+                    />
                     <span className="lpm-slot-item-name">{menu.name}</span>
                   </div>
                 ))}
@@ -642,7 +654,12 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
             </div>
 
               <div className={`lpm-result-card ${resultVisible ? 'show' : ''}`}>
-              <div className="lpm-result-emoji">{selectedMenu?.emoji || '🍽️'}</div>
+              <VectorIcon
+                spec={getLunchMenuIconSpec(selectedMenu)}
+                className="lpm-result-icon"
+                boxSize={82}
+                iconSize={40}
+              />
               <div className="lpm-result-name">{selectedMenu?.name || '메뉴 선택 중'}</div>
               <div className="lpm-result-sub">
                 {selectedMenu?.menuTag || '오늘의 점심 후보가 정해졌어요.'}
