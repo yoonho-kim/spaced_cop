@@ -56,6 +56,41 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         });
     };
 
+    const parseLocalDate = (dateString) => {
+        if (!dateString) return null;
+
+        const [year, month, day] = String(dateString).split('-').map(Number);
+        if ([year, month, day].some((value) => !Number.isFinite(value))) {
+            const fallback = new Date(dateString);
+            return Number.isNaN(fallback.getTime()) ? null : fallback;
+        }
+
+        return new Date(year, month - 1, day);
+    };
+
+    const getVolunteerResultVisibleUntil = (activity) => {
+        const activityDate = parseLocalDate(activity?.date);
+        if (activityDate) {
+            return new Date(
+                activityDate.getFullYear(),
+                activityDate.getMonth(),
+                activityDate.getDate() - 1,
+                23,
+                59,
+                59,
+                999
+            ).getTime();
+        }
+
+        const publishedTime = new Date(activity?.publishedAt || '').getTime();
+        const publishDuration = Number(activity?.publishDuration);
+        if (Number.isFinite(publishedTime) && Number.isFinite(publishDuration)) {
+            return publishedTime + publishDuration;
+        }
+
+        return null;
+    };
+
     useEffect(() => {
         loadInitialPosts();
         loadPublishedActivities();
@@ -462,12 +497,14 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         const registrations = await getVolunteerRegistrations();
         const now = new Date().getTime();
 
-        // 게시된 활동 중 24시간이 지나지 않은 것만 필터링
+        // 게시된 활동 중 봉사활동 날짜 전일까지 노출
         const published = activities.filter(activity => {
-            if (!activity.isPublished || !activity.publishedAt) return false;
-            const publishedTime = new Date(activity.publishedAt).getTime();
-            const elapsed = now - publishedTime;
-            return elapsed < activity.publishDuration;
+            if (!activity.isPublished) return false;
+
+            const visibleUntil = getVolunteerResultVisibleUntil(activity);
+            if (!Number.isFinite(visibleUntil)) return false;
+
+            return now <= visibleUntil;
         }).map(activity => {
             const activityRegs = registrations.filter(r => r.activityId === activity.id);
             const winners = activityRegs.filter(r => r.status === 'confirmed');

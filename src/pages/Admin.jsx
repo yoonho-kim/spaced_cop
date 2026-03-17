@@ -227,7 +227,7 @@ const Admin = () => {
                 postType: 'volunteer',
             });
 
-            alert(`전원 당첨! ${activityRegistrations.length}명 모두 확정되었습니다.\n탭1에 24시간 동안 게시됩니다.`);
+            alert(`전원 당첨! ${activityRegistrations.length}명 모두 확정되었습니다.\n메인 화면에는 봉사활동 날짜 전일까지 게시됩니다.`);
             loadData();
             return;
         }
@@ -283,7 +283,7 @@ const Admin = () => {
             postType: 'volunteer',
         });
 
-        alert(`추첨 완료!\n당첨: ${maxParticipants}명 (봉사활동 참여 횟수 기준)\n불합격: ${applicantsWithPriority.length - maxParticipants}명\n탭1에 24시간 동안 게시됩니다.`);
+        alert(`추첨 완료!\n당첨: ${maxParticipants}명 (봉사활동 참여 횟수 기준)\n불합격: ${applicantsWithPriority.length - maxParticipants}명\n메인 화면에는 봉사활동 날짜 전일까지 게시됩니다.`);
         loadData();
     };
 

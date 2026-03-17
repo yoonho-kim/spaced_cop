@@ -771,7 +771,7 @@ export const addVolunteerActivity = async (activity) => {
         status: 'open',
         is_published: false,
         published_at: null,
-        publish_duration: 86400000, // 24 hours in milliseconds
+        publish_duration: 86400000, // legacy fallback value for old main-feed visibility logic
       }
     ])
     .select()
