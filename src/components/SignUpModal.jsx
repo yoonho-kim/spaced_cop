@@ -5,65 +5,67 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { cn } from '@/lib/utils';
+import VectorIcon from './VectorIcon';
+import { getUiIconSpec, SIGN_UP_GENDER_OPTIONS } from '../utils/uiIconSpecs';
 
 const PERSONALITY_QUESTIONS = [
     {
         id: 'time',
         question: '가장 좋아하는 시간은 언제인가요?',
         options: [
-            { value: 'morning', label: '☀️ 활기찬 오전 10시', description: '노랑/주황' },
-            { value: 'afternoon', label: '🌿 나른한 오후 2시', description: '초록/베이지' },
-            { value: 'evening', label: '🌆 감성적인 오후 6시', description: '보라/분홍' },
-            { value: 'night', label: '🌙 고요한 새벽 2시', description: '남색/검정' }
+            { value: 'morning', iconKey: 'morning', label: '활기찬 오전 10시', description: '노랑/주황' },
+            { value: 'afternoon', iconKey: 'afternoon', label: '나른한 오후 2시', description: '초록/베이지' },
+            { value: 'evening', iconKey: 'evening', label: '감성적인 오후 6시', description: '보라/분홍' },
+            { value: 'night', iconKey: 'night', label: '고요한 새벽 2시', description: '남색/검정' }
         ]
     },
     {
         id: 'feeling',
         question: '나는 어떤 느낌일까?',
         options: [
-            { value: 'citrus', label: '🍋 톡 쏘는 상큼함', description: '뾰족한 도형, 밝음' },
-            { value: 'chocolate', label: '🍫 진하고 깊은 달콤함', description: '둥근 도형, 부드러움' },
-            { value: 'mint', label: '🧊 쿨한 민트향', description: '직선적, 심플함' }
+            { value: 'citrus', iconKey: 'citrus', label: '톡 쏘는 상큼함', description: '뾰족한 도형, 밝음' },
+            { value: 'chocolate', iconKey: 'chocolate', label: '진하고 깊은 달콤함', description: '둥근 도형, 부드러움' },
+            { value: 'mint', iconKey: 'mint', label: '쿨한 민트향', description: '직선적, 심플함' }
         ]
     },
     {
         id: 'place',
         question: '나의 드림 하우스 위치는?',
         options: [
-            { value: 'city', label: '🏙️ 화려한 도심 속 펜트하우스', description: '빌딩 실루엣' },
-            { value: 'forest', label: '🏡 한적한 숲속 오두막', description: '나무와 자연' },
-            { value: 'beach', label: '🏖️ 파도 소리 들리는 바닷가', description: '파도와 해변' },
-            { value: 'space', label: '🚀 4차원 우주 정거장', description: '별과 우주' }
+            { value: 'city', iconKey: 'city', label: '화려한 도심 속 펜트하우스', description: '빌딩 실루엣' },
+            { value: 'forest', iconKey: 'forest', label: '한적한 숲속 오두막', description: '나무와 자연' },
+            { value: 'beach', iconKey: 'beach', label: '파도 소리 들리는 바닷가', description: '파도와 해변' },
+            { value: 'space', iconKey: 'space', label: '4차원 우주 정거장', description: '별과 우주' }
         ]
     },
     {
         id: 'animal',
         question: '당신의 영혼 동물은?',
         options: [
-            { value: 'cat', label: '🐱 도도한 고양이', description: '우아함, 독립적' },
-            { value: 'dog', label: '🐕 충직한 강아지', description: '친근함, 활발함' },
-            { value: 'owl', label: '🦉 지혜로운 부엉이', description: '신비로움, 차분함' },
-            { value: 'dolphin', label: '🐬 자유로운 돌고래', description: '유연함, 사교적' }
+            { value: 'cat', iconKey: 'cat', label: '도도한 고양이', description: '우아함, 독립적' },
+            { value: 'dog', iconKey: 'dog', label: '충직한 강아지', description: '친근함, 활발함' },
+            { value: 'owl', iconKey: 'owl', label: '지혜로운 부엉이', description: '신비로움, 차분함' },
+            { value: 'dolphin', iconKey: 'dolphin', label: '자유로운 돌고래', description: '유연함, 사교적' }
         ]
     },
     {
         id: 'superpower',
         question: '하나만 가질 수 있다면?',
         options: [
-            { value: 'teleport', label: '✨ 순간이동', description: '역동적, 자유로움' },
-            { value: 'invisible', label: '👻 투명인간', description: '신비함, 조용함' },
-            { value: 'mindread', label: '🧠 마음 읽기', description: '깊이, 통찰력' },
-            { value: 'fly', label: '🕊️ 하늘을 나는 능력', description: '가벼움, 꿈' }
+            { value: 'teleport', iconKey: 'teleport', label: '순간이동', description: '역동적, 자유로움' },
+            { value: 'invisible', iconKey: 'invisible', label: '투명인간', description: '신비함, 조용함' },
+            { value: 'mindread', iconKey: 'mindread', label: '마음 읽기', description: '깊이, 통찰력' },
+            { value: 'fly', iconKey: 'fly', label: '하늘을 나는 능력', description: '가벼움, 꿈' }
         ]
     },
     {
         id: 'snack',
         question: '야근할 때 최고의 간식은?',
         options: [
-            { value: 'coffee', label: '☕ 진한 아메리카노', description: '깔끔함, 집중' },
-            { value: 'chips', label: '🍟 바삭한 감자칩', description: '재미, 가벼움' },
-            { value: 'fruit', label: '🍎 상큼한 과일', description: '건강미, 청량함' },
-            { value: 'chocolate', label: '🍫 달콤한 초콜릿', description: '달콤함, 위로' }
+            { value: 'coffee', iconKey: 'coffee', label: '진한 아메리카노', description: '깔끔함, 집중' },
+            { value: 'chips', iconKey: 'chips', label: '바삭한 감자칩', description: '재미, 가벼움' },
+            { value: 'fruit', iconKey: 'fruit', label: '상큼한 과일', description: '건강미, 청량함' },
+            { value: 'chocolate', iconKey: 'chocolate', label: '달콤한 초콜릿', description: '달콤함, 위로' }
         ]
     }
 ];
@@ -290,6 +292,13 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
         handleClose();
     };
 
+    const renderOptionLabel = (option) => (
+        <span className="inline-flex items-center gap-2">
+            <VectorIcon spec={getUiIconSpec(option.iconKey || option.value)} boxSize={22} iconSize={12} />
+            <span>{option.label}</span>
+        </span>
+    );
+
     if (!isOpen) return null;
 
     return (
@@ -395,19 +404,15 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-foreground">성별 *</label>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {[
-                                        { value: 'male', label: '👨 남성' },
-                                        { value: 'female', label: '👩 여성' },
-                                        { value: 'other', label: '🙂 기타' }
-                                    ].map((option) => (
+                                    {SIGN_UP_GENDER_OPTIONS.map((option) => (
                                         <Button
                                             key={option.value}
                                             type="button"
                                             variant={gender === option.value ? 'default' : 'outline'}
                                             onClick={() => setGender(option.value)}
-                                            className="h-9"
+                                            className="h-9 gap-2"
                                         >
-                                            {option.label}
+                                            {renderOptionLabel(option)}
                                         </Button>
                                     ))}
                                 </div>
@@ -437,7 +442,10 @@ const SignUpModal = ({ isOpen, onClose, onSignUpSuccess }) => {
                                                             : 'border-input bg-background hover:bg-accent'
                                                     )}
                                                 >
-                                                    <div className="text-sm font-medium">{option.label}</div>
+                                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                                        <VectorIcon spec={getUiIconSpec(option.iconKey || option.value)} boxSize={22} iconSize={12} />
+                                                        <span>{option.label}</span>
+                                                    </div>
                                                     <div className="text-xs text-muted-foreground">{option.description}</div>
                                                 </button>
                                             );

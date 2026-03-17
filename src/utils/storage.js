@@ -1508,7 +1508,7 @@ const isMissingTableError = (error, tableName) => {
 const mapLunchMenuItem = (row) => ({
   id: row?.id,
   name: row?.name || '',
-  emoji: row?.emoji || '🍽️',
+  emoji: row?.emoji || 'meal',
   menuTag: row?.menu_tag || '',
   isCafeteria: !!row?.is_cafeteria,
   isActive: row?.is_active !== false,
@@ -1557,7 +1557,7 @@ export const addLunchMenuItem = async (menu = {}) => {
   }
 
   const name = String(menu?.name || '').trim();
-  const emoji = String(menu?.emoji || '').trim() || '🍽️';
+  const emoji = String(menu?.emoji || '').trim() || 'meal';
   const menuTag = String(menu?.menuTag || '').trim();
 
   if (!name) {
@@ -1624,7 +1624,7 @@ export const updateLunchMenuItem = async (menuId, updates = {}) => {
   }
 
   if (typeof updates.emoji === 'string') {
-    payload.emoji = updates.emoji.trim() || '🍽️';
+    payload.emoji = updates.emoji.trim() || 'meal';
   }
 
   if (typeof updates.menuTag === 'string') {
@@ -1709,7 +1709,7 @@ const normalizeLunchPickMenu = (menu) => {
   return {
     id: menu?.id ?? name,
     name,
-    emoji: String(menu?.emoji || '🍽️').trim() || '🍽️',
+    emoji: String(menu?.emoji || 'meal').trim() || 'meal',
     menuTag: String(menu?.menuTag || '').trim(),
     isCafeteria: !!menu?.isCafeteria,
   };

@@ -1,5 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
+import VectorIcon from './VectorIcon';
+import { getUiIconSpec } from '../utils/uiIconSpecs';
 import './Modal.css';
 
 const Modal = ({
@@ -28,7 +30,7 @@ const Modal = ({
                         {title && <h3>{title}</h3>}
                         {showClose && (
                             <button className="modal-close" onClick={onClose}>
-                                ✕
+                                <VectorIcon spec={getUiIconSpec('close')} boxSize={18} iconSize={14} />
                             </button>
                         )}
                     </div>

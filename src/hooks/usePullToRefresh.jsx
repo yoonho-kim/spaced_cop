@@ -61,7 +61,7 @@ export const usePullToRefresh = (onRefresh, containerSelector = '.main-content')
         const handleTouchEnd = () => {
             if (isPulling && pullDistance > 70) {
                 // Trigger refresh if pulled more than 70px
-                console.log('📱 Pull-to-refresh triggered');
+                console.log('[UI] Pull-to-refresh triggered');
                 if (onRefresh) {
                     onRefresh();
                 }

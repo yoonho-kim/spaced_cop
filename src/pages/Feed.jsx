@@ -5,9 +5,11 @@ import { supabase } from '../utils/supabase';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import VectorIcon from '../components/VectorIcon';
 import WinnersModal from '../components/WinnersModal';
 import QuickVoteModal from '../components/QuickVoteModal';
 import LunchPickerModal from '../components/LunchPickerModal';
+import { getRankIconSpec, getUiIconSpec } from '../utils/uiIconSpecs';
 import './Feed.css';
 
 const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModalVisibilityChange }) => {
@@ -484,12 +486,9 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         setTop3Volunteers(top3);
     };
 
-    const getVolunteerRankBadge = (nickname) => {
+    const getVolunteerRankSpec = (nickname) => {
         const rank = top3Volunteers.indexOf(nickname);
-        if (rank === 0) return '🥇';
-        if (rank === 1) return '🥈';
-        if (rank === 2) return '🥉';
-        return null;
+        return getRankIconSpec(rank);
     };
 
     const loadPublishedActivities = async () => {
@@ -860,7 +859,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                 <div className="posts-list">
                     {posts.length === 0 ? (
                         <div className="empty-state">
-                            <div className="empty-icon">📝</div>
+                            <VectorIcon spec={getUiIconSpec('feedEmpty')} className="empty-icon" boxSize={56} iconSize={28} />
                             <p>아직 게시물이 없습니다</p>
                             <p className="text-secondary">첫 번째로 무언가를 공유해보세요!</p>
                         </div>
@@ -908,9 +907,9 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                                             </button>
                                             <div className="post-header-info">
                                                 <p className="post-author">
-                                                    {getVolunteerRankBadge(post.author) && (
+                                                    {getVolunteerRankSpec(post.author) && (
                                                         <span className="badge badge-volunteer-rank" title="봉사활동 Top 3">
-                                                            {getVolunteerRankBadge(post.author)}
+                                                            <VectorIcon spec={getVolunteerRankSpec(post.author)} boxSize={16} iconSize={11} />
                                                         </span>
                                                     )}
                                                     {post.author}
@@ -1015,9 +1014,9 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                                                                 <div className="comment-content">
                                                                     <div className="comment-header">
                                                                         <span className="comment-author">
-                                                                            {getVolunteerRankBadge(comment.userName) && (
+                                                                            {getVolunteerRankSpec(comment.userName) && (
                                                                                 <span className="badge badge-volunteer-rank" title="봉사활동 Top 3">
-                                                                                    {getVolunteerRankBadge(comment.userName)}
+                                                                                    <VectorIcon spec={getVolunteerRankSpec(comment.userName)} boxSize={16} iconSize={11} />
                                                                                 </span>
                                                                             )}
                                                                             {comment.userName}

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import VectorIcon from './VectorIcon';
+import { getUiIconSpec } from '../utils/uiIconSpecs';
 import './TeamPopcorn.css';
 
 const DEFAULT_MEMBERS = [];
@@ -88,7 +90,7 @@ export default function TeamPopcorn({ onClose }) {
                 {/* Header */}
                 <div className="tp-header">
                     <div className="tp-header-left">
-                        <span className="tp-emoji">🍿</span>
+                        <VectorIcon spec={getUiIconSpec('popcorn')} className="tp-emoji" boxSize={34} iconSize={18} />
                         <div>
                             <h2 className="tp-title">팀 팝콘</h2>
                             <p className="tp-subtitle">모두가 발언하고, 아무도 빠지지 않아요</p>
@@ -151,7 +153,7 @@ export default function TeamPopcorn({ onClose }) {
                                 </div>
                             ) : (
                                 <div className="tp-ready-view">
-                                    <div className="tp-popcorn-icon">🍿</div>
+                                    <VectorIcon spec={getUiIconSpec('popcorn')} className="tp-popcorn-icon" boxSize={68} iconSize={30} />
                                     <p className="tp-ready-hint">
                                         {teamMembers.length === 0
                                             ? '팀원을 추가하고 시작하세요'

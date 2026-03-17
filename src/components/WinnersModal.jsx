@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import VectorIcon from './VectorIcon';
+import { getWinnerAvatarSpec } from '../utils/uiIconSpecs';
 import './WinnersModal.css';
 
 const WinnersModal = ({ isOpen, onClose, activity, user }) => {
@@ -147,8 +149,6 @@ const WinnersModal = ({ isOpen, onClose, activity, user }) => {
 
     if (!isOpen || !activity) return null;
 
-    // 이모지 아바타 목록
-    const avatarEmojis = ['🐱', '🐶', '🦊', '🐻', '🦁', '🐼', '🐨', '🐯', '🐮', '🐷'];
     const registrations = Array.isArray(activity.registrations) ? activity.registrations : [];
     const winners = Array.isArray(activity.winners) ? activity.winners : [];
     const normalizedEmployeeId = String(user?.employeeId || '').trim();
@@ -345,7 +345,7 @@ const WinnersModal = ({ isOpen, onClose, activity, user }) => {
                                             {winners.map((winner, index) => (
                                                 <div key={winner.id} className="winner-card">
                                                     <div className="winner-avatar">
-                                                        {avatarEmojis[index % avatarEmojis.length]}
+                                                        <VectorIcon spec={getWinnerAvatarSpec(index)} boxSize={38} iconSize={18} />
                                                     </div>
                                                     <span className="winner-name">{`${winner.employeeId} (${winner.userName})`}</span>
                                                 </div>

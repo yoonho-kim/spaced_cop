@@ -3,6 +3,7 @@ import Modal from './Modal';
 import VectorIcon from './VectorIcon';
 import { getQuickVotes, getMyQuickVote, addQuickVote, removeQuickVote, getTeamMembers, getQuickVotesAvailability } from '../utils/storage';
 import { getQuickVoteIconSpec } from '../utils/iconSpecs';
+import { getUiIconSpec } from '../utils/uiIconSpecs';
 import { supabase } from '../utils/supabase';
 import './QuickVoteModal.css';
 
@@ -252,7 +253,7 @@ const QuickVoteModal = ({ voteType, user, onClose }) => {
                 />
                 <span className="qvm-option-label">{opt.label}</span>
                 <div className="qvm-option-right">
-                  {isVoted && <span className="qvm-check">✓</span>}
+                  {isVoted && <VectorIcon spec={getUiIconSpec('check')} className="qvm-check" boxSize={16} iconSize={10} />}
                   <span className="qvm-option-count">{count > 0 ? `${percent}%` : ''}</span>
                 </div>
               </div>

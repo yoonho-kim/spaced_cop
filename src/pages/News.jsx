@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { fetchAINews, clearNewsCache } from '../utils/newsService';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
+import VectorIcon from '../components/VectorIcon';
+import { getUiIconSpec } from '../utils/uiIconSpecs';
 import './News.css';
 
 const News = () => {
@@ -20,7 +22,7 @@ const News = () => {
     const loadNews = async (forceRefresh = false) => {
         try {
             if (forceRefresh) {
-                console.log('🔄 Refreshing news - clearing cache and fetching fresh data...');
+                console.log('[News] Refreshing news: clearing cache and fetching fresh data');
                 setRefreshing(true);
                 clearNewsCache();
             } else {
@@ -29,7 +31,7 @@ const News = () => {
             setError(null);
 
             const newsData = await fetchAINews(5, forceRefresh);
-            console.log(`📰 Loaded ${newsData.length} news items`, forceRefresh ? '(fresh)' : '(cached or fresh)');
+            console.log(`[News] Loaded ${newsData.length} news items`, forceRefresh ? '(fresh)' : '(cached or fresh)');
             setNews(newsData);
             setLastUpdated(new Date());
         } catch (err) {
@@ -42,7 +44,7 @@ const News = () => {
     };
 
     const handleRefresh = () => {
-        console.log('🔄 Refresh button clicked');
+        console.log('[News] Refresh button clicked');
         loadNews(true);
     };
 
@@ -98,7 +100,7 @@ const News = () => {
 
             {error ? (
                 <div className="news-error">
-                    <div className="error-icon">📡</div>
+                    <VectorIcon spec={getUiIconSpec('newsError')} className="error-icon" boxSize={56} iconSize={28} />
                     <p>{error}</p>
                     <button className="retry-button" onClick={() => loadNews(true)}>
                         다시 시도
@@ -106,7 +108,7 @@ const News = () => {
                 </div>
             ) : news.length === 0 ? (
                 <div className="news-empty">
-                    <div className="empty-icon">📰</div>
+                    <VectorIcon spec={getUiIconSpec('newsEmpty')} className="empty-icon" boxSize={56} iconSize={28} />
                     <p>뉴스가 없습니다</p>
                 </div>
             ) : (

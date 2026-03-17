@@ -3,7 +3,9 @@ import { getMeetingRooms, getReservations, addReservation, deleteReservation } f
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import VectorIcon from '../components/VectorIcon';
 import { Badge } from '@/components/ui/badge';
+import { getUiIconSpec } from '../utils/uiIconSpecs';
 import './MeetingRooms.css';
 
 const MeetingRooms = ({ user }) => {
@@ -338,7 +340,7 @@ const MeetingRooms = ({ user }) => {
                     <div key={room.id} className="room-section">
                         <div className="room-header">
                             <div className="room-title">
-                                <span className="room-icon">🚪</span>
+                                <VectorIcon spec={getUiIconSpec('meetingRoom')} className="room-icon" boxSize={32} iconSize={18} />
                                 <h3>{room.name}</h3>
                             </div>
                             <div className="room-meta">
@@ -371,7 +373,7 @@ const MeetingRooms = ({ user }) => {
                 <h3>내 예약</h3>
                 {myReservations.length === 0 ? (
                     <div className="empty-state">
-                        <div className="empty-icon">📅</div>
+                        <VectorIcon spec={getUiIconSpec('meetingCalendar')} className="empty-icon" boxSize={56} iconSize={28} />
                         <p className="text-secondary">아직 예약이 없습니다</p>
                     </div>
                 ) : (

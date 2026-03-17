@@ -32,8 +32,10 @@ import {
 } from '../utils/auth';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import VectorIcon from '../components/VectorIcon';
 import RecurringReservationModal from '../components/RecurringReservationModal';
 import ParticipantListModal from '../components/ParticipantListModal';
+import { getLunchMenuIconSpec } from '../utils/iconSpecs';
 import './Admin.css';
 
 const HONORIFIC_REGEX = /^[가-힣]{1,4}$/;
@@ -52,7 +54,7 @@ const buildLotteryFeedContent = (activity) => (
 
 const INITIAL_LUNCH_MENU_FORM = {
     name: '',
-    emoji: '🍽️',
+    emoji: 'meal',
     menuTag: '',
 };
 
@@ -886,14 +888,14 @@ const Admin = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="lunch-menu-emoji">이모지</label>
+                                        <label htmlFor="lunch-menu-emoji">아이콘 힌트</label>
                                         <input
                                             id="lunch-menu-emoji"
                                             type="text"
                                             value={lunchMenuForm.emoji}
                                             onChange={(e) => handleLunchMenuFormChange('emoji', e.target.value)}
-                                            placeholder="🍲"
-                                            maxLength={4}
+                                            placeholder="예) 국밥 / 커피 / 샌드위치"
+                                            maxLength={20}
                                         />
                                     </div>
                                 </div>
@@ -939,7 +941,12 @@ const Admin = () => {
                                                 key={menu.id}
                                                 className={`lunch-menu-item ${menu.isActive ? 'is-active' : 'is-inactive'} ${menu.isCafeteria ? 'is-fixed' : ''}`}
                                             >
-                                                <div className="lunch-menu-item__emoji">{menu.emoji || '🍽️'}</div>
+                                                <VectorIcon
+                                                    spec={getLunchMenuIconSpec(menu)}
+                                                    className="lunch-menu-item__emoji"
+                                                    boxSize={44}
+                                                    iconSize={22}
+                                                />
                                                 <div className="lunch-menu-item__info">
                                                     <div className="lunch-menu-item__title-row">
                                                         <strong>{menu.name}</strong>

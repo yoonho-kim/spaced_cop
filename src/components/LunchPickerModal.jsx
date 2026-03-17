@@ -8,12 +8,13 @@ import {
   saveLunchPickResultForEmployee,
 } from '../utils/storage';
 import { getLunchMenuIconSpec } from '../utils/iconSpecs';
+import { getUiIconSpec } from '../utils/uiIconSpecs';
 import './LunchPickerModal.css';
 
 const DEFAULT_CAFETERIA_MENU = Object.freeze({
   id: 'cafeteria-default',
   name: '25층 구내식당',
-  emoji: '🏢',
+  emoji: 'cafeteria',
   menuTag: '직원 할인 적용',
   isCafeteria: true,
   isActive: true,
@@ -74,7 +75,7 @@ const ensureCafeteriaMenu = (items = []) => {
       ...item,
       id: item?.id ?? item?.name,
       name: item?.name || '',
-      emoji: item?.emoji || '🍽️',
+      emoji: item?.emoji || 'meal',
       menuTag: item?.menuTag || '',
       isCafeteria: !!item?.isCafeteria,
       isActive: item?.isActive !== false,
@@ -530,7 +531,7 @@ const LunchPickerModal = ({ isOpen, onClose, user }) => {
           onClick={handleCloseModal}
           aria-label="닫기"
         >
-          ✕
+          <VectorIcon spec={getUiIconSpec('close')} boxSize={18} iconSize={14} />
         </button>
 
         <div className="lpm-main-screen">

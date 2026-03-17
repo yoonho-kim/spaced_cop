@@ -3,6 +3,8 @@ import { getSupplyRequests, addSupplyRequest } from '../utils/storage';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import VectorIcon from '../components/VectorIcon';
+import { getUiIconSpec } from '../utils/uiIconSpecs';
 import './Supplies.css';
 
 const Supplies = ({ user }) => {
@@ -80,7 +82,7 @@ const Supplies = ({ user }) => {
                 <h3>내 신청 내역</h3>
                 {myRequests.length === 0 ? (
                     <div className="empty-state">
-                        <div className="empty-icon">📦</div>
+                        <VectorIcon spec={getUiIconSpec('suppliesEmpty')} className="empty-icon" boxSize={56} iconSize={28} />
                         <p className="text-secondary">아직 비품 신청이 없습니다</p>
                     </div>
                 ) : (

@@ -6,8 +6,10 @@ import {
 } from '../utils/storage';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
 import Button from '../components/Button';
+import VectorIcon from '../components/VectorIcon';
 import ParticipantListModal from '../components/ParticipantListModal';
 import VolunteerDetailModal from '../components/VolunteerDetailModal';
+import { getRankIconSpec, getUiIconSpec } from '../utils/uiIconSpecs';
 import './Volunteer.css';
 
 const Volunteer = ({ user }) => {
@@ -150,13 +152,6 @@ const Volunteer = ({ user }) => {
         });
     };
 
-    const getRankEmoji = (index) => {
-        if (index === 0) return '🥇';
-        if (index === 1) return '🥈';
-        if (index === 2) return '🥉';
-        return `${index + 1}`;
-    };
-
     return (
         <div className="volunteer-container" style={{ position: 'relative' }}>
             {/* Pull-to-refresh indicator */}
@@ -170,7 +165,7 @@ const Volunteer = ({ user }) => {
                 <h3>참가 가능한 활동</h3>
                 {openActivities.length === 0 ? (
                     <div className="empty-state">
-                        <div className="empty-icon">🤝</div>
+                        <VectorIcon spec={getUiIconSpec('volunteerEmpty')} className="empty-icon" boxSize={56} iconSize={28} />
                         <p className="text-secondary">현재 참가 가능한 활동이 없습니다</p>
                     </div>
                 ) : (
@@ -236,7 +231,11 @@ const Volunteer = ({ user }) => {
                                     {ranking.map((item, index) => (
                                         <div key={item.employeeId} className={`ranking-item ${index < 3 ? 'top-rank' : ''}`}>
                                             <div className="rank-badge">
-                                                {getRankEmoji(index)}
+                                                {getRankIconSpec(index) ? (
+                                                    <VectorIcon spec={getRankIconSpec(index)} boxSize={24} iconSize={14} />
+                                                ) : (
+                                                    `${index + 1}`
+                                                )}
                                             </div>
                                             <div className="ranking-info">
                                                 <span className="employee-id">{item.employeeId}</span>

@@ -3,6 +3,8 @@ import { logout, isAdmin } from '../utils/auth';
 import { addPost, getEventSettings } from '../utils/storage';
 import Modal from '../components/Modal';
 import TeamPopcorn from '../components/TeamPopcorn';
+import VectorIcon from '../components/VectorIcon';
+import { getUiIconSpec } from '../utils/uiIconSpecs';
 import './MainLayout.css';
 
 const Feed = React.lazy(() => import('./Feed'));
@@ -336,7 +338,7 @@ const MainLayout = ({ user, onLogout }) => {
                                 setShowMenu(false);
                             }}
                         >
-                            <span>🍿</span>
+                            <VectorIcon spec={getUiIconSpec('popcorn')} boxSize={24} iconSize={14} />
                             <span>팀 팝콘</span>
                         </button>
                         <button
