@@ -354,14 +354,16 @@
 
 /* Detail Modal */
 .winners-detail-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: rgba(15, 23, 42, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
-    z-index: 60;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    z-index: 1001;
 }
 
 .winners-detail-card {
@@ -371,10 +373,14 @@
     border-radius: 16px;
     border: 1px solid rgba(15, 23, 42, 0.1);
     box-shadow: 0 20px 36px rgba(15, 23, 42, 0.2);
-    max-height: 80vh;
-    overflow-y: auto;
+    max-height: calc(100dvh - 32px);
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
 }
 
 .winners-detail-header {
@@ -411,6 +417,11 @@
     flex-direction: column;
     gap: 12px;
     text-align: left;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
 }
 
 .winners-detail-body h4 {

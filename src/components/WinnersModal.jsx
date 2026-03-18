@@ -305,86 +305,99 @@ const WinnersModal = ({ isOpen, onClose, activity, user }) => {
                     </button>
                 </div>
 
-                {showWinnerList && (
-                    <div className="winners-detail-overlay" onClick={() => setShowWinnerList(false)}>
-                        <div className="winners-detail-card" onClick={(e) => e.stopPropagation()}>
-                            <div className="winners-detail-header">
-                                <h3>당첨자 목록</h3>
-                                <button
-                                    type="button"
-                                    className="winners-detail-close"
-                                    onClick={() => setShowWinnerList(false)}
-                                >
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
-
-                            <div className="winners-detail-body">
-                                <h4>{activity.title}</h4>
-                                <div className="winners-detail-meta">
-                                    <div className="detail-row">
-                                        <span className="material-symbols-outlined">calendar_today</span>
-                                        <span>{formatDate(activity.date)}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="material-symbols-outlined">event_busy</span>
-                                        <span>모집 마감일: {formatDate(activity.deadline)}</span>
-                                    </div>
-                                    {activity.location && (
-                                        <div className="detail-row">
-                                            <span className="material-symbols-outlined">location_on</span>
-                                            <span>{activity.location}</span>
-                                        </div>
-                                    )}
-                                    <div className="detail-row">
-                                        <span className="material-symbols-outlined">schedule</span>
-                                        <span>인정 시간: {activity.recognitionHours || 0}시간</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="material-symbols-outlined">group</span>
-                                        <span>모집 인원: {activity.maxParticipants}명</span>
-                                    </div>
-                                </div>
-
-                                <div className="winners-detail-description">
-                                    <span>활동 내용</span>
-                                    <p>{activity.description || '설명이 없습니다.'}</p>
-                                </div>
-
-                                <div className="winners-detail-winners">
-                                    <div className="winners-detail-winners-header">
-                                        <strong>당첨자 현황</strong>
-                                        <span>총 {winners.length}명</span>
-                                    </div>
-
-                                    {winners.length === 0 ? (
-                                        <div className="winners-detail-empty">현재 확인 가능한 당첨자가 없습니다.</div>
-                                    ) : (
-                                        <div className="winners-detail-list">
-                                            {winners.map((winner, index) => (
-                                                <div key={winner.id} className="winner-card">
-                                                    <div className="winner-avatar">
-                                                        <VectorIcon spec={getWinnerAvatarSpec(index)} boxSize={38} iconSize={18} />
-                                                    </div>
-                                                    <span className="winner-name">{`${winner.employeeId} (${winner.userName})`}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
 
+    const detailModalNode = showWinnerList ? (
+        <div className="winners-detail-overlay" onClick={() => setShowWinnerList(false)}>
+            <div
+                className="winners-detail-card"
+                onClick={(e) => e.stopPropagation()}
+                onWheel={(e) => e.stopPropagation()}
+                onTouchMove={(e) => e.stopPropagation()}
+            >
+                <div className="winners-detail-header">
+                    <h3>당첨자 목록</h3>
+                    <button
+                        type="button"
+                        className="winners-detail-close"
+                        onClick={() => setShowWinnerList(false)}
+                    >
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <div className="winners-detail-body">
+                    <h4>{activity.title}</h4>
+                    <div className="winners-detail-meta">
+                        <div className="detail-row">
+                            <span className="material-symbols-outlined">calendar_today</span>
+                            <span>{formatDate(activity.date)}</span>
+                        </div>
+                        <div className="detail-row">
+                            <span className="material-symbols-outlined">event_busy</span>
+                            <span>모집 마감일: {formatDate(activity.deadline)}</span>
+                        </div>
+                        {activity.location && (
+                            <div className="detail-row">
+                                <span className="material-symbols-outlined">location_on</span>
+                                <span>{activity.location}</span>
+                            </div>
+                        )}
+                        <div className="detail-row">
+                            <span className="material-symbols-outlined">schedule</span>
+                            <span>인정 시간: {activity.recognitionHours || 0}시간</span>
+                        </div>
+                        <div className="detail-row">
+                            <span className="material-symbols-outlined">group</span>
+                            <span>모집 인원: {activity.maxParticipants}명</span>
+                        </div>
+                    </div>
+
+                    <div className="winners-detail-description">
+                        <span>활동 내용</span>
+                        <p>{activity.description || '설명이 없습니다.'}</p>
+                    </div>
+
+                    <div className="winners-detail-winners">
+                        <div className="winners-detail-winners-header">
+                            <strong>당첨자 현황</strong>
+                            <span>총 {winners.length}명</span>
+                        </div>
+
+                        {winners.length === 0 ? (
+                            <div className="winners-detail-empty">현재 확인 가능한 당첨자가 없습니다.</div>
+                        ) : (
+                            <div className="winners-detail-list">
+                                {winners.map((winner, index) => (
+                                    <div key={winner.id} className="winner-card">
+                                        <div className="winner-avatar">
+                                            <VectorIcon spec={getWinnerAvatarSpec(index)} boxSize={38} iconSize={18} />
+                                        </div>
+                                        <span className="winner-name">{`${winner.employeeId} (${winner.userName})`}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    ) : null;
+
+    const portalContent = (
+        <>
+            {modalNode}
+            {detailModalNode}
+        </>
+    );
+
     if (typeof document === 'undefined') {
-        return modalNode;
+        return portalContent;
     }
 
-    return createPortal(modalNode, document.body);
+    return createPortal(portalContent, document.body);
 };
 
 export default WinnersModal;
