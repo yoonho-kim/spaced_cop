@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import VectorIcon from './VectorIcon';
 import { getWinnerAvatarSpec } from '../utils/uiIconSpecs';
 import './WinnersModal.css';
@@ -137,6 +138,24 @@ const WinnersModal = ({ isOpen, onClose, activity, user }) => {
         }
     }, [isOpen, activity?.id]);
 
+    useEffect(() => {
+        if (!isOpen || typeof document === 'undefined') return undefined;
+
+        const mainContent = document.querySelector('.main-content');
+        if (!mainContent) return undefined;
+
+        const previousOverflow = mainContent.style.overflow;
+        const previousOverscrollBehavior = mainContent.style.overscrollBehavior;
+
+        mainContent.style.overflow = 'hidden';
+        mainContent.style.overscrollBehavior = 'none';
+
+        return () => {
+            mainContent.style.overflow = previousOverflow;
+            mainContent.style.overscrollBehavior = previousOverscrollBehavior;
+        };
+    }, [isOpen]);
+
     const formatDate = (dateString) => {
         if (!dateString) return '-';
         return new Date(dateString).toLocaleDateString('ko-KR', {
@@ -202,7 +221,7 @@ const WinnersModal = ({ isOpen, onClose, activity, user }) => {
 
     const myResult = getMyResultContent();
 
-    return (
+    const modalNode = (
         <div className="winners-modal-overlay" onClick={handleClose}>
             <div className="winners-modal-container" onClick={(e) => e.stopPropagation()}>
                 <div className="winners-modal-gradient-bg"></div>
@@ -360,6 +379,12 @@ const WinnersModal = ({ isOpen, onClose, activity, user }) => {
             </div>
         </div>
     );
+
+    if (typeof document === 'undefined') {
+        return modalNode;
+    }
+
+    return createPortal(modalNode, document.body);
 };
 
 export default WinnersModal;
