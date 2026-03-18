@@ -1,15 +1,80 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import VectorIcon from './VectorIcon';
 import { getWinnerAvatarSpec } from '../utils/uiIconSpecs';
+import { STORAGE_KEYS, getItem, setItem } from '../utils/clientStorage';
 import './WinnersModal.css';
 
+const getScratchViewerKey = (user) => {
+    const employeeId = String(user?.employeeId || '').trim();
+    if (employeeId) return `employee:${employeeId}`;
+
+    const nickname = String(user?.nickname || '').trim();
+    if (nickname) return `nickname:${nickname}`;
+
+    return '';
+};
+
+const getScratchActivityKey = (activity) => {
+    const activityId = String(activity?.id || '').trim();
+    if (activityId) return activityId;
+
+    const activityTitle = String(activity?.title || '').trim();
+    const activityDate = String(activity?.date || '').trim();
+
+    if (!activityTitle && !activityDate) return '';
+    return `${activityTitle}:${activityDate}`;
+};
+
+const getScratchEntryKey = (activity, user) => {
+    const viewerKey = getScratchViewerKey(user);
+    const activityKey = getScratchActivityKey(activity);
+
+    if (!viewerKey || !activityKey) return '';
+    return `${viewerKey}:${activityKey}`;
+};
+
+const getStoredScratchMap = () => {
+    const stored = getItem(STORAGE_KEYS.VOLUNTEER_RESULT_SCRATCHES);
+    return stored && typeof stored === 'object' ? stored : {};
+};
+
+const getStoredScratchState = (activity, user) => {
+    const entryKey = getScratchEntryKey(activity, user);
+    if (!entryKey) return false;
+
+    const scratchMap = getStoredScratchMap();
+    return scratchMap[entryKey] === true;
+};
+
+const persistScratchState = (activity, user) => {
+    const entryKey = getScratchEntryKey(activity, user);
+    if (!entryKey) return;
+
+    const scratchMap = getStoredScratchMap();
+    if (scratchMap[entryKey] === true) return;
+
+    setItem(STORAGE_KEYS.VOLUNTEER_RESULT_SCRATCHES, {
+        ...scratchMap,
+        [entryKey]: true,
+    });
+};
+
 const WinnersModal = ({ isOpen, onClose, activity, user }) => {
-    const [isScratched, setIsScratched] = useState(false);
+    const scratchEntryKey = getScratchEntryKey(activity, user);
+    const [currentScratchKey, setCurrentScratchKey] = useState(scratchEntryKey);
+    const [isScratched, setIsScratched] = useState(() => getStoredScratchState(activity, user));
     const [isDrawing, setIsDrawing] = useState(false);
     const [showWinnerList, setShowWinnerList] = useState(false);
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
+
+    if (scratchEntryKey !== currentScratchKey) {
+        setCurrentScratchKey(scratchEntryKey);
+        setIsScratched(getStoredScratchState(activity, user));
+        setIsDrawing(false);
+        setShowWinnerList(false);
+    }
 
     function initCanvas() {
         const canvas = canvasRef.current;
@@ -88,6 +153,7 @@ const WinnersModal = ({ isOpen, onClose, activity, user }) => {
 
         if (scratchedPercentage > 60) {
             setIsScratched(true);
+            persistScratchState(activity, user);
         }
     };
 
@@ -126,17 +192,18 @@ const WinnersModal = ({ isOpen, onClose, activity, user }) => {
     };
 
     const handleClose = () => {
-        setIsScratched(false);
         setIsDrawing(false);
         setShowWinnerList(false);
         onClose();
     };
 
-    useEffect(() => {
-        if (isOpen && canvasRef.current && containerRef.current) {
+    useLayoutEffect(() => {
+        if (!isOpen) return;
+
+        if (!isScratched && canvasRef.current && containerRef.current) {
             initCanvas();
         }
-    }, [isOpen, activity?.id]);
+    }, [isOpen, isScratched, scratchEntryKey]);
 
     useEffect(() => {
         if (!isOpen || typeof document === 'undefined') return undefined;
@@ -238,7 +305,11 @@ const WinnersModal = ({ isOpen, onClose, activity, user }) => {
 
                     {/* Title */}
                     <h2 className="winners-modal-title">봉사활동 당첨자 발표</h2>
-                    <p className="winners-modal-subtitle">스크래치를 긁어서 내 결과를 먼저 확인해보세요.</p>
+                    <p className="winners-modal-subtitle">
+                        {isScratched
+                            ? '이전에 확인한 결과입니다. 바로 내 결과와 당첨자 목록을 볼 수 있어요.'
+                            : '스크래치를 긁어서 내 결과를 먼저 확인해보세요.'}
+                    </p>
 
                     {/* Activity Info Card */}
                     <div className="winners-activity-card">
