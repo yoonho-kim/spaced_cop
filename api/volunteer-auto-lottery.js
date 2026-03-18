@@ -105,7 +105,7 @@ export default async function handler(request, response) {
   try {
     const { data: openActivities, error: activityError } = await supabase
       .from('volunteer_activities')
-      .select('id, title, date, deadline, max_participants, status, is_published')
+      .select('id, title, date, deadline, max_participants, recognition_hours, status, is_published')
       .eq('status', 'open')
       .eq('deadline', nowKst.dateKey);
 
@@ -159,6 +159,7 @@ export default async function handler(request, response) {
 
     for (const activity of openActivities) {
       const candidates = (pendingRegs || []).filter((reg) => reg.activity_id === activity.id);
+      const recognitionHours = Number(activity.recognition_hours || 0);
       if (candidates.length === 0) {
         details.push({
           activityId: activity.id,
@@ -191,7 +192,10 @@ export default async function handler(request, response) {
       if (winners.length > 0) {
         const { error } = await supabase
           .from('volunteer_registrations')
-          .update({ status: 'confirmed' })
+          .update({
+            status: 'confirmed',
+            recognized_hours: recognitionHours,
+          })
           .in('id', winners.map((w) => w.id));
         if (error) throw error;
       }
@@ -199,7 +203,10 @@ export default async function handler(request, response) {
       if (losers.length > 0) {
         const { error } = await supabase
           .from('volunteer_registrations')
-          .update({ status: 'rejected' })
+          .update({
+            status: 'rejected',
+            recognized_hours: 0,
+          })
           .in('id', losers.map((l) => l.id));
         if (error) throw error;
       }

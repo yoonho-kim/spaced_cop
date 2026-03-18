@@ -15,7 +15,12 @@ const STATUS_STYLES = {
     pending: 'bg-amber-100 text-amber-700 border-amber-200',
     rejected: 'bg-red-100 text-red-700 border-red-200',
 };
-const STATUS_LABELS = { confirmed: '확정', pending: '대기', rejected: '미선정' };
+const STATUS_LABELS = { confirmed: '확정', pending: '미확정', rejected: '미선정' };
+const EDITABLE_STATUSES = [
+    { value: 'confirmed', label: '확정' },
+    { value: 'pending', label: '미확정' },
+    { value: 'rejected', label: '미선정' },
+];
 
 const ParticipantListModal = ({ activity, onClose, onUpdate }) => {
     const [participants, setParticipants] = useState([]);
@@ -33,6 +38,7 @@ const ParticipantListModal = ({ activity, onClose, onUpdate }) => {
     const [editHours, setEditHours] = useState('');
     const [editName, setEditName] = useState('');
     const [editEmployeeId, setEditEmployeeId] = useState('');
+    const [editStatus, setEditStatus] = useState('pending');
 
     useEffect(() => {
         if (activity?.id) {
@@ -74,6 +80,7 @@ const ParticipantListModal = ({ activity, onClose, onUpdate }) => {
         setEditHours(participant.recognizedHours.toString());
         setEditName(participant.employeeName || '');
         setEditEmployeeId(participant.employeeId || '');
+        setEditStatus(participant.status || 'pending');
         setConfirmDelete(null);
     };
 
@@ -82,6 +89,7 @@ const ParticipantListModal = ({ activity, onClose, onUpdate }) => {
             hours: parseFloat(editHours) || 0,
             employeeName: editName,
             employeeId: editEmployeeId,
+            status: editStatus,
         });
 
         if (success) {
@@ -299,6 +307,20 @@ const ParticipantListModal = ({ activity, onClose, onUpdate }) => {
                                                         step="0.5"
                                                         min="0"
                                                     />
+                                                </div>
+                                                <div className="edit-field-group edit-field-group--status">
+                                                    <label className="field-label">상태</label>
+                                                    <select
+                                                        className="edit-status-select"
+                                                        value={editStatus}
+                                                        onChange={(e) => setEditStatus(e.target.value)}
+                                                    >
+                                                        {EDITABLE_STATUSES.map((statusOption) => (
+                                                            <option key={statusOption.value} value={statusOption.value}>
+                                                                {statusOption.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
                                                 </div>
                                             </div>
                                             <div className="edit-panel-actions">

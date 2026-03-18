@@ -1390,7 +1390,7 @@ export const addParticipantByAdmin = async (activityId, activityTitle, employeeI
   return data;
 };
 
-// 참가자 정보 수정 (인정시간, 이름, 사번)
+// 참가자 정보 수정 (인정시간, 이름, 사번, 상태)
 export const updateParticipantDetails = async (registrationId, updates) => {
   if (!ensureAdminAccess()) {
     return false;
@@ -1398,8 +1398,9 @@ export const updateParticipantDetails = async (registrationId, updates) => {
 
   const dbUpdates = {};
   if (updates.hours !== undefined) dbUpdates.recognized_hours = updates.hours;
-  if (updates.employeeName) dbUpdates.employee_name = updates.employeeName;
-  if (updates.employeeId) dbUpdates.employee_id = updates.employeeId;
+  if (updates.employeeName !== undefined) dbUpdates.employee_name = updates.employeeName;
+  if (updates.employeeId !== undefined) dbUpdates.employee_id = updates.employeeId;
+  if (updates.status !== undefined) dbUpdates.status = updates.status;
 
   const { error } = await supabase
     .from('volunteer_registrations')
@@ -1407,7 +1408,7 @@ export const updateParticipantDetails = async (registrationId, updates) => {
     .match({ id: registrationId });
 
   if (error) {
-    console.error('Error updating participant hours:', error);
+    console.error('Error updating participant details:', error);
     return false;
   }
   return true;

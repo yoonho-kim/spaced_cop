@@ -368,7 +368,7 @@
 
 .edit-panel-fields {
     display: grid;
-    grid-template-columns: 1fr 1fr 80px;
+    grid-template-columns: 1fr 1fr 96px 112px;
     gap: 8px;
     margin-bottom: 10px;
 }
@@ -380,12 +380,33 @@
     .edit-field-group--hours {
         grid-column: 1 / -1;
     }
+    .edit-field-group--status {
+        grid-column: 1 / -1;
+    }
 }
 
 .edit-field-group {
     display: flex;
     flex-direction: column;
     gap: 4px;
+}
+
+.edit-status-select {
+    height: 36px;
+    width: 100%;
+    border: 1px solid hsl(var(--input));
+    border-radius: 6px;
+    background: hsl(var(--background));
+    padding: 0 12px;
+    font-size: 0.875rem;
+    color: hsl(var(--foreground));
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.edit-status-select:focus {
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 1px hsl(var(--ring));
 }
 
 .edit-panel-actions {

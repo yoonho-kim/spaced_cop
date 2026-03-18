@@ -52,6 +52,8 @@ const buildLotteryFeedContent = (activity) => (
     `${activity.title} 의 추첨이 완료되었습니다.\n - 봉사활동 일자 : ${formatVolunteerDateLabel(activity.date)}`
 );
 
+const getVolunteerRecognitionHours = (activity) => Number(activity?.recognitionHours || 0);
+
 const INITIAL_LUNCH_MENU_FORM = {
     name: '',
     emoji: 'meal',
@@ -202,6 +204,7 @@ const Admin = () => {
         const activity = activities.find(a => a.id === activityId);
         if (!activity) return;
         const activityRegistrations = registrations.filter(r => r.activityId === activityId && r.status === 'pending');
+        const recognitionHours = getVolunteerRecognitionHours(activity);
 
         if (activityRegistrations.length === 0) {
             alert('신청자가 없어 게시할 수 없습니다.');
@@ -213,7 +216,10 @@ const Admin = () => {
         // 신청인원이 모집인원보다 적으면 전원 당첨
         if (activityRegistrations.length <= maxParticipants) {
             for (const reg of activityRegistrations) {
-                await updateVolunteerRegistration(reg.id, { status: 'confirmed' });
+                await updateVolunteerRegistration(reg.id, {
+                    status: 'confirmed',
+                    recognized_hours: recognitionHours,
+                });
             }
 
             await updateVolunteerActivity(activityId, {
@@ -265,9 +271,15 @@ const Admin = () => {
         for (let i = 0; i < applicantsWithPriority.length; i++) {
             const reg = applicantsWithPriority[i];
             if (i < maxParticipants) {
-                await updateVolunteerRegistration(reg.id, { status: 'confirmed' });
+                await updateVolunteerRegistration(reg.id, {
+                    status: 'confirmed',
+                    recognized_hours: recognitionHours,
+                });
             } else {
-                await updateVolunteerRegistration(reg.id, { status: 'rejected' });
+                await updateVolunteerRegistration(reg.id, {
+                    status: 'rejected',
+                    recognized_hours: 0,
+                });
             }
         }
 
