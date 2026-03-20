@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getPostsPage, addPost, addLike, removeLike, addComment, deleteComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers } from '../utils/storage';
+import { getPostsPage, addLike, removeLike, addComment, deleteComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import { supabase } from '../utils/supabase';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
-import Button from '../components/Button';
 import Modal from '../components/Modal';
 import VectorIcon from '../components/VectorIcon';
 import WinnersModal from '../components/WinnersModal';
 import QuickVoteModal from '../components/QuickVoteModal';
 import LunchPickerModal from '../components/LunchPickerModal';
 import { getRankIconSpec, getUiIconSpec } from '../utils/uiIconSpecs';
+import { fetchLinkPreview, getFirstUrl, getHostnameFromUrl, splitTextWithUrls } from '../utils/linkPreview';
 import './Feed.css';
 
 const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModalVisibilityChange }) => {
@@ -17,7 +17,6 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
-    const [newPost, setNewPost] = useState('');
     const [publishedActivities, setPublishedActivities] = useState([]);
     const [showWinnersModal, setShowWinnersModal] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState(null);
@@ -35,6 +34,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
     const [isAiServiceLoading, setIsAiServiceLoading] = useState(false);
     const [highlightedPostIds, setHighlightedPostIds] = useState(new Set());
     const [liveFeedNotice, setLiveFeedNotice] = useState('');
+    const [linkPreviewMap, setLinkPreviewMap] = useState({});
     const loadMoreRef = useRef(null);
     const observerRef = useRef(null);
     const loadingRef = useRef(false);
@@ -44,6 +44,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
     const highlightTimeoutsRef = useRef(new Map());
     const liveNoticeTimeoutRef = useRef(null);
     const refreshPostsRef = useRef(null);
+    const previewRequestsRef = useRef(new Set());
     const PAGE_SIZE = 10;
     const NEW_POST_EFFECT_MS = 1800;
     const LIVE_NOTICE_MS = 2400;
@@ -151,8 +152,73 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                 clearTimeout(liveNoticeTimeoutRef.current);
                 liveNoticeTimeoutRef.current = null;
             }
+
+            previewRequestsRef.current.clear();
         };
     }, []);
+
+    useEffect(() => {
+        const previewUrls = [...new Set(
+            posts
+                .map((post) => getFirstUrl(post?.content))
+                .filter(Boolean)
+        )];
+        const pendingUrls = previewUrls.filter((url) => {
+            if (linkPreviewMap[url]) return false;
+            return !previewRequestsRef.current.has(url);
+        });
+
+        if (pendingUrls.length === 0) return undefined;
+
+        const abortController = new AbortController();
+        let isCancelled = false;
+
+        pendingUrls.forEach((url) => {
+            previewRequestsRef.current.add(url);
+            setLinkPreviewMap((prev) => (
+                prev[url]
+                    ? prev
+                    : {
+                        ...prev,
+                        [url]: { status: 'loading' },
+                    }
+            ));
+        });
+
+        Promise.allSettled(
+            pendingUrls.map(async (url) => {
+                try {
+                    const preview = await fetchLinkPreview(url, { signal: abortController.signal });
+                    if (isCancelled) return;
+
+                    setLinkPreviewMap((prev) => ({
+                        ...prev,
+                        [url]: {
+                            status: 'success',
+                            data: preview,
+                        },
+                    }));
+                } catch (error) {
+                    if (isCancelled || abortController.signal.aborted) return;
+
+                    setLinkPreviewMap((prev) => ({
+                        ...prev,
+                        [url]: {
+                            status: 'error',
+                            error: error instanceof Error ? error.message : '링크 미리보기를 불러오지 못했습니다.',
+                        },
+                    }));
+                } finally {
+                    previewRequestsRef.current.delete(url);
+                }
+            })
+        );
+
+        return () => {
+            isCancelled = true;
+            abortController.abort();
+        };
+    }, [posts, linkPreviewMap]);
 
     const showLiveNotice = (authorNickname) => {
         if (!authorNickname) return;
@@ -517,25 +583,6 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         setPublishedActivities(published);
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!newPost.trim()) return;
-
-        const createdPost = await addPost({
-            content: newPost,
-            author: user.nickname,
-            isAdmin: isAdmin(),
-        });
-
-        setNewPost('');
-        if (createdPost?.id) {
-            await refreshPosts({ incomingPostId: createdPost.id });
-            return;
-        }
-
-        await loadInitialPosts();
-    };
-
     const formatTimestamp = (timestamp) => {
         const date = new Date(timestamp);
         const now = new Date();
@@ -549,6 +596,33 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         if (hours < 24) return `${hours}시간 전`;
         if (days < 7) return `${days}일 전`;
         return date.toLocaleDateString();
+    };
+
+    const renderTextWithLinks = (text, keyPrefix) => {
+        const parts = splitTextWithUrls(text);
+        if (parts.length === 0) return text;
+
+        return parts.map((part, index) => {
+            if (part.type === 'link') {
+                return (
+                    <a
+                        key={`${keyPrefix}-link-${index}`}
+                        href={part.url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="feed-inline-link"
+                    >
+                        {part.value}
+                    </a>
+                );
+            }
+
+            return (
+                <React.Fragment key={`${keyPrefix}-text-${index}`}>
+                    {part.value}
+                </React.Fragment>
+            );
+        });
     };
 
     const handleShowWinners = (activity) => {
@@ -738,7 +812,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         loadInitialPosts();
         loadPublishedActivities();
     };
-    const { pullDistance, PullToRefreshIndicator } = usePullToRefresh(handleRefresh);
+    const { PullToRefreshIndicator } = usePullToRefresh(handleRefresh);
     const openAiServiceView = () => {
         setIsAiServiceLoading(true);
         setShowAiServiceView(true);
@@ -872,6 +946,10 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                             const canManage = canManagePost(post);
                             const isEditingPost = editingPostId === post.id;
                             const isNewPost = highlightedPostIds.has(post.id);
+                            const previewUrl = getFirstUrl(post.content);
+                            const previewState = previewUrl ? linkPreviewMap[previewUrl] : null;
+                            const previewData = previewState?.data;
+                            const previewHostname = previewData?.siteName || getHostnameFromUrl(previewUrl);
 
                             return (
                                 <div
@@ -981,7 +1059,39 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                                                 </div>
                                             </div>
                                         ) : (
-                                            <p className="post-text">{post.content}</p>
+                                            <div className="post-body">
+                                                <p className="post-text">
+                                                    {renderTextWithLinks(post.content, `post-${post.id}`)}
+                                                </p>
+                                                {previewUrl && previewState?.status !== 'error' && (
+                                                    <a
+                                                        href={previewData?.url || previewUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer noopener"
+                                                        className={`link-preview-card ${previewState?.status === 'loading' ? 'is-loading' : ''}`}
+                                                    >
+                                                        <div className="link-preview-card__content">
+                                                            <div className="link-preview-card__eyebrow">
+                                                                <span className="material-symbols-outlined">link</span>
+                                                                <span>{previewHostname || '링크'}</span>
+                                                            </div>
+                                                            <strong className="link-preview-card__title">
+                                                                {previewData?.title || '링크 미리보기를 불러오는 중...'}
+                                                            </strong>
+                                                            {(previewData?.description || previewState?.status === 'loading') && (
+                                                                <p className="link-preview-card__description">
+                                                                    {previewData?.description || '잠시만 기다리면 링크 요약 정보를 표시해드릴게요.'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        {previewData?.imageUrl && (
+                                                            <div className="link-preview-card__thumb">
+                                                                <img src={previewData.imageUrl} alt="" loading="lazy" />
+                                                            </div>
+                                                        )}
+                                                    </a>
+                                                )}
+                                            </div>
                                         )}
 
                                         {/* Post Actions */}
@@ -1041,7 +1151,9 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                                                                             )}
                                                                         </div>
                                                                     </div>
-                                                                    <p className="comment-text">{comment.content}</p>
+                                                                    <p className="comment-text">
+                                                                        {renderTextWithLinks(comment.content, `comment-${comment.id}`)}
+                                                                    </p>
                                                                 </div>
                                                             </div>
                                                         ))}
