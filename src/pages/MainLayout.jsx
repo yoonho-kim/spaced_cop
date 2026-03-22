@@ -3,6 +3,7 @@ import { logout, isAdmin } from '../utils/auth';
 import { addPost, getEventSettings } from '../utils/storage';
 import Modal from '../components/Modal';
 import TeamPopcorn from '../components/TeamPopcorn';
+import AttendanceCheckModal from '../components/AttendanceCheckModal';
 import VectorIcon from '../components/VectorIcon';
 import { getUiIconSpec } from '../utils/uiIconSpecs';
 import './MainLayout.css';
@@ -15,6 +16,8 @@ const Event = React.lazy(() => import('./Event'));
 const Admin = React.lazy(() => import('./Admin'));
 const Statistics = React.lazy(() => import('./Statistics'));
 
+const ATTENDANCE_BUTTON_ALLOWED_NICKNAMES = new Set(['유노', '나모남호', 'admin']);
+
 const MainLayout = ({ user, onLogout }) => {
     const [activeTab, setActiveTab] = useState('feed');
     const [feedViewVersion, setFeedViewVersion] = useState(0);
@@ -23,6 +26,7 @@ const MainLayout = ({ user, onLogout }) => {
     const [showMenu, setShowMenu] = useState(false);
     const [showPostModal, setShowPostModal] = useState(false);
     const [showStatistics, setShowStatistics] = useState(false);
+    const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
     const [isPraiseQuickVoteOpen, setIsPraiseQuickVoteOpen] = useState(false);
     const [newPost, setNewPost] = useState('');
     const [postType, setPostType] = useState('normal'); // 'normal', 'notice', 'volunteer'
@@ -38,6 +42,7 @@ const MainLayout = ({ user, onLogout }) => {
     const [eventPopup, setEventPopup] = useState(null);
     const [showEventPopup, setShowEventPopup] = useState(false);
     const [previousTab, setPreviousTab] = useState('feed');
+    const canUseAttendanceButton = ATTENDANCE_BUTTON_ALLOWED_NICKNAMES.has(String(user?.nickname || '').trim());
 
     const [isNavVisible, setIsNavVisible] = useState(true);
     const lastScrollY = useRef(0);
@@ -317,6 +322,19 @@ const MainLayout = ({ user, onLogout }) => {
                         </div>
                     </div>
                     <div className="header-actions" ref={menuRef}>
+                        {canUseAttendanceButton && (
+                            <button
+                                className="attendance-header-button"
+                                type="button"
+                                onClick={() => {
+                                    setShowAttendanceCheck(true);
+                                    setShowMenu(false);
+                                }}
+                            >
+                                <span className="material-symbols-outlined">schedule</span>
+                                <span>[출/퇴근]</span>
+                            </button>
+                        )}
                         <button
                             className="icon-button"
                             aria-label="메뉴"
@@ -589,6 +607,12 @@ const MainLayout = ({ user, onLogout }) => {
                     <Statistics onClose={() => setShowStatistics(false)} />
                 </Suspense>
             )}
+
+            <AttendanceCheckModal
+                isOpen={showAttendanceCheck}
+                onClose={() => setShowAttendanceCheck(false)}
+                user={user}
+            />
 
             {/* Team Popcorn */}
             {showTeamPopcorn && (

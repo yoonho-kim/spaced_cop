@@ -10,6 +10,7 @@ import {
     TableRow,
 } from '../components/ui/table';
 import { getEventEntries, getEventKey, getEventSettings, getReservations } from '../utils/storage';
+import AttendanceStatsPanel from '../components/AttendanceStatsPanel';
 import AdminVolunteerStats from './AdminVolunteerStats';
 import './Statistics.css';
 
@@ -128,6 +129,13 @@ const Statistics = ({ onClose }) => {
                 >
                     <span className="material-symbols-outlined">volunteer_activism</span>
                     봉사활동
+                </button>
+                <button
+                    className={`tab-btn ${activeTab === 'attendance' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('attendance')}
+                >
+                    <span className="material-symbols-outlined">schedule</span>
+                    출퇴근
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'event' ? 'active' : ''}`}
@@ -273,6 +281,10 @@ const Statistics = ({ onClose }) => {
                     <div className="tab-content volunteer-stats">
                         <AdminVolunteerStats />
                     </div>
+                )}
+
+                {activeTab === 'attendance' && (
+                    <AttendanceStatsPanel />
                 )}
 
                 {activeTab === 'event' && (

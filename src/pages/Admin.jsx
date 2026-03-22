@@ -33,6 +33,7 @@ import {
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import VectorIcon from '../components/VectorIcon';
+import AttendanceAdminPocPanel from '../components/AttendanceAdminPocPanel';
 import RecurringReservationModal from '../components/RecurringReservationModal';
 import ParticipantListModal from '../components/ParticipantListModal';
 import { getLunchMenuIconSpec } from '../utils/iconSpecs';
@@ -683,6 +684,12 @@ const Admin = () => {
                     점심메뉴
                 </button>
                 <button
+                    className={`admin-tab ${activeSection === 'attendance' ? 'active' : ''}`}
+                    onClick={() => setActiveSection('attendance')}
+                >
+                    출퇴근
+                </button>
+                <button
                     className={`admin-tab ${activeSection === 'settings' ? 'active' : ''}`}
                     onClick={() => setActiveSection('settings')}
                 >
@@ -998,6 +1005,18 @@ const Admin = () => {
                                 )}
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {activeSection === 'attendance' && (
+                    <div className="admin-section">
+                        <div className="section-header">
+                            <div>
+                                <h3>출퇴근 주파수 PoC</h3>
+                                <p className="text-secondary">출근 18.5kHz, 퇴근 19.2kHz 테스트 음을 관리자 기기에서 재생합니다.</p>
+                            </div>
+                        </div>
+                        <AttendanceAdminPocPanel />
                     </div>
                 )}
 

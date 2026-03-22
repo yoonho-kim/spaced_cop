@@ -2,6 +2,7 @@ export const STORAGE_KEYS = {
   USER: 'spaced_user',
   LUNCH_PICK_RESULTS: 'spaced_lunch_pick_results',
   VOLUNTEER_RESULT_SCRATCHES: 'spaced_volunteer_result_scratches',
+  ATTENDANCE_POC_LOGS: 'spaced_attendance_poc_logs',
 };
 
 export const getItem = (key) => {

@@ -140,6 +140,32 @@
     gap: 8px;
 }
 
+.attendance-header-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid rgba(41, 82, 204, 0.16);
+    border-radius: 9999px;
+    background: linear-gradient(135deg, rgba(239, 246, 255, 0.96) 0%, rgba(224, 231, 255, 0.94) 100%);
+    color: #1d4ed8;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.14);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.attendance-header-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
+}
+
+.attendance-header-button .material-symbols-outlined {
+    font-size: 18px;
+}
+
 .icon-button {
     width: 40px;
     height: 40px;
