@@ -11,6 +11,16 @@ declare global {
 
 const DEFAULT_TONE_DURATION_MS = 3200;
 const DEFAULT_GAIN = 0.08;
+const TONE_PLAYBACK_PROFILES: Record<AttendanceActionType, { durationMs: number; gain: number }> = {
+    checkIn: {
+        durationMs: DEFAULT_TONE_DURATION_MS,
+        gain: DEFAULT_GAIN,
+    },
+    checkOut: {
+        durationMs: 3800,
+        gain: 0.1,
+    },
+};
 
 const getAudioContextConstructor = () => {
     if (typeof window === 'undefined') return null;
@@ -87,16 +97,17 @@ const AttendanceAdminPocPanel = () => {
             stopTone(true);
 
             const tone = getAttendanceToneConfig(actionType);
+            const playbackProfile = TONE_PLAYBACK_PROFILES[actionType];
             const oscillator = audioContext.createOscillator();
             const gain = audioContext.createGain();
-            const durationSeconds = DEFAULT_TONE_DURATION_MS / 1000;
+            const durationSeconds = playbackProfile.durationMs / 1000;
 
             oscillator.type = 'sine';
             oscillator.frequency.setValueAtTime(tone.frequency, audioContext.currentTime);
 
             gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
             gain.gain.exponentialRampToValueAtTime(
-                DEFAULT_GAIN,
+                playbackProfile.gain,
                 audioContext.currentTime + 0.04
             );
             gain.gain.exponentialRampToValueAtTime(
@@ -123,7 +134,7 @@ const AttendanceAdminPocPanel = () => {
 
             timeoutRef.current = window.setTimeout(() => {
                 setActiveAction(null);
-            }, DEFAULT_TONE_DURATION_MS + 80);
+            }, playbackProfile.durationMs + 80);
         } catch (error) {
             console.error('Attendance tone playback error:', error);
             setActiveAction(null);
@@ -159,6 +170,10 @@ const AttendanceAdminPocPanel = () => {
             <div className="attendance-admin-grid">
                 {ATTENDANCE_TONE_LIST.map((tone) => (
                     <div key={tone.key} className="attendance-admin-card">
+                        {(() => {
+                            const playbackProfile = TONE_PLAYBACK_PROFILES[tone.key];
+                            return (
+                                <>
                         <div className="attendance-admin-card__header">
                             <strong>{tone.label} 주파수</strong>
                             <span
@@ -172,7 +187,7 @@ const AttendanceAdminPocPanel = () => {
                             {tone.frequency.toLocaleString()}Hz
                         </div>
                         <p className="attendance-admin-card__hint">
-                            {tone.label} 체크 인식용 테스트 음을 약 {DEFAULT_TONE_DURATION_MS / 1000}초 동안 재생합니다.
+                            {tone.label} 체크 인식용 테스트 음을 약 {(playbackProfile.durationMs / 1000).toFixed(1)}초 동안 재생합니다.
                         </p>
                         <div className="attendance-actions" style={{ marginTop: '14px' }}>
                             <Button
@@ -183,6 +198,9 @@ const AttendanceAdminPocPanel = () => {
                                 {tone.label} 음 재생
                             </Button>
                         </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 ))}
             </div>

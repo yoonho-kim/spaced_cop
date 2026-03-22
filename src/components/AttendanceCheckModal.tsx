@@ -26,17 +26,39 @@ declare global {
 }
 
 type DetectionStatus = 'idle' | 'requesting' | 'listening' | 'success' | 'error';
+type ToneDetectionProfile = {
+    searchRangeHz: number;
+    lowerToleranceHz: number;
+    upperToleranceHz: number;
+    requiredMatchCount: number;
+    minSignalDb: number;
+    minProminenceDb: number;
+};
 
 const FFT_SIZE = 8192;
 const HIGH_FREQUENCY_RANGE_MIN = 17000;
 const HIGH_FREQUENCY_RANGE_MAX = 20000;
-const TARGET_SEARCH_RANGE_HZ = 320;
-const REQUIRED_MATCH_COUNT = 3;
 const ANALYZE_INTERVAL_MS = 120;
-const MIN_SIGNAL_DB = -82;
-const MIN_PROMINENCE_DB = 4;
 const NOISE_COMPARISON_RADIUS = 32;
 const NOISE_EXCLUSION_RADIUS = 5;
+const TONE_DETECTION_PROFILES: Record<AttendanceActionType, ToneDetectionProfile> = {
+    checkIn: {
+        searchRangeHz: 320,
+        lowerToleranceHz: 320,
+        upperToleranceHz: 320,
+        requiredMatchCount: 3,
+        minSignalDb: -82,
+        minProminenceDb: 4,
+    },
+    checkOut: {
+        searchRangeHz: 420,
+        lowerToleranceHz: 380,
+        upperToleranceHz: 420,
+        requiredMatchCount: 2,
+        minSignalDb: -85,
+        minProminenceDb: 2.5,
+    },
+};
 
 const STATUS_COPY: Record<DetectionStatus, string> = {
     idle: '대기',
@@ -99,14 +121,16 @@ const getNoiseAverageDb = (
 };
 
 const analyzeToneCandidate = (
+    actionType: AttendanceActionType,
     buffer: Float32Array,
     hzPerBin: number,
     startIndex: number,
     endIndex: number,
     targetFrequency: number
 ) => {
+    const detectionProfile = TONE_DETECTION_PROFILES[actionType];
     const expectedIndex = Math.max(startIndex, Math.min(endIndex, Math.round(targetFrequency / hzPerBin)));
-    const searchRadius = Math.max(2, Math.round(TARGET_SEARCH_RANGE_HZ / hzPerBin));
+    const searchRadius = Math.max(2, Math.round(detectionProfile.searchRangeHz / hzPerBin));
     const candidateStartIndex = Math.max(startIndex, expectedIndex - searchRadius);
     const candidateEndIndex = Math.min(endIndex, expectedIndex + searchRadius);
     const candidateIndex = getDominantIndexInRange(buffer, candidateStartIndex, candidateEndIndex);
@@ -115,16 +139,21 @@ const analyzeToneCandidate = (
     const noiseAverageDb = getNoiseAverageDb(buffer, candidateIndex, startIndex, endIndex);
     const prominence = candidateDb - noiseAverageDb;
     const frequencyGap = Math.abs(candidateFrequency - targetFrequency);
+    const frequencyTolerance =
+        candidateFrequency <= targetFrequency
+            ? detectionProfile.lowerToleranceHz
+            : detectionProfile.upperToleranceHz;
 
     return {
         detectedFrequency: candidateFrequency,
         peakDb: candidateDb,
         prominence,
         frequencyGap,
+        requiredMatchCount: detectionProfile.requiredMatchCount,
         isMatch:
-            frequencyGap <= TARGET_SEARCH_RANGE_HZ &&
-            candidateDb >= MIN_SIGNAL_DB &&
-            prominence >= MIN_PROMINENCE_DB,
+            frequencyGap <= frequencyTolerance &&
+            candidateDb >= detectionProfile.minSignalDb &&
+            prominence >= detectionProfile.minProminenceDb,
     };
 };
 
@@ -353,7 +382,7 @@ const AttendanceCheckModal = ({ isOpen, onClose, user }) => {
         const toneCandidates = ATTENDANCE_TONE_LIST.map((tone) => ({
             actionType: tone.key,
             tone,
-            ...analyzeToneCandidate(buffer, hzPerBin, startIndex, endIndex, tone.frequency),
+            ...analyzeToneCandidate(tone.key, buffer, hzPerBin, startIndex, endIndex, tone.frequency),
         })).sort((left, right) => {
             if (right.prominence !== left.prominence) {
                 return right.prominence - left.prominence;
@@ -384,10 +413,10 @@ const AttendanceCheckModal = ({ isOpen, onClose, user }) => {
         const matchedTone = getAttendanceToneConfig(matchedCandidate.actionType);
         setStatus('listening');
         setStatusMessage(
-            `${matchedTone.label} 후보 감지 중입니다. ${matchedCandidate.detectedFrequency.toFixed(1)}Hz · ${matchedCandidate.peakDb.toFixed(1)}dB · 안정화 확인 ${nextHits}/${REQUIRED_MATCH_COUNT}`
+            `${matchedTone.label} 후보 감지 중입니다. ${matchedCandidate.detectedFrequency.toFixed(1)}Hz · ${matchedCandidate.peakDb.toFixed(1)}dB · 안정화 확인 ${nextHits}/${matchedCandidate.requiredMatchCount}`
         );
 
-        if (nextHits >= REQUIRED_MATCH_COUNT) {
+        if (nextHits >= matchedCandidate.requiredMatchCount) {
             void handleDetectionSuccess(
                 matchedCandidate.actionType,
                 matchedCandidate.detectedFrequency,
