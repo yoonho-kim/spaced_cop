@@ -9,8 +9,8 @@ declare global {
     }
 }
 
-const DEFAULT_TONE_DURATION_MS = 2200;
-const DEFAULT_GAIN = 0.045;
+const DEFAULT_TONE_DURATION_MS = 3200;
+const DEFAULT_GAIN = 0.08;
 
 const getAudioContextConstructor = () => {
     if (typeof window === 'undefined') return null;

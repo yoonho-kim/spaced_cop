@@ -109,10 +109,10 @@ const ATTENDANCE_LOG_STORAGE_KEY = STORAGE_KEYS.ATTENDANCE_POC_LOGS || 'spaced_a
 const MAX_ATTENDANCE_LOG_COUNT = 500;
 
 const ATTENDANCE_STORAGE_FALLBACK_MESSAGE =
-  '출퇴근 로그 테이블이 아직 없거나 접근할 수 없어 임시로 브라우저 로컬에 저장했습니다. SQL 적용 후 새로고침하면 DB 저장으로 전환됩니다.';
+  '출퇴근 로그 테이블에 접근할 수 없어 현재 브라우저에만 임시 저장했습니다. 다른 기기 관리자 통계에는 반영되지 않으니 SQL과 권한 설정을 다시 적용한 뒤 새로고침해주세요.';
 
 const ATTENDANCE_DB_ERROR_MESSAGE =
-  '출퇴근 로그를 DB에 저장하지 못해 현재 브라우저에 임시 저장했습니다.';
+  '출퇴근 로그를 DB에 저장하지 못해 현재 브라우저에만 임시 저장했습니다. 다른 기기에는 공유되지 않습니다.';
 
 const ATTENDANCE_STATUS_LABELS: Record<AttendanceLogStatus, string> = {
   requested: '권한 요청',

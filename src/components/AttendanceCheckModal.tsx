@@ -30,11 +30,13 @@ type DetectionStatus = 'idle' | 'requesting' | 'listening' | 'success' | 'error'
 const FFT_SIZE = 8192;
 const HIGH_FREQUENCY_RANGE_MIN = 17000;
 const HIGH_FREQUENCY_RANGE_MAX = 20000;
-const TARGET_TOLERANCE_HZ = 140;
-const REQUIRED_MATCH_COUNT = 6;
+const TARGET_SEARCH_RANGE_HZ = 220;
+const REQUIRED_MATCH_COUNT = 4;
 const ANALYZE_INTERVAL_MS = 120;
-const MIN_SIGNAL_DB = -70;
-const MIN_PROMINENCE_DB = 11;
+const MIN_SIGNAL_DB = -78;
+const MIN_PROMINENCE_DB = 6;
+const NOISE_COMPARISON_RADIUS = 32;
+const NOISE_EXCLUSION_RADIUS = 5;
 
 const STATUS_COPY: Record<DetectionStatus, string> = {
     idle: '대기',
@@ -59,6 +61,71 @@ const formatDateTime = (value: string) => new Date(value).toLocaleString('ko-KR'
 const getAudioContextConstructor = () => {
     if (typeof window === 'undefined') return null;
     return window.AudioContext || window.webkitAudioContext || null;
+};
+
+const getDominantIndexInRange = (
+    buffer: Float32Array,
+    startIndex: number,
+    endIndex: number
+) => {
+    let strongestIndex = startIndex;
+    for (let index = startIndex + 1; index <= endIndex; index += 1) {
+        if (buffer[index] > buffer[strongestIndex]) {
+            strongestIndex = index;
+        }
+    }
+    return strongestIndex;
+};
+
+const getNoiseAverageDb = (
+    buffer: Float32Array,
+    strongestIndex: number,
+    startIndex: number,
+    endIndex: number
+) => {
+    const surroundingValues = [];
+
+    for (
+        let index = Math.max(startIndex, strongestIndex - NOISE_COMPARISON_RADIUS);
+        index <= Math.min(endIndex, strongestIndex + NOISE_COMPARISON_RADIUS);
+        index += 1
+    ) {
+        if (Math.abs(index - strongestIndex) <= NOISE_EXCLUSION_RADIUS) continue;
+        surroundingValues.push(buffer[index]);
+    }
+
+    if (surroundingValues.length === 0) return -100;
+    return surroundingValues.reduce((sum, value) => sum + value, 0) / surroundingValues.length;
+};
+
+const analyzeToneCandidate = (
+    buffer: Float32Array,
+    hzPerBin: number,
+    startIndex: number,
+    endIndex: number,
+    targetFrequency: number
+) => {
+    const expectedIndex = Math.max(startIndex, Math.min(endIndex, Math.round(targetFrequency / hzPerBin)));
+    const searchRadius = Math.max(2, Math.round(TARGET_SEARCH_RANGE_HZ / hzPerBin));
+    const candidateStartIndex = Math.max(startIndex, expectedIndex - searchRadius);
+    const candidateEndIndex = Math.min(endIndex, expectedIndex + searchRadius);
+    const candidateIndex = getDominantIndexInRange(buffer, candidateStartIndex, candidateEndIndex);
+    const candidateFrequency = candidateIndex * hzPerBin;
+    const candidateDb = buffer[candidateIndex];
+    const noiseAverageDb = getNoiseAverageDb(buffer, candidateIndex, startIndex, endIndex);
+    const prominence = candidateDb - noiseAverageDb;
+    const frequencyGap = Math.abs(candidateFrequency - targetFrequency);
+
+    return {
+        detectedFrequency: candidateFrequency,
+        peakDb: candidateDb,
+        prominence,
+        frequencyGap,
+        isMatch:
+            frequencyGap <= TARGET_SEARCH_RANGE_HZ &&
+            candidateDb >= MIN_SIGNAL_DB &&
+            prominence >= MIN_PROMINENCE_DB,
+    };
 };
 
 const createAudioErrorMessage = (error: unknown) => {
@@ -253,7 +320,11 @@ const AttendanceCheckModal = ({ isOpen, onClose, user }) => {
         setDetectedAction(actionType);
         setStatus('success');
         setStatusMessage(
-            `${tone.label} 주파수 ${tone.frequency.toLocaleString()}Hz 감지에 성공했습니다. ${persistenceResult.storageMode === 'db' ? 'DB에 저장했습니다.' : 'DB를 사용할 수 없어 현재 브라우저에 임시 저장했습니다.'}`
+            `${tone.label} 주파수 ${tone.frequency.toLocaleString()}Hz 감지에 성공했습니다. ${
+                persistenceResult.storageMode === 'db'
+                    ? 'DB에 저장했습니다.'
+                    : 'DB를 사용할 수 없어 현재 브라우저에만 임시 저장했습니다. 다른 기기 관리자 통계에는 바로 보이지 않습니다.'
+            }`
         );
         await refreshRecentLogs();
     };
@@ -271,12 +342,7 @@ const AttendanceCheckModal = ({ isOpen, onClose, user }) => {
         const startIndex = Math.max(0, Math.floor(HIGH_FREQUENCY_RANGE_MIN / hzPerBin));
         const endIndex = Math.min(buffer.length - 1, Math.ceil(HIGH_FREQUENCY_RANGE_MAX / hzPerBin));
 
-        let strongestIndex = startIndex;
-        for (let index = startIndex + 1; index <= endIndex; index += 1) {
-            if (buffer[index] > buffer[strongestIndex]) {
-                strongestIndex = index;
-            }
-        }
+        const strongestIndex = getDominantIndexInRange(buffer, startIndex, endIndex);
 
         const strongestFrequency = strongestIndex * hzPerBin;
         const strongestDb = buffer[strongestIndex];
@@ -284,54 +350,49 @@ const AttendanceCheckModal = ({ isOpen, onClose, user }) => {
         setLiveFrequency(strongestFrequency);
         setLivePeakDb(strongestDb);
 
-        const surroundingValues = [];
-        const neighborhoodRadius = 44;
-        for (
-            let index = Math.max(startIndex, strongestIndex - neighborhoodRadius);
-            index <= Math.min(endIndex, strongestIndex + neighborhoodRadius);
-            index += 1
-        ) {
-            if (Math.abs(index - strongestIndex) <= 6) continue;
-            surroundingValues.push(buffer[index]);
-        }
-
-        const surroundingAverageDb =
-            surroundingValues.length > 0
-                ? surroundingValues.reduce((sum, value) => sum + value, 0) / surroundingValues.length
-                : -100;
-        const prominence = strongestDb - surroundingAverageDb;
-
-        let matchedActionType: AttendanceActionType | null = null;
-        let smallestGap = Number.POSITIVE_INFINITY;
-
-        ATTENDANCE_TONE_LIST.forEach((tone) => {
-            const frequencyGap = Math.abs(strongestFrequency - tone.frequency);
-            if (frequencyGap <= TARGET_TOLERANCE_HZ && frequencyGap < smallestGap) {
-                smallestGap = frequencyGap;
-                matchedActionType = tone.key;
+        const toneCandidates = ATTENDANCE_TONE_LIST.map((tone) => ({
+            actionType: tone.key,
+            tone,
+            ...analyzeToneCandidate(buffer, hzPerBin, startIndex, endIndex, tone.frequency),
+        })).sort((left, right) => {
+            if (right.prominence !== left.prominence) {
+                return right.prominence - left.prominence;
             }
+            if (right.peakDb !== left.peakDb) {
+                return right.peakDb - left.peakDb;
+            }
+            return left.frequencyGap - right.frequencyGap;
         });
 
-        if (!matchedActionType || strongestDb < MIN_SIGNAL_DB || prominence < MIN_PROMINENCE_DB) {
+        const matchedCandidate = toneCandidates.find((candidate) => candidate.isMatch) || null;
+
+        if (!matchedCandidate) {
             matchTrackerRef.current = { actionType: null, hits: 0 };
             return;
         }
 
         const nextHits =
-            matchTrackerRef.current.actionType === matchedActionType
+            matchTrackerRef.current.actionType === matchedCandidate.actionType
                 ? matchTrackerRef.current.hits + 1
                 : 1;
 
-        matchTrackerRef.current = { actionType: matchedActionType, hits: nextHits };
+        matchTrackerRef.current = { actionType: matchedCandidate.actionType, hits: nextHits };
 
-        const matchedTone = getAttendanceToneConfig(matchedActionType);
+        setLiveFrequency(matchedCandidate.detectedFrequency);
+        setLivePeakDb(matchedCandidate.peakDb);
+
+        const matchedTone = getAttendanceToneConfig(matchedCandidate.actionType);
         setStatus('listening');
         setStatusMessage(
-            `${matchedTone.label} 후보 감지 중입니다. 안정화 확인 ${nextHits}/${REQUIRED_MATCH_COUNT}`
+            `${matchedTone.label} 후보 감지 중입니다. ${matchedCandidate.detectedFrequency.toFixed(1)}Hz · ${matchedCandidate.peakDb.toFixed(1)}dB · 안정화 확인 ${nextHits}/${REQUIRED_MATCH_COUNT}`
         );
 
         if (nextHits >= REQUIRED_MATCH_COUNT) {
-            void handleDetectionSuccess(matchedActionType, strongestFrequency, strongestDb);
+            void handleDetectionSuccess(
+                matchedCandidate.actionType,
+                matchedCandidate.detectedFrequency,
+                matchedCandidate.peakDb
+            );
         }
     };
 

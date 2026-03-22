@@ -58,6 +58,10 @@ create policy "app_attendance_logs_update_all"
   using (true)
   with check (true);
 
+grant usage on schema public to anon, authenticated, service_role;
+grant select, insert, update on table app_attendance_logs to anon, authenticated, service_role;
+grant usage, select on sequence app_attendance_logs_id_seq to anon, authenticated, service_role;
+
 -- --------------------------------------------
 -- 확인용 쿼리 예시
 -- --------------------------------------------
