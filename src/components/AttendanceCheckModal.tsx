@@ -30,11 +30,11 @@ type DetectionStatus = 'idle' | 'requesting' | 'listening' | 'success' | 'error'
 const FFT_SIZE = 8192;
 const HIGH_FREQUENCY_RANGE_MIN = 17000;
 const HIGH_FREQUENCY_RANGE_MAX = 20000;
-const TARGET_SEARCH_RANGE_HZ = 220;
-const REQUIRED_MATCH_COUNT = 4;
+const TARGET_SEARCH_RANGE_HZ = 320;
+const REQUIRED_MATCH_COUNT = 3;
 const ANALYZE_INTERVAL_MS = 120;
-const MIN_SIGNAL_DB = -78;
-const MIN_PROMINENCE_DB = 6;
+const MIN_SIGNAL_DB = -82;
+const MIN_PROMINENCE_DB = 4;
 const NOISE_COMPARISON_RADIUS = 32;
 const NOISE_EXCLUSION_RADIUS = 5;
 
