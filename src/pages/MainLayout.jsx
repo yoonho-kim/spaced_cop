@@ -4,6 +4,7 @@ import { addPost, getEventSettings } from '../utils/storage';
 import Modal from '../components/Modal';
 import TeamPopcorn from '../components/TeamPopcorn';
 import AttendanceCheckModal from '../components/AttendanceCheckModal';
+import InstallPromptBanner from '../components/InstallPromptBanner';
 import VectorIcon from '../components/VectorIcon';
 import { getUiIconSpec } from '../utils/uiIconSpecs';
 import './MainLayout.css';
@@ -276,6 +277,7 @@ const MainLayout = ({ user, onLogout }) => {
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
     const activeComponentKey = activeTab === 'feed' ? `feed-${feedViewVersion}` : activeTab;
     const isEventPage = activeTab === 'event';
+    const showBottomNavigation = isNavVisible && !isEventPage && !isAiServiceViewOpen && !isPraiseQuickVoteOpen;
 
     // Get greeting based on time of day
     const getGreeting = () => {
@@ -424,7 +426,9 @@ const MainLayout = ({ user, onLogout }) => {
                 </Suspense>
             </main>
 
-            <nav className={`bottom-nav ${isNavVisible && !isEventPage && !isAiServiceViewOpen && !isPraiseQuickVoteOpen ? '' : 'hidden'}`}>
+            <InstallPromptBanner isVisible={showBottomNavigation} />
+
+            <nav className={`bottom-nav ${showBottomNavigation ? '' : 'hidden'}`}>
                 <div className="nav-container">
                     {tabs.slice(0, 2).map(tab => (
                         <button

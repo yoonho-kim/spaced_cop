@@ -1,0 +1,113 @@
+.install-prompt-banner {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(104px + env(safe-area-inset-bottom));
+    z-index: calc(var(--z-toast) - 10);
+    max-width: 448px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(41, 82, 204, 0.12);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+}
+
+.install-prompt-banner__icon {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(41, 82, 204, 0.14) 0%, rgba(29, 78, 216, 0.2) 100%);
+    color: #1d4ed8;
+}
+
+.install-prompt-banner__icon .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.install-prompt-banner__body {
+    min-width: 0;
+    flex: 1;
+}
+
+.install-prompt-banner__title {
+    display: block;
+    margin-bottom: 2px;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.install-prompt-banner__text {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.install-prompt-banner__actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.install-prompt-banner__install {
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #2952cc 0%, #1d4ed8 100%);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(41, 82, 204, 0.18);
+}
+
+.install-prompt-banner__dismiss {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.install-prompt-banner__dismiss .material-symbols-outlined {
+    font-size: 18px;
+}
+
+@media (max-width: 480px) {
+    .install-prompt-banner {
+        left: 12px;
+        right: 12px;
+        bottom: calc(96px + env(safe-area-inset-bottom));
+        padding: 11px 12px;
+        gap: 8px;
+    }
+
+    .install-prompt-banner__title {
+        font-size: 12px;
+    }
+
+    .install-prompt-banner__text {
+        font-size: 11px;
+    }
+
+    .install-prompt-banner__install {
+        padding: 7px 11px;
+    }
+}
