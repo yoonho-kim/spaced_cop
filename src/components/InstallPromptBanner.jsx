@@ -52,7 +52,7 @@ const getEnvironment = () => {
     return { isMobile, isIOS, isAndroid, isNative };
 };
 
-const InstallPromptBanner = ({ isVisible = true }) => {
+const InstallPromptBanner = ({ isVisible = true, bottomOffset }) => {
     const [environment, setEnvironment] = useState(() => getEnvironment());
     const [installed, setInstalled] = useState(() => isInstalledApp());
     const [dismissedUntil, setDismissedUntil] = useState(() => readDismissedUntil());
@@ -151,7 +151,11 @@ const InstallPromptBanner = ({ isVisible = true }) => {
     if (!shouldShow) return null;
 
     return (
-        <aside className="install-prompt-banner" aria-live="polite">
+        <aside
+            className="install-prompt-banner"
+            aria-live="polite"
+            style={bottomOffset ? { '--install-banner-bottom-offset': bottomOffset } : undefined}
+        >
             <div className="install-prompt-banner__icon" aria-hidden="true">
                 <span className="material-symbols-outlined">download_for_offline</span>
             </div>

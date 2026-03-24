@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { login, loginWithPassword } from '../utils/auth';
 import SignUpModal from '../components/SignUpModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import InstallPromptBanner from '../components/InstallPromptBanner';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
@@ -161,6 +162,10 @@ const Login = ({ onLogin }) => {
                         </div>
                     </div>
                 )}
+
+                <InstallPromptBanner
+                    bottomOffset="calc(18px + env(safe-area-inset-bottom))"
+                />
 
                 {/* Home Indicator */}
                 <div className="login-home-indicator"></div>

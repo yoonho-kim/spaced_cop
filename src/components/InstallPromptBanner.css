@@ -2,7 +2,7 @@
     position: fixed;
     left: 16px;
     right: 16px;
-    bottom: calc(104px + env(safe-area-inset-bottom));
+    bottom: var(--install-banner-bottom-offset, calc(104px + env(safe-area-inset-bottom)));
     z-index: calc(var(--z-toast) - 10);
     max-width: 448px;
     margin: 0 auto;
@@ -94,7 +94,7 @@
     .install-prompt-banner {
         left: 12px;
         right: 12px;
-        bottom: calc(96px + env(safe-area-inset-bottom));
+        bottom: var(--install-banner-bottom-offset, calc(96px + env(safe-area-inset-bottom)));
         padding: 11px 12px;
         gap: 8px;
     }
