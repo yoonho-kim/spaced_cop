@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import Modal from './Modal';
 import './InstallPromptBanner.css';
 
 const DISMISS_KEY = 'spaced_install_banner_dismissed_until';
@@ -40,7 +41,14 @@ const writeDismissedUntil = (value) => {
 
 const getEnvironment = () => {
     if (typeof window === 'undefined') {
-        return { isMobile: false, isIOS: false, isAndroid: false, isNative: false };
+        return {
+            isMobile: false,
+            isIOS: false,
+            isAndroid: false,
+            isNative: false,
+            browserName: '',
+            usesManualGuide: false,
+        };
     }
 
     const userAgent = window.navigator.userAgent || '';
@@ -48,8 +56,26 @@ const getEnvironment = () => {
     const isAndroid = /Android/i.test(userAgent);
     const isMobile = isIOS || isAndroid;
     const isNative = window.Capacitor?.isNativePlatform?.() === true;
+    const isChromeIOS = /CriOS/i.test(userAgent);
+    const isEdgeIOS = /EdgiOS/i.test(userAgent);
+    const isFirefoxIOS = /FxiOS/i.test(userAgent);
+    const isSafari = isIOS && /Safari/i.test(userAgent) && !isChromeIOS && !isEdgeIOS && !isFirefoxIOS;
 
-    return { isMobile, isIOS, isAndroid, isNative };
+    let browserName = '';
+    if (isSafari) browserName = 'Safari';
+    else if (isChromeIOS) browserName = 'Chrome';
+    else if (isEdgeIOS) browserName = 'Edge';
+    else if (isFirefoxIOS) browserName = 'Firefox';
+    else if (isAndroid) browserName = 'Chrome';
+
+    return {
+        isMobile,
+        isIOS,
+        isAndroid,
+        isNative,
+        browserName,
+        usesManualGuide: isIOS,
+    };
 };
 
 const InstallPromptBanner = ({ isVisible = true, bottomOffset }) => {
@@ -58,6 +84,7 @@ const InstallPromptBanner = ({ isVisible = true, bottomOffset }) => {
     const [dismissedUntil, setDismissedUntil] = useState(() => readDismissedUntil());
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [isReady, setIsReady] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
 
     useEffect(() => {
         const nextEnvironment = getEnvironment();
@@ -111,11 +138,11 @@ const InstallPromptBanner = ({ isVisible = true, bottomOffset }) => {
         && !environment.isNative
         && !installed
         && !isDismissed
-        && (environment.isIOS || canInstallFromPrompt);
+        && (environment.usesManualGuide || canInstallFromPrompt);
 
     const description = useMemo(() => {
-        if (environment.isIOS) {
-            return "공유 메뉴에서 '홈 화면에 추가'를 누르면 앱처럼 바로 열 수 있어요.";
+        if (environment.usesManualGuide) {
+            return '설치 방법을 한 번만 보면 홈 화면에서 앱처럼 바로 열 수 있어요.';
         }
 
         if (canInstallFromPrompt) {
@@ -124,6 +151,26 @@ const InstallPromptBanner = ({ isVisible = true, bottomOffset }) => {
 
         return '';
     }, [canInstallFromPrompt, environment.isIOS]);
+
+    const guideSteps = useMemo(() => {
+        if (!environment.usesManualGuide) {
+            return [];
+        }
+
+        if (environment.browserName === 'Safari') {
+            return [
+                "Safari에서 공유 버튼을 누르세요.",
+                "'홈 화면에 추가'를 선택하세요.",
+                "'Open as Web App'가 보이면 켠 뒤 '추가'를 누르세요.",
+            ];
+        }
+
+        return [
+            `${environment.browserName || '브라우저'}에서 주소창 오른쪽의 공유 버튼을 누르세요.`,
+            "'홈 화면에 추가'를 선택하세요.",
+            "이름을 확인한 뒤 '추가'를 누르세요.",
+        ];
+    }, [environment.browserName, environment.usesManualGuide]);
 
     const handleDismiss = () => {
         const nextDismissedUntil = Date.now() + DISMISS_DURATION_MS;
@@ -148,41 +195,81 @@ const InstallPromptBanner = ({ isVisible = true, bottomOffset }) => {
         }
     };
 
+    const handlePrimaryAction = () => {
+        if (environment.usesManualGuide) {
+            setShowGuide(true);
+            return;
+        }
+
+        void handleInstall();
+    };
+
     if (!shouldShow) return null;
 
     return (
-        <aside
-            className="install-prompt-banner"
-            aria-live="polite"
-            style={bottomOffset ? { '--install-banner-bottom-offset': bottomOffset } : undefined}
-        >
-            <div className="install-prompt-banner__icon" aria-hidden="true">
-                <span className="material-symbols-outlined">download_for_offline</span>
-            </div>
-            <div className="install-prompt-banner__body">
-                <strong className="install-prompt-banner__title">앱처럼 빠르게 열기</strong>
-                <p className="install-prompt-banner__text">{description}</p>
-            </div>
-            <div className="install-prompt-banner__actions">
-                {canInstallFromPrompt && (
+        <>
+            <aside
+                className="install-prompt-banner"
+                aria-live="polite"
+                style={bottomOffset ? { '--install-banner-bottom-offset': bottomOffset } : undefined}
+            >
+                <div className="install-prompt-banner__icon" aria-hidden="true">
+                    <span className="material-symbols-outlined">download_for_offline</span>
+                </div>
+                <button
+                    type="button"
+                    className="install-prompt-banner__body install-prompt-banner__body-button"
+                    onClick={handlePrimaryAction}
+                >
+                    <strong className="install-prompt-banner__title">앱처럼 빠르게 열기</strong>
+                    <p className="install-prompt-banner__text">{description}</p>
+                </button>
+                <div className="install-prompt-banner__actions">
                     <button
                         type="button"
                         className="install-prompt-banner__install"
-                        onClick={handleInstall}
+                        onClick={handlePrimaryAction}
                     >
-                        설치
+                        {environment.usesManualGuide ? '방법 보기' : '설치'}
                     </button>
-                )}
-                <button
-                    type="button"
-                    className="install-prompt-banner__dismiss"
-                    aria-label="설치 안내 닫기"
-                    onClick={handleDismiss}
+                    <button
+                        type="button"
+                        className="install-prompt-banner__dismiss"
+                        aria-label="설치 안내 닫기"
+                        onClick={handleDismiss}
+                    >
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            </aside>
+
+            {environment.usesManualGuide && (
+                <Modal
+                    isOpen={showGuide}
+                    onClose={() => setShowGuide(false)}
+                    title={`${environment.browserName || 'iPhone'}에서 설치하기`}
+                    maxWidth="420px"
+                    bodyClassName="install-guide-modal"
                 >
-                    <span className="material-symbols-outlined">close</span>
-                </button>
-            </div>
-        </aside>
+                    <div className="install-guide">
+                        <p className="install-guide__intro">
+                            이 브라우저에서는 설치를 자동으로 시작할 수 없어요. 아래 순서대로 한 번만 추가해 주세요.
+                        </p>
+                        <ol className="install-guide__steps">
+                            {guideSteps.map((step) => (
+                                <li key={step} className="install-guide__step">
+                                    {step}
+                                </li>
+                            ))}
+                        </ol>
+                        <div className="install-guide__hint">
+                            <span className="material-symbols-outlined" aria-hidden="true">ios_share</span>
+                            <span>공유 메뉴 안에 없으면 목록 하단의 편집에서 '홈 화면에 추가'를 켤 수 있어요.</span>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+        </>
     );
 };
 
