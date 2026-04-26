@@ -19,6 +19,14 @@ const Statistics = React.lazy(() => import('./Statistics'));
 
 const ATTENDANCE_BUTTON_ALLOWED_NICKNAMES = new Set(['유노', '나모남호', 'admin']);
 
+const isStandaloneDisplay = () => {
+    if (typeof window === 'undefined') return false;
+    return (
+        window.matchMedia?.('(display-mode: standalone)')?.matches === true ||
+        window.navigator?.standalone === true
+    );
+};
+
 const MainLayout = ({ user, onLogout }) => {
     const [activeTab, setActiveTab] = useState('feed');
     const [feedViewVersion, setFeedViewVersion] = useState(0);
@@ -35,7 +43,6 @@ const MainLayout = ({ user, onLogout }) => {
 
     // Image upload and AI generation states
     const [isGenerating, setIsGenerating] = useState(false);
-    const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const fileInputRef = useRef(null);
 
@@ -46,11 +53,25 @@ const MainLayout = ({ user, onLogout }) => {
     const canUseAttendanceButton = ATTENDANCE_BUTTON_ALLOWED_NICKNAMES.has(String(user?.nickname || '').trim());
 
     const [isNavVisible, setIsNavVisible] = useState(true);
+    const [isStandaloneApp, setIsStandaloneApp] = useState(isStandaloneDisplay);
     const lastScrollY = useRef(0);
     const mainContentRef = useRef(null);
     const menuRef = useRef(null);
     const menuDropdownRef = useRef(null);
 
+    useEffect(() => {
+        const mediaQuery = window.matchMedia?.('(display-mode: standalone)');
+        const syncStandaloneMode = () => {
+            setIsStandaloneApp(isStandaloneDisplay());
+        };
+
+        syncStandaloneMode();
+        mediaQuery?.addEventListener?.('change', syncStandaloneMode);
+
+        return () => {
+            mediaQuery?.removeEventListener?.('change', syncStandaloneMode);
+        };
+    }, []);
 
     useEffect(() => {
         if (mainContentRef.current) {
@@ -162,7 +183,7 @@ const MainLayout = ({ user, onLogout }) => {
             if (shouldShow) {
                 sessionStorage.removeItem('spaced_show_event_popup');
             }
-        } catch (error) {
+        } catch {
             // ignore sessionStorage errors
         }
 
@@ -234,7 +255,6 @@ const MainLayout = ({ user, onLogout }) => {
         if (imagePreview) {
             URL.revokeObjectURL(imagePreview);
         }
-        setSelectedImage(null);
         setImagePreview(null);
     };
 
@@ -277,7 +297,7 @@ const MainLayout = ({ user, onLogout }) => {
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
     const activeComponentKey = activeTab === 'feed' ? `feed-${feedViewVersion}` : activeTab;
     const isEventPage = activeTab === 'event';
-    const showBottomNavigation = isNavVisible && !isEventPage && !isAiServiceViewOpen && !isPraiseQuickVoteOpen;
+    const showBottomNavigation = (isStandaloneApp || isNavVisible) && !isEventPage && !isAiServiceViewOpen && !isPraiseQuickVoteOpen;
 
     // Get greeting based on time of day
     const getGreeting = () => {
@@ -288,7 +308,7 @@ const MainLayout = ({ user, onLogout }) => {
     };
 
     return (
-        <div className="main-layout">
+        <div className={`main-layout ${isStandaloneApp ? 'main-layout--pwa' : ''}`}>
             <header className="main-header">
                 <div className="header-content">
                     <div
