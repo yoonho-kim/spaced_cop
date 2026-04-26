@@ -1979,3 +1979,343 @@ export const getTeamMembers = async (options = {}) => {
       return (orderMap.get(left) ?? 999) - (orderMap.get(right) ?? 999);
     });
 };
+
+// ============================================
+// HORSE RACE ROOMS
+// ============================================
+
+const RACE_ROOM_MAX_PARTICIPANTS = 8;
+
+const RACE_HORSE_COLORS = [
+  '#2563eb',
+  '#dc2626',
+  '#16a34a',
+  '#f59e0b',
+  '#7c3aed',
+  '#0891b2',
+  '#db2777',
+  '#475569',
+];
+
+const RACE_HORSE_NAME_PARTS = [
+  'ORBIT-1',
+  'ORBIT-2',
+  'ORBIT-3',
+  'ORBIT-4',
+  'ORBIT-5',
+  'ORBIT-6',
+  'ORBIT-7',
+  'ORBIT-8',
+];
+
+const isRaceTableMissingError = (error) => {
+  if (!error) return false;
+  return (
+    isMissingTableError(error, 'app_race_rooms') ||
+    isMissingTableError(error, 'app_race_participants') ||
+    isMissingTableError(error, 'app_race_messages')
+  );
+};
+
+const mapRaceRoom = (row) => ({
+  id: row?.id,
+  title: row?.title || '',
+  hostEmployeeId: row?.host_employee_id || '',
+  hostNickname: row?.host_nickname || '',
+  status: row?.status || 'waiting',
+  raceSeed: row?.race_seed ?? null,
+  durationMs: row?.duration_ms ?? null,
+  slowStartMs: row?.slow_start_ms ?? null,
+  startedAt: row?.started_at || null,
+  finishedAt: row?.finished_at || null,
+  winnerEmployeeId: row?.winner_employee_id || null,
+  results: Array.isArray(row?.results) ? row.results : [],
+  createdAt: row?.created_at || null,
+  updatedAt: row?.updated_at || row?.created_at || null,
+});
+
+const mapRaceParticipant = (row) => ({
+  id: row?.id,
+  roomId: row?.room_id,
+  employeeId: row?.employee_id || '',
+  nickname: row?.nickname || '',
+  lane: row?.lane ?? 0,
+  horseName: row?.horse_name || row?.nickname || '',
+  color: row?.color || RACE_HORSE_COLORS[0],
+  joinedAt: row?.joined_at || null,
+});
+
+const mapRaceMessage = (row) => ({
+  id: row?.id,
+  roomId: row?.room_id,
+  employeeId: row?.employee_id || '',
+  nickname: row?.nickname || '',
+  message: row?.message || '',
+  createdAt: row?.created_at || null,
+});
+
+const buildRaceHorseName = (nickname, lane) => {
+  const baseName = String(nickname || '참가자').trim() || '참가자';
+  const prefix = RACE_HORSE_NAME_PARTS[Math.max(0, lane) % RACE_HORSE_NAME_PARTS.length];
+  return `${prefix} ${baseName}`;
+};
+
+export const getRaceRooms = async () => {
+  const { data, error } = await supabase
+    .from('app_race_rooms')
+    .select('*, app_race_participants(id)')
+    .in('status', ['waiting', 'running', 'finished'])
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error) {
+    if (isRaceTableMissingError(error)) {
+      console.warn('Race room tables are missing. Apply supabase_horse_race.sql to enable the race game.');
+      return { success: false, error: '캡슐 탈출 게임 테이블이 없습니다. supabase_horse_race.sql을 먼저 실행해주세요.', data: [] };
+    }
+    console.error('Error fetching race rooms:', error);
+    return { success: false, error: '방 목록을 불러오지 못했습니다.', data: [] };
+  }
+
+  return {
+    success: true,
+    data: (data || []).map((row) => ({
+      ...mapRaceRoom(row),
+      participantCount: Array.isArray(row?.app_race_participants) ? row.app_race_participants.length : 0,
+    })),
+  };
+};
+
+export const getRaceRoomBundle = async (roomId) => {
+  if (!roomId) {
+    return { success: false, error: '방 정보를 찾을 수 없습니다.', room: null, participants: [], messages: [] };
+  }
+
+  const [roomResult, participantsResult, messagesResult] = await Promise.all([
+    supabase.from('app_race_rooms').select('*').eq('id', roomId).single(),
+    supabase.from('app_race_participants').select('*').eq('room_id', roomId).order('lane', { ascending: true }),
+    supabase.from('app_race_messages').select('*').eq('room_id', roomId).order('created_at', { ascending: true }).limit(80),
+  ]);
+
+  if (roomResult.error) {
+    if (isRaceTableMissingError(roomResult.error)) {
+      return { success: false, error: '캡슐 탈출 게임 테이블이 없습니다. supabase_horse_race.sql을 먼저 실행해주세요.', room: null, participants: [], messages: [] };
+    }
+    console.error('Error fetching race room:', roomResult.error);
+    return { success: false, error: '방 정보를 불러오지 못했습니다.', room: null, participants: [], messages: [] };
+  }
+
+  if (participantsResult.error) {
+    console.error('Error fetching race participants:', participantsResult.error);
+  }
+
+  if (messagesResult.error) {
+    console.error('Error fetching race messages:', messagesResult.error);
+  }
+
+  return {
+    success: true,
+    room: mapRaceRoom(roomResult.data),
+    participants: (participantsResult.data || []).map(mapRaceParticipant),
+    messages: (messagesResult.data || []).map(mapRaceMessage),
+  };
+};
+
+export const createRaceRoom = async ({ title, user }) => {
+  const normalizedTitle = String(title || '').trim();
+  if (!normalizedTitle) {
+    return { success: false, error: '방 제목을 입력해주세요.' };
+  }
+
+  const employeeId = String(user?.employeeId || '').trim();
+  const nickname = String(user?.nickname || '').trim();
+  if (!employeeId || !nickname) {
+    return { success: false, error: '사용자 정보를 찾을 수 없습니다.' };
+  }
+
+  const { data, error } = await supabase
+    .from('app_race_rooms')
+    .insert([{
+      title: normalizedTitle,
+      host_employee_id: employeeId,
+      host_nickname: nickname,
+      status: 'waiting',
+      updated_at: new Date().toISOString(),
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    if (isRaceTableMissingError(error)) {
+      return { success: false, error: '캡슐 탈출 게임 테이블이 없습니다. supabase_horse_race.sql을 먼저 실행해주세요.' };
+    }
+    console.error('Error creating race room:', error);
+    return { success: false, error: '방을 만들지 못했습니다.' };
+  }
+
+  const room = mapRaceRoom(data);
+  await joinRaceRoom(room.id, user);
+  return { success: true, room };
+};
+
+export const joinRaceRoom = async (roomId, user) => {
+  const employeeId = String(user?.employeeId || '').trim();
+  const nickname = String(user?.nickname || '').trim();
+  if (!roomId || !employeeId || !nickname) {
+    return { success: false, error: '참가 정보를 확인할 수 없습니다.' };
+  }
+
+  const bundle = await getRaceRoomBundle(roomId);
+  if (!bundle.success) {
+    return { success: false, error: bundle.error };
+  }
+
+  if (bundle.room?.status !== 'waiting') {
+    return { success: false, error: '이미 시작했거나 종료된 방입니다.' };
+  }
+
+  const existing = bundle.participants.find((item) => String(item.employeeId) === employeeId);
+  if (existing) {
+    return { success: true, participant: existing };
+  }
+
+  if (bundle.participants.length >= RACE_ROOM_MAX_PARTICIPANTS) {
+    return { success: false, error: '이 방은 최대 8명까지 참가할 수 있습니다.' };
+  }
+
+  const usedLanes = new Set(bundle.participants.map((item) => Number(item.lane)));
+  let lane = 0;
+  while (usedLanes.has(lane) && lane < RACE_ROOM_MAX_PARTICIPANTS) {
+    lane += 1;
+  }
+
+  const { data, error } = await supabase
+    .from('app_race_participants')
+    .insert([{
+      room_id: roomId,
+      employee_id: employeeId,
+      nickname,
+      lane,
+      horse_name: buildRaceHorseName(nickname, lane),
+      color: RACE_HORSE_COLORS[lane % RACE_HORSE_COLORS.length],
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error joining race room:', error);
+    return { success: false, error: '게임 참가에 실패했습니다.' };
+  }
+
+  return { success: true, participant: mapRaceParticipant(data) };
+};
+
+export const startRaceRoom = async (roomId, user, participants = []) => {
+  const employeeId = String(user?.employeeId || '').trim();
+  if (!roomId || !employeeId) {
+    return { success: false, error: '방 정보를 찾을 수 없습니다.' };
+  }
+
+  const roomBundle = await getRaceRoomBundle(roomId);
+  if (!roomBundle.success) {
+    return { success: false, error: roomBundle.error };
+  }
+
+  const currentParticipants = participants.length > 0 ? participants : roomBundle.participants;
+  const room = roomBundle.room;
+
+  if (room.hostEmployeeId !== employeeId) {
+    return { success: false, error: '방장만 경기를 시작할 수 있습니다.' };
+  }
+
+  if (currentParticipants.length < 2) {
+    return { success: false, error: '경기는 2명 이상부터 시작할 수 있습니다.' };
+  }
+
+  const seed = Math.floor(Math.random() * 900000) + 100000;
+  const durationMs = 22000 + Math.floor(Math.random() * 7000);
+  const slowStartMs = Math.max(0, durationMs - 4500);
+
+  const { data, error } = await supabase
+    .from('app_race_rooms')
+    .update({
+      status: 'running',
+      race_seed: seed,
+      duration_ms: durationMs,
+      slow_start_ms: slowStartMs,
+      started_at: new Date().toISOString(),
+      finished_at: null,
+      winner_employee_id: null,
+      results: [],
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', roomId)
+    .eq('host_employee_id', employeeId)
+    .eq('status', 'waiting')
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error starting race room:', error);
+    return { success: false, error: '경기 시작에 실패했습니다.' };
+  }
+
+  return { success: true, room: mapRaceRoom(data) };
+};
+
+export const finishRaceRoom = async (roomId, results = []) => {
+  if (!roomId || !Array.isArray(results) || results.length === 0) {
+    return { success: false, error: '경기 결과가 올바르지 않습니다.' };
+  }
+
+  const winnerEmployeeId = String(results[0]?.employeeId || '').trim();
+
+  const { data, error } = await supabase
+    .from('app_race_rooms')
+    .update({
+      status: 'finished',
+      finished_at: new Date().toISOString(),
+      winner_employee_id: winnerEmployeeId || null,
+      results,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', roomId)
+    .eq('status', 'running')
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error finishing race room:', error);
+    return { success: false, error: '경기 결과 저장에 실패했습니다.' };
+  }
+
+  return { success: true, room: mapRaceRoom(data) };
+};
+
+export const addRaceMessage = async (roomId, user, message) => {
+  const trimmedMessage = String(message || '').trim().slice(0, 160);
+  const employeeId = String(user?.employeeId || '').trim();
+  const nickname = String(user?.nickname || '').trim();
+
+  if (!roomId || !trimmedMessage || !employeeId || !nickname) {
+    return { success: false, error: '응원 메시지를 보낼 수 없습니다.' };
+  }
+
+  const { data, error } = await supabase
+    .from('app_race_messages')
+    .insert([{
+      room_id: roomId,
+      employee_id: employeeId,
+      nickname,
+      message: trimmedMessage,
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding race message:', error);
+    return { success: false, error: '응원 메시지 전송에 실패했습니다.' };
+  }
+
+  return { success: true, message: mapRaceMessage(data) };
+};

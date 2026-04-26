@@ -114,6 +114,10 @@
     min-height: 160px;
 }
 
+.quick-card--race {
+    background: linear-gradient(135deg, #dbeafe 0%, #dcfce7 100%);
+}
+
 /* 점심 투표 - 연초록 */
 .quick-card--lunch {
     background: #d4f0da;

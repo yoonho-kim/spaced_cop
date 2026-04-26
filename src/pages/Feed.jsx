@@ -8,6 +8,7 @@ import VectorIcon from '../components/VectorIcon';
 import WinnersModal from '../components/WinnersModal';
 import QuickVoteModal from '../components/QuickVoteModal';
 import LunchPickerModal from '../components/LunchPickerModal';
+import HorseRaceModal from '../components/HorseRaceModal';
 import { getRankIconSpec, getUiIconSpec } from '../utils/uiIconSpecs';
 import { fetchLinkPreview, getFirstUrl, getHostnameFromUrl, splitTextWithUrls } from '../utils/linkPreview';
 import './Feed.css';
@@ -30,6 +31,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
     const [top3Volunteers, setTop3Volunteers] = useState([]);
     const [voteModal, setVoteModal] = useState(null); // 'praise' | null
     const [showLunchPicker, setShowLunchPicker] = useState(false);
+    const [showHorseRace, setShowHorseRace] = useState(false);
     const [showAiServiceView, setShowAiServiceView] = useState(false);
     const [isAiServiceLoading, setIsAiServiceLoading] = useState(false);
     const [highlightedPostIds, setHighlightedPostIds] = useState(new Set());
@@ -129,9 +131,9 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
 
     useEffect(() => {
         if (typeof onPraiseModalVisibilityChange === 'function') {
-            onPraiseModalVisibilityChange(voteModal === 'praise');
+            onPraiseModalVisibilityChange(voteModal === 'praise' || showHorseRace);
         }
-    }, [voteModal, onPraiseModalVisibilityChange]);
+    }, [showHorseRace, voteModal, onPraiseModalVisibilityChange]);
 
     useEffect(() => {
         return () => {
@@ -831,19 +833,25 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
             {/* Quick Action Cards */}
             <section className="quick-actions-section">
                 <div className="quick-actions-grid">
-                    <button className="quick-card quick-card--praise" onClick={() => setVoteModal('praise')}>
+                    <button className="quick-card quick-card--praise quick-card--race" onClick={() => setShowHorseRace(true)}>
                         <div className="quick-card__illust">
                             <svg width="80" height="72" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M38 54C38 54 14 40.5 14 24.5C14 16.492 20.268 10 28 10C32.418 10 36.364 12.094 39 15.382C41.636 12.094 45.582 10 50 10C57.732 10 64 16.492 64 24.5C64 40.5 40 54 40 54H38Z" fill="#FF6B8A" opacity="0.9"/>
-                                <path d="M52 46C52 46 36 37.2 36 26.4C36 21.178 40.03 17 45 17C47.6 17 49.9 18.25 51.5 20.26C53.1 18.25 55.4 17 58 17C62.97 17 67 21.178 67 26.4C67 37.2 53 46 53 46H52Z" fill="#FF99B5" opacity="0.7"/>
-                                <path d="M25 18L26.5 14L28 18L32 19.5L28 21L26.5 25L25 21L21 19.5L25 18Z" fill="#FFD700"/>
-                                <path d="M58 8L59 5L60 8L63 9L60 10L59 13L58 10L55 9L58 8Z" fill="#FFD700"/>
-                                <path d="M14 34L14.8 31.5L15.6 34L18 34.8L15.6 35.6L14.8 38L14 35.6L11.5 34.8L14 34Z" fill="#FFD700" opacity="0.8"/>
+                                <rect x="8" y="51" width="64" height="6" rx="3" fill="#93c5fd"/>
+                                <rect x="8" y="37" width="64" height="4" rx="2" fill="#bfdbfe"/>
+                                <path d="M22 37C24 29 31 24 40 25C49 26 55 31 58 38L52 41C48 36 43 34 37 35C31 36 27 39 24 44L22 37Z" fill="#2952CC"/>
+                                <path d="M49 27C53 22 61 24 63 31C64 35 62 39 58 40L54 35L48 34L49 27Z" fill="#1D4ED8"/>
+                                <circle cx="58" cy="30" r="2" fill="#ffffff"/>
+                                <path d="M26 43L20 54" stroke="#2952CC" strokeWidth="5" strokeLinecap="round"/>
+                                <path d="M39 43L36 55" stroke="#2952CC" strokeWidth="5" strokeLinecap="round"/>
+                                <path d="M50 42L58 53" stroke="#2952CC" strokeWidth="5" strokeLinecap="round"/>
+                                <path d="M22 34C15 29 15 22 24 18" stroke="#60A5FA" strokeWidth="5" strokeLinecap="round"/>
+                                <path d="M14 18L15.5 14L17 18L21 19.5L17 21L15.5 25L14 21L10 19.5L14 18Z" fill="#F59E0B"/>
+                                <path d="M63 48L64 45L65 48L68 49L65 50L64 53L63 50L60 49L63 48Z" fill="#F59E0B"/>
                             </svg>
                         </div>
                         <div className="quick-card__text">
-                            <span className="quick-card__title">칭찬하기</span>
-                            <span className="quick-card__subtitle">우수한 팀원을 칭찬하자!</span>
+                            <span className="quick-card__title">캡슐 탈출</span>
+                            <span className="quick-card__subtitle">실시간 우주 탈출 미션</span>
                         </div>
                     </button>
                     <button className="quick-card quick-card--lunch" onClick={() => setShowLunchPicker(true)}>
@@ -1282,6 +1290,13 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                 isOpen={showLunchPicker}
                 user={user}
                 onClose={() => setShowLunchPicker(false)}
+            />
+
+            <HorseRaceModal
+                isOpen={showHorseRace}
+                user={user}
+                onClose={() => setShowHorseRace(false)}
+                onShared={(createdPost) => refreshPosts({ incomingPostId: createdPost?.id })}
             />
         </div>
     );
