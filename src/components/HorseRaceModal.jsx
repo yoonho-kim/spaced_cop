@@ -262,7 +262,7 @@ const HorseRaceModal = ({ isOpen, user, onClose, onShared }) => {
   const handleShareResult = async () => {
     if (!room || results.length === 0 || sharedRoomIds.has(room.id)) return;
     const lines = [
-      `[${room.title}] 마블 핀볼 결과`,
+      `[${room.title}] 실시간 핀볼 게임 결과`,
       `우승: ${winner?.nickname || '-'} (${winner?.horseName || '-'})`,
       '',
       ...results.map((item) => `${item.rank}등. ${item.nickname} - ${item.horseName}`),
@@ -353,7 +353,7 @@ const HorseRaceModal = ({ isOpen, user, onClose, onShared }) => {
       <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="마블 핀볼"
+      title="실시간 핀볼 게임"
       maxWidth="980px"
       contentClassName="hrm-modal-content"
       bodyClassName="hrm-modal-body"

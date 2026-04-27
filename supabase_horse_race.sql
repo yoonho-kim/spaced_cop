@@ -61,6 +61,7 @@ alter table public.app_race_messages enable row level security;
 drop policy if exists "app_race_rooms_read_all" on public.app_race_rooms;
 drop policy if exists "app_race_rooms_insert_all" on public.app_race_rooms;
 drop policy if exists "app_race_rooms_update_all" on public.app_race_rooms;
+drop policy if exists "app_race_rooms_delete_all" on public.app_race_rooms;
 drop policy if exists "app_race_participants_read_all" on public.app_race_participants;
 drop policy if exists "app_race_participants_insert_all" on public.app_race_participants;
 drop policy if exists "app_race_messages_read_all" on public.app_race_messages;
@@ -78,6 +79,10 @@ create policy "app_race_rooms_update_all"
   on public.app_race_rooms for update
   using (true)
   with check (true);
+
+create policy "app_race_rooms_delete_all"
+  on public.app_race_rooms for delete
+  using (true);
 
 create policy "app_race_participants_read_all"
   on public.app_race_participants for select

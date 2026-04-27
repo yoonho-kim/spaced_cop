@@ -2060,7 +2060,36 @@ const buildRaceHorseName = (nickname, lane) => {
   return `${prefix} ${baseName}`;
 };
 
+const getTodayStartIso = () => {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return todayStart.toISOString();
+};
+
+const cleanupExpiredRaceRooms = async () => {
+  const todayStartIso = getTodayStartIso();
+  const { error } = await supabase
+    .from('app_race_rooms')
+    .delete()
+    .lt('created_at', todayStartIso);
+
+  if (error) {
+    if (isRaceTableMissingError(error)) {
+      return { success: false, error };
+    }
+    console.warn('Error cleaning up expired race rooms:', error);
+  }
+
+  return { success: !error, error: error || null };
+};
+
 export const getRaceRooms = async () => {
+  const cleanupResult = await cleanupExpiredRaceRooms();
+  if (cleanupResult.error && isRaceTableMissingError(cleanupResult.error)) {
+    console.warn('Race room tables are missing. Apply supabase_horse_race.sql to enable the race game.');
+    return { success: false, error: '마블 핀볼 게임 테이블이 없습니다. supabase_horse_race.sql을 먼저 실행해주세요.', data: [] };
+  }
+
   const { data, error } = await supabase
     .from('app_race_rooms')
     .select('*, app_race_participants(id)')

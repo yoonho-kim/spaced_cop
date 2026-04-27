@@ -210,7 +210,7 @@ const drawScene = ({
   ctx.fillStyle = '#e5f0ff';
   ctx.font = '900 18px sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(room?.title || '마블 핀볼', 32, 39);
+  ctx.fillText(room?.title || '실시간 핀볼 게임', 32, 39);
   ctx.font = '800 12px sans-serif';
   ctx.fillStyle = room?.status === 'running' ? '#fde68a' : '#93c5fd';
   const status = room?.status === 'running' ? 'LIVE PINBALL DROP' : room?.status === 'finished' ? 'RESULT LOCKED' : 'READY';
