@@ -14,6 +14,10 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
+          if (id.includes('box2d-wasm')) {
+            return 'box2d';
+          }
+
           if (id.includes('/react/') || id.includes('react-dom')) {
             return 'react';
           }

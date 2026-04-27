@@ -272,10 +272,25 @@
 .hrm-stage {
   position: relative;
   overflow: hidden;
-  border: 1px solid #dbeafe;
+  border: 1px solid rgba(14, 165, 233, 0.28);
   border-radius: 18px;
-  background: #f8fbff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  background: #07111f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 14px 30px rgba(15, 23, 42, 0.12);
+}
+
+.hrm-stage-canvas-wrap {
+  width: 100%;
+  min-height: 340px;
+}
+
+.hrm-stage-loading {
+  display: flex;
+  min-height: 340px;
+  align-items: center;
+  justify-content: center;
+  color: #e0f2fe;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .hrm-stage canvas {

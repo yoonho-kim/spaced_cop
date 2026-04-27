@@ -850,8 +850,8 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                             </svg>
                         </div>
                         <div className="quick-card__text">
-                            <span className="quick-card__title">캡슐 탈출</span>
-                            <span className="quick-card__subtitle">실시간 우주 탈출 미션</span>
+                            <span className="quick-card__title">실시간 핀볼 게임</span>
+                            <span className="quick-card__subtitle">실시간 핀볼 추첨</span>
                         </div>
                     </button>
                     <button className="quick-card quick-card--lunch" onClick={() => setShowLunchPicker(true)}>

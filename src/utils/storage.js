@@ -1998,14 +1998,14 @@ const RACE_HORSE_COLORS = [
 ];
 
 const RACE_HORSE_NAME_PARTS = [
-  'ORBIT-1',
-  'ORBIT-2',
-  'ORBIT-3',
-  'ORBIT-4',
-  'ORBIT-5',
-  'ORBIT-6',
-  'ORBIT-7',
-  'ORBIT-8',
+  'MARBLE-1',
+  'MARBLE-2',
+  'MARBLE-3',
+  'MARBLE-4',
+  'MARBLE-5',
+  'MARBLE-6',
+  'MARBLE-7',
+  'MARBLE-8',
 ];
 
 const isRaceTableMissingError = (error) => {
@@ -2071,7 +2071,7 @@ export const getRaceRooms = async () => {
   if (error) {
     if (isRaceTableMissingError(error)) {
       console.warn('Race room tables are missing. Apply supabase_horse_race.sql to enable the race game.');
-      return { success: false, error: '캡슐 탈출 게임 테이블이 없습니다. supabase_horse_race.sql을 먼저 실행해주세요.', data: [] };
+      return { success: false, error: '마블 핀볼 게임 테이블이 없습니다. supabase_horse_race.sql을 먼저 실행해주세요.', data: [] };
     }
     console.error('Error fetching race rooms:', error);
     return { success: false, error: '방 목록을 불러오지 못했습니다.', data: [] };
@@ -2099,7 +2099,7 @@ export const getRaceRoomBundle = async (roomId) => {
 
   if (roomResult.error) {
     if (isRaceTableMissingError(roomResult.error)) {
-      return { success: false, error: '캡슐 탈출 게임 테이블이 없습니다. supabase_horse_race.sql을 먼저 실행해주세요.', room: null, participants: [], messages: [] };
+      return { success: false, error: '마블 핀볼 게임 테이블이 없습니다. supabase_horse_race.sql을 먼저 실행해주세요.', room: null, participants: [], messages: [] };
     }
     console.error('Error fetching race room:', roomResult.error);
     return { success: false, error: '방 정보를 불러오지 못했습니다.', room: null, participants: [], messages: [] };
@@ -2147,7 +2147,7 @@ export const createRaceRoom = async ({ title, user }) => {
 
   if (error) {
     if (isRaceTableMissingError(error)) {
-      return { success: false, error: '캡슐 탈출 게임 테이블이 없습니다. supabase_horse_race.sql을 먼저 실행해주세요.' };
+      return { success: false, error: '마블 핀볼 게임 테이블이 없습니다. supabase_horse_race.sql을 먼저 실행해주세요.' };
     }
     console.error('Error creating race room:', error);
     return { success: false, error: '방을 만들지 못했습니다.' };
@@ -2233,7 +2233,7 @@ export const startRaceRoom = async (roomId, user, participants = []) => {
   }
 
   const seed = Math.floor(Math.random() * 900000) + 100000;
-  const durationMs = 22000 + Math.floor(Math.random() * 7000);
+  const durationMs = 30000 + Math.floor(Math.random() * 11000);
   const slowStartMs = Math.max(0, durationMs - 4500);
 
   const { data, error } = await supabase
