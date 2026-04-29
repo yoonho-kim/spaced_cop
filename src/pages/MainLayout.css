@@ -416,6 +416,22 @@
         width: 52px;
         height: 52px;
     }
+
+    .meeting-secret-actions,
+    .meeting-password-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .meeting-secret-button {
+        width: 100%;
+    }
+
+    .meeting-password-value {
+        display: block;
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
 }
 
 /* Post Creation Modal */
@@ -566,6 +582,122 @@
 .modal-publish-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Meeting Room Secret Modals */
+.meeting-secret-modal,
+.meeting-password-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.meeting-secret-alert {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid rgba(245, 158, 11, 0.24);
+    border-radius: 14px;
+    background: rgba(255, 251, 235, 0.9);
+}
+
+.meeting-secret-alert .material-symbols-outlined {
+    flex: 0 0 auto;
+    color: #d97706;
+    font-size: 26px;
+    margin-top: 1px;
+}
+
+.meeting-secret-alert h4 {
+    margin: 0 0 8px;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.meeting-secret-alert p,
+.meeting-password-warning {
+    margin: 0;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.55;
+}
+
+.meeting-secret-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.meeting-secret-button {
+    min-width: 96px;
+    min-height: 44px;
+    border: none;
+    border-radius: 14px;
+    padding: 0 18px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.meeting-secret-button:hover {
+    transform: translateY(-1px);
+}
+
+.meeting-secret-button--secondary {
+    background: rgba(15, 23, 42, 0.06);
+    color: #334155;
+}
+
+.meeting-secret-button--primary {
+    background: #2952cc;
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(41, 82, 204, 0.24);
+}
+
+.meeting-password-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.meeting-password-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+.meeting-password-label {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.meeting-password-value {
+    padding: 7px 10px;
+    border-radius: 10px;
+    background: #0f172a;
+    color: #ffffff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.meeting-password-warning {
+    padding: 12px 14px;
+    border-left: 4px solid #ef4444;
+    border-radius: 10px;
+    background: rgba(254, 242, 242, 0.95);
+    color: #991b1b;
 }
 
 /* Image Preview */
