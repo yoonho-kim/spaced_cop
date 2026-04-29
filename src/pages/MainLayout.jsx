@@ -18,6 +18,12 @@ const Admin = React.lazy(() => import('./Admin'));
 const Statistics = React.lazy(() => import('./Statistics'));
 
 const ATTENDANCE_BUTTON_ALLOWED_NICKNAMES = new Set(['유노', '나모남호', 'admin']);
+const MEETING_ROOM_TAB_SECRET_PRESS_COUNT = 3;
+const MEETING_ROOM_TAB_SECRET_PRESS_WINDOW_MS = 2000;
+const MEETING_ROOM_PC_PASSWORDS = [
+    { label: '운영PC CMOS', password: '*신한1808' },
+    { label: '개발PC CMOS', password: 'Sh@i0612' },
+];
 
 const MainLayout = ({ user, onLogout }) => {
     const [activeTab, setActiveTab] = useState('feed');
@@ -29,6 +35,8 @@ const MainLayout = ({ user, onLogout }) => {
     const [showStatistics, setShowStatistics] = useState(false);
     const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
     const [isPraiseQuickVoteOpen, setIsPraiseQuickVoteOpen] = useState(false);
+    const [showMeetingRoomSecretPrompt, setShowMeetingRoomSecretPrompt] = useState(false);
+    const [showMeetingRoomPasswords, setShowMeetingRoomPasswords] = useState(false);
     const [newPost, setNewPost] = useState('');
     const [postType, setPostType] = useState('normal'); // 'normal', 'notice', 'volunteer'
     const userIsAdmin = isAdmin();
@@ -50,6 +58,8 @@ const MainLayout = ({ user, onLogout }) => {
     const mainContentRef = useRef(null);
     const menuRef = useRef(null);
     const menuDropdownRef = useRef(null);
+    const meetingRoomTabPressCountRef = useRef(0);
+    const meetingRoomTabPressTimerRef = useRef(null);
 
 
     useEffect(() => {
@@ -72,6 +82,14 @@ const MainLayout = ({ user, onLogout }) => {
 
     useEffect(() => {
         loadEventPopup();
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (meetingRoomTabPressTimerRef.current) {
+                clearTimeout(meetingRoomTabPressTimerRef.current);
+            }
+        };
     }, []);
 
     useEffect(() => {
@@ -197,6 +215,50 @@ const MainLayout = ({ user, onLogout }) => {
         if (isAiServiceViewOpen) {
             setAiServiceCloseSignal((prev) => prev + 1);
         }
+    };
+
+    const resetMeetingRoomTabPressCount = () => {
+        if (meetingRoomTabPressTimerRef.current) {
+            clearTimeout(meetingRoomTabPressTimerRef.current);
+            meetingRoomTabPressTimerRef.current = null;
+        }
+        meetingRoomTabPressCountRef.current = 0;
+    };
+
+    const handleBottomNavClick = (tabId) => {
+        if (tabId !== 'meetings') {
+            resetMeetingRoomTabPressCount();
+            setActiveTab(tabId);
+            return;
+        }
+
+        if (meetingRoomTabPressTimerRef.current) {
+            clearTimeout(meetingRoomTabPressTimerRef.current);
+        }
+
+        const nextCount = meetingRoomTabPressCountRef.current + 1;
+        if (nextCount >= MEETING_ROOM_TAB_SECRET_PRESS_COUNT) {
+            meetingRoomTabPressCountRef.current = 0;
+            meetingRoomTabPressTimerRef.current = null;
+            setShowMeetingRoomSecretPrompt(true);
+        } else {
+            meetingRoomTabPressCountRef.current = nextCount;
+            meetingRoomTabPressTimerRef.current = setTimeout(() => {
+                meetingRoomTabPressCountRef.current = 0;
+                meetingRoomTabPressTimerRef.current = null;
+            }, MEETING_ROOM_TAB_SECRET_PRESS_WINDOW_MS);
+        }
+
+        setActiveTab('meetings');
+    };
+
+    const closeMeetingRoomSecretPrompt = () => {
+        setShowMeetingRoomSecretPrompt(false);
+    };
+
+    const openMeetingRoomPasswords = () => {
+        setShowMeetingRoomSecretPrompt(false);
+        setShowMeetingRoomPasswords(true);
     };
 
     // Handle image selection and AI post generation
@@ -434,7 +496,7 @@ const MainLayout = ({ user, onLogout }) => {
                         <button
                             key={tab.id}
                             className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => handleBottomNavClick(tab.id)}
                         >
                             <span
                                 className="material-symbols-outlined nav-icon"
@@ -457,7 +519,7 @@ const MainLayout = ({ user, onLogout }) => {
                         <button
                             key={tab.id}
                             className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => handleBottomNavClick(tab.id)}
                         >
                             <span
                                 className="material-symbols-outlined nav-icon"
@@ -575,6 +637,64 @@ const MainLayout = ({ user, onLogout }) => {
                             게시하기
                         </button>
                     </div>
+                </div>
+            </Modal>
+
+            {/* Meeting Room PC Password Confirmation */}
+            <Modal
+                isOpen={showMeetingRoomSecretPrompt}
+                onClose={closeMeetingRoomSecretPrompt}
+                title="보안 확인"
+                maxWidth="420px"
+            >
+                <div className="meeting-secret-modal">
+                    <div className="meeting-secret-alert">
+                        <span className="material-symbols-outlined">warning</span>
+                        <div>
+                            <h4>회의실 PC 비밀번호 정보가 필요하신가요?</h4>
+                            <p>
+                                이 정보는 내부 PC 접근을 위한 민감 정보입니다. 업무상 필요한 경우에만 확인해 주세요.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="meeting-secret-actions">
+                        <button
+                            type="button"
+                            className="meeting-secret-button meeting-secret-button--secondary"
+                            onClick={closeMeetingRoomSecretPrompt}
+                        >
+                            아니요
+                        </button>
+                        <button
+                            type="button"
+                            className="meeting-secret-button meeting-secret-button--primary"
+                            onClick={openMeetingRoomPasswords}
+                        >
+                            예
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Meeting Room PC Passwords */}
+            <Modal
+                isOpen={showMeetingRoomPasswords}
+                onClose={() => setShowMeetingRoomPasswords(false)}
+                title="회의실 PC 비밀번호"
+                maxWidth="420px"
+            >
+                <div className="meeting-password-modal">
+                    <div className="meeting-password-list">
+                        {MEETING_ROOM_PC_PASSWORDS.map((item) => (
+                            <div className="meeting-password-item" key={item.label}>
+                                <span className="meeting-password-label">{item.label}</span>
+                                <code className="meeting-password-value">{item.password}</code>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="meeting-password-warning">
+                        정보 유출 및 외부 공유를 금지합니다. 필요한 사용자에게만 직접 확인해 주세요.
+                    </p>
                 </div>
             </Modal>
 
