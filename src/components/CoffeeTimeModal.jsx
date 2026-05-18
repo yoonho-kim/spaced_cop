@@ -12,6 +12,30 @@ import './CoffeeTimeModal.css';
 
 const TEAM_NAMES = ['라떼팀', '콜드브루팀', '에스프레소팀', '아포가토팀', '플랫화이트팀', '모카팀'];
 const MotionDiv = motion.div;
+const KOREAN_HOLIDAYS = new Set([
+  '2026-01-01',
+  '2026-02-16',
+  '2026-02-17',
+  '2026-02-18',
+  '2026-03-01',
+  '2026-03-02',
+  '2026-05-01',
+  '2026-05-05',
+  '2026-05-24',
+  '2026-05-25',
+  '2026-06-03',
+  '2026-06-06',
+  '2026-07-17',
+  '2026-08-15',
+  '2026-08-17',
+  '2026-09-24',
+  '2026-09-25',
+  '2026-09-26',
+  '2026-10-03',
+  '2026-10-05',
+  '2026-10-09',
+  '2026-12-25',
+]);
 
 const normalizeMember = (member) => ({
   employeeId: String(member?.employee_id || member?.employeeId || '').trim(),
@@ -66,6 +90,57 @@ const getBestGroupCount = (fixedCount, randomCount) => {
   return best.count;
 };
 
+const toDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getTodayKey = () => toDateKey(new Date());
+
+const parseDateKey = (dateKey) => {
+  const [year, month, day] = String(dateKey || '').split('-').map(Number);
+  if (!year || !month || !day) return new Date();
+  return new Date(year, month - 1, day);
+};
+
+const isBusinessDate = (date) => {
+  const day = date.getDay();
+  if (day === 0 || day === 6) return false;
+  return !KOREAN_HOLIDAYS.has(toDateKey(date));
+};
+
+const addDays = (date, days) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
+const getBusinessDates = (startDateKey, count) => {
+  const dates = [];
+  let cursor = parseDateKey(startDateKey);
+
+  while (dates.length < count) {
+    if (isBusinessDate(cursor)) {
+      dates.push(toDateKey(cursor));
+    }
+    cursor = addDays(cursor, 1);
+  }
+
+  return dates;
+};
+
+const formatAssignedDate = (dateKey) => {
+  if (!dateKey) return '날짜 미지정';
+  const date = parseDateKey(dateKey);
+  return date.toLocaleDateString('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  });
+};
+
 const createDrawHash = async (payload) => {
   const source = JSON.stringify(payload);
   if (typeof window === 'undefined' || !window.crypto?.subtle) {
@@ -80,12 +155,14 @@ const createDrawHash = async (payload) => {
     .slice(0, 16);
 };
 
-const buildCoffeeGroups = (fixedMembers, randomMembers) => {
+const buildCoffeeGroups = (fixedMembers, randomMembers, startDate) => {
   const shuffled = shuffleMembers(randomMembers);
   const groupCount = getBestGroupCount(fixedMembers.length, shuffled.length);
+  const assignedDates = getBusinessDates(startDate, groupCount);
   const groups = Array.from({ length: groupCount }, (_, index) => ({
     groupNo: index + 1,
     name: TEAM_NAMES[index % TEAM_NAMES.length],
+    assignedDate: assignedDates[index],
     members: fixedMembers.map((member) => ({ ...member, role: 'fixed' })),
   }));
 
@@ -172,7 +249,7 @@ const GroupListView = ({ groups, title, badge }) => (
             <div className="ct-group-row__head">
               <span>{group.groupNo}조</span>
               <strong>{group.name}</strong>
-              <em>{group.members.length}명</em>
+              <em>{group.members.length}명 · {formatAssignedDate(group.assignedDate)}</em>
             </div>
             <div className="ct-group-row__members">
               {fixedMembers.length > 0 && (
@@ -215,6 +292,7 @@ const GroupCard = ({ group }) => {
         <div>
           <span className="ct-group-kicker">{group.groupNo}조</span>
           <h4>{group.name}</h4>
+          <em className="ct-group-date">{formatAssignedDate(group.assignedDate)}</em>
         </div>
         <span className={`ct-size-badge ${totalCount === 5 ? '' : 'is-adjusted'}`}>
           {totalCount}명
@@ -348,8 +426,9 @@ const GroupRevealStage = ({ group, revealCount }) => {
           {completedCount + 1}번째 Human ID를 완성하고 있습니다...
         </div>
       ) : (
-        <div className="ct-reveal-complete">
-          오늘의 커피메이트 공개 완료
+        <div className="ct-reveal-complete ct-reveal-complete--date">
+          <span>커피타임 날짜</span>
+          <strong>{formatAssignedDate(group.assignedDate)}</strong>
         </div>
       )}
     </div>
@@ -368,6 +447,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
   const [search, setSearch] = useState('');
   const [revealed, setRevealed] = useState(false);
   const [revealCount, setRevealCount] = useState(0);
+  const [startDate, setStartDate] = useState(getTodayKey());
 
   const userIsAdmin = isAdmin();
   const currentEmployeeId = String(user?.employeeId || '').trim();
@@ -488,15 +568,16 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
     }
 
     setIsDrawing(true);
-    const groups = buildCoffeeGroups(fixedMembers, randomMembers);
+    const groups = buildCoffeeGroups(fixedMembers, randomMembers, startDate);
     const drawHash = await createDrawHash({
       fixed: fixedMembers.map((member) => member.employeeId),
-      random: groups.map((group) => group.members.map((member) => `${group.groupNo}:${member.employeeId}:${member.role}`)),
+      random: groups.map((group) => group.members.map((member) => `${group.groupNo}:${group.assignedDate}:${member.employeeId}:${member.role}`)),
       createdAt: new Date().toISOString(),
     });
 
     const result = await createCoffeeTimeEvent({
       title: '커피타임 랜덤 매칭',
+      startDate,
       fixedMembers,
       randomMembers,
       groups,
@@ -687,6 +768,17 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="이름 또는 사번 검색"
                 />
+
+                <div className="ct-date-field">
+                  <label htmlFor="coffee-start-date">시작일자</label>
+                  <input
+                    id="coffee-start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(event) => setStartDate(event.target.value || getTodayKey())}
+                  />
+                  <span>주말과 2026년 한국 공휴일은 자동으로 건너뜁니다.</span>
+                </div>
 
                 <div className="ct-picker-block">
                   <h5>신규직원 고정 멤버 (최대 3명)</h5>

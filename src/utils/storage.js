@@ -2011,6 +2011,7 @@ const mapCoffeeEvent = (event, members = [], groups = [], groupMembers = []) => 
     id: group.id,
     groupNo: group.group_no,
     name: group.name || `${group.group_no}조`,
+    assignedDate: group.assigned_date || null,
     members: [],
   }]));
 
@@ -2045,6 +2046,7 @@ const mapCoffeeEvent = (event, members = [], groups = [], groupMembers = []) => 
     title: event.title || '커피타임',
     status: event.status || 'published',
     fixedEmployeeIds: Array.isArray(event.fixed_employee_ids) ? event.fixed_employee_ids : [],
+    startDate: event.start_date || null,
     participantCount: event.participant_count || 0,
     groupCount: event.group_count || sortedGroups.length,
     drawHash: event.draw_hash || '',
@@ -2105,7 +2107,7 @@ export const getLatestCoffeeTimeEvent = async () => {
   };
 };
 
-export const createCoffeeTimeEvent = async ({ title, fixedMembers, randomMembers, groups, drawHash, createdBy }) => {
+export const createCoffeeTimeEvent = async ({ title, startDate, fixedMembers, randomMembers, groups, drawHash, createdBy }) => {
   if (!ensureAdminAccess()) {
     return { success: false, error: '권한이 없습니다.' };
   }
@@ -2132,6 +2134,7 @@ export const createCoffeeTimeEvent = async ({ title, fixedMembers, randomMembers
       title: title || '커피타임',
       status: 'published',
       fixed_employee_ids: fixed.map((member) => member.employeeId),
+      start_date: startDate || null,
       participant_count: allMembers.length,
       group_count: groups.length,
       draw_hash: drawHash || null,
@@ -2170,6 +2173,7 @@ export const createCoffeeTimeEvent = async ({ title, fixedMembers, randomMembers
       event_id: event.id,
       group_no: group.groupNo || index + 1,
       name: group.name || `${group.groupNo || index + 1}조`,
+      assigned_date: group.assignedDate || null,
     })))
     .select();
 

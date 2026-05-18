@@ -833,6 +833,29 @@
   color: #bbf7d0;
 }
 
+.ct-reveal-complete--date {
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.ct-reveal-complete--date span {
+  display: block;
+  margin-bottom: 3px;
+  color: #bfdbfe;
+  font-size: 12px;
+}
+
+.ct-reveal-complete--date strong {
+  display: block;
+  font-size: 25px;
+  line-height: 1.15;
+  color: #ffffff;
+  text-shadow: 0 0 18px rgba(125, 211, 252, 0.54);
+}
+
 @keyframes ct-card-shine {
   from {
     transform: translateX(0) rotate(12deg);
@@ -1051,6 +1074,15 @@
   line-height: 1.2;
 }
 
+.ct-group-date {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .ct-size-badge {
   border-radius: 999px;
   background: #dcfce7;
@@ -1104,6 +1136,40 @@
 .ct-search:focus {
   border-color: rgba(41, 82, 204, 0.68);
   box-shadow: 0 0 0 3px rgba(41, 82, 204, 0.1);
+}
+
+.ct-date-field {
+  display: grid;
+  gap: 6px;
+}
+
+.ct-date-field label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ct-date-field input {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  border-radius: 12px;
+  padding: 11px 12px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  outline: none;
+}
+
+.ct-date-field input:focus {
+  border-color: rgba(41, 82, 204, 0.68);
+  box-shadow: 0 0 0 3px rgba(41, 82, 204, 0.1);
+}
+
+.ct-date-field span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .ct-picker-block {
