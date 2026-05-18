@@ -114,7 +114,8 @@
     min-height: 160px;
 }
 
-.quick-card--race {
+.quick-card--race,
+.quick-card--coffee {
     background: linear-gradient(135deg, #dbeafe 0%, #dcfce7 100%);
 }
 

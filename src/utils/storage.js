@@ -1981,6 +1981,250 @@ export const getTeamMembers = async (options = {}) => {
 };
 
 // ============================================
+// COFFEE TIME GROUPS
+// ============================================
+
+const isCoffeeTimeTableMissingError = (error) => {
+  if (!error) return false;
+  const message = String(error.message || '').toLowerCase();
+  return error.code === '42P01' || message.includes('app_coffee_time_');
+};
+
+const mapCoffeeMember = (member) => ({
+  employeeId: String(member?.employee_id || '').trim(),
+  nickname: member?.nickname || '',
+  profileIconUrl: member?.profile_icon_url || '',
+  role: member?.role || 'participant',
+});
+
+const mapCoffeeEvent = (event, members = [], groups = [], groupMembers = []) => {
+  if (!event) return null;
+
+  const memberMap = new Map(
+    members
+      .map(mapCoffeeMember)
+      .filter((member) => member.employeeId)
+      .map((member) => [member.employeeId, member])
+  );
+
+  const groupsById = new Map((groups || []).map((group) => [group.id, {
+    id: group.id,
+    groupNo: group.group_no,
+    name: group.name || `${group.group_no}조`,
+    members: [],
+  }]));
+
+  (groupMembers || []).forEach((row) => {
+    const group = groupsById.get(row.group_id);
+    if (!group) return;
+
+    const employeeId = String(row.employee_id || '').trim();
+    const member = memberMap.get(employeeId);
+    if (!member) return;
+
+    group.members.push({
+      ...member,
+      role: row.role || member.role || 'random',
+    });
+  });
+
+  const sortedGroups = [...groupsById.values()]
+    .map((group) => ({
+      ...group,
+      members: group.members.sort((left, right) => {
+        if (left.role === right.role) {
+          return String(left.nickname || '').localeCompare(String(right.nickname || ''), 'ko');
+        }
+        return left.role === 'fixed' ? -1 : 1;
+      }),
+    }))
+    .sort((left, right) => Number(left.groupNo || 0) - Number(right.groupNo || 0));
+
+  return {
+    id: event.id,
+    title: event.title || '커피타임',
+    status: event.status || 'published',
+    fixedEmployeeIds: Array.isArray(event.fixed_employee_ids) ? event.fixed_employee_ids : [],
+    participantCount: event.participant_count || 0,
+    groupCount: event.group_count || sortedGroups.length,
+    drawHash: event.draw_hash || '',
+    createdBy: event.created_by || '',
+    createdAt: event.created_at || null,
+    publishedAt: event.published_at || event.created_at || null,
+    members: [...memberMap.values()],
+    groups: sortedGroups,
+  };
+};
+
+export const getLatestCoffeeTimeEvent = async () => {
+  const { data: event, error: eventError } = await supabase
+    .from('app_coffee_time_events')
+    .select('*')
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (eventError) {
+    if (isCoffeeTimeTableMissingError(eventError)) {
+      return { success: false, missingTable: true, event: null };
+    }
+    console.error('Error fetching coffee time event:', eventError);
+    return { success: false, error: '커피타임 정보를 불러올 수 없습니다.', event: null };
+  }
+
+  if (!event) {
+    return { success: true, event: null };
+  }
+
+  const [membersResult, groupsResult, groupMembersResult] = await Promise.all([
+    supabase
+      .from('app_coffee_time_members')
+      .select('*')
+      .eq('event_id', event.id),
+    supabase
+      .from('app_coffee_time_groups')
+      .select('*')
+      .eq('event_id', event.id)
+      .order('group_no', { ascending: true }),
+    supabase
+      .from('app_coffee_time_group_members')
+      .select('*')
+      .eq('event_id', event.id),
+  ]);
+
+  const loadError = membersResult.error || groupsResult.error || groupMembersResult.error;
+  if (loadError) {
+    console.error('Error fetching coffee time details:', loadError);
+    return { success: false, error: '커피타임 조 정보를 불러올 수 없습니다.', event: null };
+  }
+
+  return {
+    success: true,
+    event: mapCoffeeEvent(event, membersResult.data, groupsResult.data, groupMembersResult.data),
+  };
+};
+
+export const createCoffeeTimeEvent = async ({ title, fixedMembers, randomMembers, groups, drawHash, createdBy }) => {
+  if (!ensureAdminAccess()) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
+  const fixed = (fixedMembers || []).filter((member) => member?.employeeId);
+  const random = (randomMembers || []).filter((member) => member?.employeeId);
+  const allMembers = [...fixed, ...random];
+
+  if (fixed.length > 3) {
+    return { success: false, error: '고정 신규직원은 최대 3명까지 선택할 수 있습니다.' };
+  }
+
+  if (random.length === 0) {
+    return { success: false, error: '랜덤 배정 대상자를 1명 이상 선택해주세요.' };
+  }
+
+  if (!Array.isArray(groups) || groups.length === 0) {
+    return { success: false, error: '생성할 조 정보가 없습니다.' };
+  }
+
+  const { data: event, error: eventError } = await supabase
+    .from('app_coffee_time_events')
+    .insert([{
+      title: title || '커피타임',
+      status: 'published',
+      fixed_employee_ids: fixed.map((member) => member.employeeId),
+      participant_count: allMembers.length,
+      group_count: groups.length,
+      draw_hash: drawHash || null,
+      created_by: createdBy || null,
+      published_at: new Date().toISOString(),
+    }])
+    .select()
+    .single();
+
+  if (eventError) {
+    console.error('Error creating coffee time event:', eventError);
+    return { success: false, error: eventError.message || '커피타임 이벤트를 저장할 수 없습니다.' };
+  }
+
+  const memberRows = allMembers.map((member) => ({
+    event_id: event.id,
+    employee_id: member.employeeId,
+    nickname: member.nickname || null,
+    profile_icon_url: member.profileIconUrl || member.profile_icon_url || null,
+    role: fixed.some((fixedMember) => fixedMember.employeeId === member.employeeId) ? 'fixed' : 'participant',
+  }));
+
+  const { error: membersError } = await supabase
+    .from('app_coffee_time_members')
+    .insert(memberRows);
+
+  if (membersError) {
+    console.error('Error creating coffee time members:', membersError);
+    await supabase.from('app_coffee_time_events').delete().eq('id', event.id);
+    return { success: false, error: membersError.message || '커피타임 참여자를 저장할 수 없습니다.' };
+  }
+
+  const { data: groupRows, error: groupsError } = await supabase
+    .from('app_coffee_time_groups')
+    .insert(groups.map((group, index) => ({
+      event_id: event.id,
+      group_no: group.groupNo || index + 1,
+      name: group.name || `${group.groupNo || index + 1}조`,
+    })))
+    .select();
+
+  if (groupsError) {
+    console.error('Error creating coffee time groups:', groupsError);
+    await supabase.from('app_coffee_time_events').delete().eq('id', event.id);
+    return { success: false, error: groupsError.message || '커피타임 조를 저장할 수 없습니다.' };
+  }
+
+  const groupIdByNo = new Map((groupRows || []).map((group) => [group.group_no, group.id]));
+  const groupMemberRows = groups.flatMap((group, index) => {
+    const groupNo = group.groupNo || index + 1;
+    const groupId = groupIdByNo.get(groupNo);
+    if (!groupId) return [];
+
+    return (group.members || []).map((member) => ({
+      event_id: event.id,
+      group_id: groupId,
+      employee_id: member.employeeId,
+      role: member.role || 'random',
+    }));
+  });
+
+  const { error: groupMembersError } = await supabase
+    .from('app_coffee_time_group_members')
+    .insert(groupMemberRows);
+
+  if (groupMembersError) {
+    console.error('Error creating coffee time group members:', groupMembersError);
+    await supabase.from('app_coffee_time_events').delete().eq('id', event.id);
+    return { success: false, error: groupMembersError.message || '커피타임 조 멤버를 저장할 수 없습니다.' };
+  }
+
+  return await getLatestCoffeeTimeEvent();
+};
+
+export const resetCoffeeTimeEvents = async () => {
+  if (!ensureAdminAccess()) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
+  const { error } = await supabase
+    .from('app_coffee_time_events')
+    .delete()
+    .eq('status', 'published');
+
+  if (error) {
+    console.error('Error resetting coffee time events:', error);
+    return { success: false, error: error.message || '커피타임 이벤트를 초기화할 수 없습니다.' };
+  }
+
+  return { success: true };
+};
+
+// ============================================
 // HORSE RACE ROOMS
 // ============================================
 

@@ -8,7 +8,7 @@ import VectorIcon from '../components/VectorIcon';
 import WinnersModal from '../components/WinnersModal';
 import QuickVoteModal from '../components/QuickVoteModal';
 import LunchPickerModal from '../components/LunchPickerModal';
-import HorseRaceModal from '../components/HorseRaceModal';
+import CoffeeTimeModal from '../components/CoffeeTimeModal';
 import { getRankIconSpec, getUiIconSpec } from '../utils/uiIconSpecs';
 import { fetchLinkPreview, getFirstUrl, getHostnameFromUrl, splitTextWithUrls } from '../utils/linkPreview';
 import './Feed.css';
@@ -31,7 +31,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
     const [top3Volunteers, setTop3Volunteers] = useState([]);
     const [voteModal, setVoteModal] = useState(null); // 'praise' | null
     const [showLunchPicker, setShowLunchPicker] = useState(false);
-    const [showHorseRace, setShowHorseRace] = useState(false);
+    const [showCoffeeTime, setShowCoffeeTime] = useState(false);
     const [showAiServiceView, setShowAiServiceView] = useState(false);
     const [isAiServiceLoading, setIsAiServiceLoading] = useState(false);
     const [highlightedPostIds, setHighlightedPostIds] = useState(new Set());
@@ -131,9 +131,9 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
 
     useEffect(() => {
         if (typeof onPraiseModalVisibilityChange === 'function') {
-            onPraiseModalVisibilityChange(voteModal === 'praise' || showHorseRace);
+            onPraiseModalVisibilityChange(voteModal === 'praise' || showCoffeeTime);
         }
-    }, [showHorseRace, voteModal, onPraiseModalVisibilityChange]);
+    }, [showCoffeeTime, voteModal, onPraiseModalVisibilityChange]);
 
     useEffect(() => {
         return () => {
@@ -833,25 +833,26 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
             {/* Quick Action Cards */}
             <section className="quick-actions-section">
                 <div className="quick-actions-grid">
-                    <button className="quick-card quick-card--praise quick-card--race" onClick={() => setShowHorseRace(true)}>
+                    <button className="quick-card quick-card--praise quick-card--coffee" onClick={() => setShowCoffeeTime(true)}>
                         <div className="quick-card__illust">
-                            <svg width="80" height="72" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="8" y="51" width="64" height="6" rx="3" fill="#93c5fd"/>
-                                <rect x="8" y="37" width="64" height="4" rx="2" fill="#bfdbfe"/>
-                                <path d="M22 37C24 29 31 24 40 25C49 26 55 31 58 38L52 41C48 36 43 34 37 35C31 36 27 39 24 44L22 37Z" fill="#2952CC"/>
-                                <path d="M49 27C53 22 61 24 63 31C64 35 62 39 58 40L54 35L48 34L49 27Z" fill="#1D4ED8"/>
-                                <circle cx="58" cy="30" r="2" fill="#ffffff"/>
-                                <path d="M26 43L20 54" stroke="#2952CC" strokeWidth="5" strokeLinecap="round"/>
-                                <path d="M39 43L36 55" stroke="#2952CC" strokeWidth="5" strokeLinecap="round"/>
-                                <path d="M50 42L58 53" stroke="#2952CC" strokeWidth="5" strokeLinecap="round"/>
-                                <path d="M22 34C15 29 15 22 24 18" stroke="#60A5FA" strokeWidth="5" strokeLinecap="round"/>
-                                <path d="M14 18L15.5 14L17 18L21 19.5L17 21L15.5 25L14 21L10 19.5L14 18Z" fill="#F59E0B"/>
-                                <path d="M63 48L64 45L65 48L68 49L65 50L64 53L63 50L60 49L63 48Z" fill="#F59E0B"/>
+                            <svg width="84" height="76" viewBox="0 0 84 76" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="15" y="26" width="44" height="37" rx="11" fill="#2952CC"/>
+                                <path d="M59 36H64C69.523 36 74 40.477 74 46C74 51.523 69.523 56 64 56H59V49H64C65.657 49 67 47.657 67 46C67 44.343 65.657 43 64 43H59V36Z" fill="#7DD3FC"/>
+                                <path d="M20 31H54V47C54 55.837 46.837 63 38 63H36C27.163 63 20 55.837 20 47V31Z" fill="#60A5FA"/>
+                                <rect x="12" y="60" width="56" height="5" rx="2.5" fill="#BBF7D0"/>
+                                <path d="M29 21C24 15 29 10 25 6" stroke="#92400E" strokeWidth="4" strokeLinecap="round"/>
+                                <path d="M41 21C36 15 42 10 38 6" stroke="#92400E" strokeWidth="4" strokeLinecap="round"/>
+                                <path d="M50 22C47 17 53 13 50 9" stroke="#92400E" strokeWidth="4" strokeLinecap="round"/>
+                                <circle cx="32" cy="43" r="2.4" fill="#0F172A"/>
+                                <circle cx="44" cy="43" r="2.4" fill="#0F172A"/>
+                                <path d="M32 51C35.2 53.2 39.8 53.2 43 51" stroke="#0F172A" strokeWidth="2.4" strokeLinecap="round"/>
+                                <path d="M67 18L68.8 13.8L70.6 18L75 19.8L70.6 21.6L68.8 26L67 21.6L62.8 19.8L67 18Z" fill="#F59E0B"/>
+                                <path d="M13 17L14.3 13.7L15.8 17L19 18.3L15.8 19.8L14.3 23L13 19.8L9.7 18.3L13 17Z" fill="#22C55E"/>
                             </svg>
                         </div>
                         <div className="quick-card__text">
-                            <span className="quick-card__title">실시간 핀볼 게임</span>
-                            <span className="quick-card__subtitle">실시간 핀볼 추첨</span>
+                            <span className="quick-card__title">커피타임 매칭</span>
+                            <span className="quick-card__subtitle">카드 열고 우리 조 확인</span>
                         </div>
                     </button>
                     <button className="quick-card quick-card--lunch" onClick={() => setShowLunchPicker(true)}>
@@ -1292,11 +1293,10 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                 onClose={() => setShowLunchPicker(false)}
             />
 
-            <HorseRaceModal
-                isOpen={showHorseRace}
+            <CoffeeTimeModal
+                isOpen={showCoffeeTime}
                 user={user}
-                onClose={() => setShowHorseRace(false)}
-                onShared={(createdPost) => refreshPosts({ incomingPostId: createdPost?.id })}
+                onClose={() => setShowCoffeeTime(false)}
             />
         </div>
     );
