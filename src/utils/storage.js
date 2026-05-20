@@ -501,13 +501,14 @@ export const updatePost = async (postId, content) => {
   }
 
   try {
-    const response = await fetch('/api/posts-update', {
+    const response = await fetch('/api/posts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       credentials: 'include',
       body: JSON.stringify({
+        action: 'update',
         postId,
         content: nextContent,
       }),
@@ -550,13 +551,13 @@ export const updatePost = async (postId, content) => {
 
 export const deletePost = async (postId) => {
   try {
-    const response = await fetch('/api/posts-delete', {
+    const response = await fetch('/api/posts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       credentials: 'include',
-      body: JSON.stringify({ postId }),
+      body: JSON.stringify({ action: 'delete', postId }),
     });
 
     const result = await response.json().catch(() => ({}));
