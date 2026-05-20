@@ -500,6 +500,35 @@ export const updatePost = async (postId, content) => {
     return { success: false, error: '내용이 비어 있습니다.' };
   }
 
+  try {
+    const response = await fetch('/api/posts-update', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        postId,
+        content: nextContent,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (response.ok && result.success) {
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: result.error || '게시물 수정에 실패했습니다.',
+    };
+  } catch (requestError) {
+    if (!import.meta.env.DEV) {
+      console.error('Error updating post through API:', requestError);
+      return { success: false, error: '게시물 수정 요청에 실패했습니다.' };
+    }
+  }
+
   const { data, error } = await supabase
     .from('posts')
     .update({ content: nextContent })

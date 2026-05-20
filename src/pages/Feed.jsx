@@ -702,7 +702,10 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         setIsUpdatingPost(false);
 
         if (!result?.success) {
-            window.alert('게시물 수정에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            const message = typeof result?.error === 'string'
+                ? result.error
+                : result?.error?.message || '게시물 수정에 실패했습니다. 잠시 후 다시 시도해주세요.';
+            window.alert(message);
             return;
         }
 
