@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getPostsPage, addLike, removeLike, addComment, deleteComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import { supabase } from '../utils/supabase';
@@ -12,6 +13,79 @@ import CoffeeTimeModal from '../components/CoffeeTimeModal';
 import { getRankIconSpec, getUiIconSpec } from '../utils/uiIconSpecs';
 import { fetchLinkPreview, getFirstUrl, getHostnameFromUrl, splitTextWithUrls } from '../utils/linkPreview';
 import './Feed.css';
+
+const FeedImage = ({ src, alt, onPreview }) => (
+    <button
+        type="button"
+        className="feed-image-card"
+        onClick={onPreview}
+        aria-label="이미지 크게 보기"
+    >
+        <img
+            className="post-image"
+            src={src}
+            alt={alt}
+            loading="lazy"
+            decoding="async"
+        />
+    </button>
+);
+
+const ImagePreviewModal = ({ image, onClose }) => {
+    useEffect(() => {
+        if (!image) return undefined;
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+        const previousOverflow = document.body.style.overflow;
+
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [image, onClose]);
+
+    if (!image) return null;
+
+    const modalNode = (
+        <div
+            className="image-preview-backdrop"
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-label="이미지 크게 보기"
+        >
+            <div className="image-preview-modal" onClick={(event) => event.stopPropagation()}>
+                <button
+                    type="button"
+                    className="image-preview-close"
+                    onClick={onClose}
+                    aria-label="이미지 미리보기 닫기"
+                >
+                    <span className="material-symbols-outlined">close</span>
+                </button>
+                <img
+                    className="image-preview-modal-image"
+                    src={image.src}
+                    alt={image.alt}
+                    decoding="async"
+                />
+            </div>
+        </div>
+    );
+
+    if (typeof document === 'undefined') {
+        return modalNode;
+    }
+
+    return createPortal(modalNode, document.body);
+};
 
 const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModalVisibilityChange }) => {
     const [posts, setPosts] = useState([]);
@@ -37,6 +111,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
     const [highlightedPostIds, setHighlightedPostIds] = useState(new Set());
     const [liveFeedNotice, setLiveFeedNotice] = useState('');
     const [linkPreviewMap, setLinkPreviewMap] = useState({});
+    const [previewImage, setPreviewImage] = useState(null);
     const loadMoreRef = useRef(null);
     const observerRef = useRef(null);
     const loadingRef = useRef(false);
@@ -1073,14 +1148,13 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                                                     {renderTextWithLinks(post.content, `post-${post.id}`)}
                                                 </p>
                                                 {post.imageUrl && (
-                                                    <img
-                                                        className="post-image"
+                                                    <FeedImage
                                                         src={post.imageUrl}
-                                                        alt=""
-                                                        width={post.imageWidth || undefined}
-                                                        height={post.imageHeight || undefined}
-                                                        loading="lazy"
-                                                        decoding="async"
+                                                        alt={`${post.author} 게시물 이미지`}
+                                                        onPreview={() => setPreviewImage({
+                                                            src: post.imageUrl,
+                                                            alt: `${post.author} 게시물 이미지`
+                                                        })}
                                                     />
                                                 )}
                                                 {previewUrl && previewState?.status !== 'error' && (
@@ -1308,6 +1382,11 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                 isOpen={showCoffeeTime}
                 user={user}
                 onClose={() => setShowCoffeeTime(false)}
+            />
+
+            <ImagePreviewModal
+                image={previewImage}
+                onClose={() => setPreviewImage(null)}
             />
         </div>
     );
