@@ -471,6 +471,9 @@ export const addPost = async (post) => {
 
   if (error) {
     console.error('Error adding post:', error);
+    if (post.throwOnError) {
+      throw new Error(error.message || '게시물 작성에 실패했습니다.');
+    }
     return null;
   }
 

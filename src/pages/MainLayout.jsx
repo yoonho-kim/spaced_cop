@@ -324,10 +324,11 @@ const MainLayout = ({ user, onLogout }) => {
         try {
             let imagePayload = {};
             const { data: authData } = await supabase.auth.getSession();
-            const authUserId = authData.session?.user?.id || user.id;
+            const supabaseAuthUserId = authData.session?.user?.id || null;
+            const uploadOwnerId = supabaseAuthUserId || user.id;
 
             if (selectedImage) {
-                const pathname = buildFeedImagePathname(authUserId);
+                const pathname = buildFeedImagePathname(uploadOwnerId);
                 const optimized = await resizeToWebP(selectedImage, {
                     maxWidth: 1280,
                     quality: 0.8,
@@ -338,7 +339,7 @@ const MainLayout = ({ user, onLogout }) => {
                     access: 'public',
                     contentType: 'image/webp',
                     handleUploadUrl: '/api/blob/upload',
-                    clientPayload: JSON.stringify({ userId: authUserId }),
+                    clientPayload: JSON.stringify({ userId: uploadOwnerId }),
                     headers: authData.session?.access_token
                         ? { Authorization: `Bearer ${authData.session.access_token}` }
                         : undefined,
@@ -348,7 +349,7 @@ const MainLayout = ({ user, onLogout }) => {
                 });
 
                 imagePayload = {
-                    userId: authUserId,
+                    userId: supabaseAuthUserId,
                     imageUrl: blob.url,
                     imagePath: blob.pathname || pathname,
                     imageWidth: optimized.width,
@@ -361,6 +362,7 @@ const MainLayout = ({ user, onLogout }) => {
                 author: user.nickname,
                 isAdmin: userIsAdmin,
                 postType: postType,
+                throwOnError: true,
                 ...imagePayload,
             });
 
