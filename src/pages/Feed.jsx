@@ -722,12 +722,6 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         const firstCheck = window.confirm('정말로 이 게시물을 삭제하시겠습니까?');
         if (!firstCheck) return;
 
-        const deleteKeyword = window.prompt('삭제를 진행하려면 "삭제"를 입력하세요.');
-        if (deleteKeyword !== '삭제') {
-            window.alert('삭제가 취소되었습니다.');
-            return;
-        }
-
         const result = await deletePost(post.id);
         if (!result?.success) {
             const message = typeof result?.error === 'string'

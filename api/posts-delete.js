@@ -80,21 +80,32 @@ export default async function handler(request, response) {
       .from('post_comments')
       .delete()
       .eq('post_id', postId);
-    if (commentsError) throw commentsError;
+    if (commentsError) {
+      throw new Error(`댓글 정리 실패: ${commentsError.message}`);
+    }
 
     const { error: likesError } = await supabase
       .from('post_likes')
       .delete()
       .eq('post_id', postId);
-    if (likesError) throw likesError;
+    if (likesError) {
+      throw new Error(`좋아요 정리 실패: ${likesError.message}`);
+    }
 
-    const { error: deleteError } = await supabase
+    const { data: deletedPost, error: deleteError } = await supabase
       .from('posts')
       .delete()
-      .eq('id', postId);
+      .eq('id', postId)
+      .select('id')
+      .maybeSingle();
 
     if (deleteError) {
-      throw deleteError;
+      throw new Error(`게시물 삭제 실패: ${deleteError.message}`);
+    }
+
+    if (!deletedPost) {
+      response.status(404).json({ success: false, error: '삭제할 게시물을 찾지 못했습니다.' });
+      return;
     }
 
     response.status(200).json({ success: true });
