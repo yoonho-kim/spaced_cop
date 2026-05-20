@@ -1,8 +1,8 @@
 import { STORAGE_KEYS, getItem, setItem, removeItem } from './clientStorage';
 import { supabase } from './supabase';
 
-// Session expires after 10 hours (in milliseconds)
-const SESSION_DURATION = 10 * 60 * 60 * 1000;
+// Session expires after 90 days (in milliseconds)
+const SESSION_DURATION = 90 * 24 * 60 * 60 * 1000;
 const HONORIFIC_REGEX = /^[가-힣]{1,4}$/;
 const PASSWORD_HASH_VERSION = 'pbkdf2_sha256';
 const PASSWORD_HASH_ITERATIONS = 210000;
@@ -643,6 +643,7 @@ const revalidateStoredSessionInDev = async (storedUser) => {
             profileIconUrl: dbUser.profile_icon_url,
             isAdmin: dbUser.is_admin === true,
             isRegistered: true,
+            expiresAt: new Date(Date.now() + SESSION_DURATION).toISOString(),
         });
 
         syncAdminVerificationState(refreshedUser);

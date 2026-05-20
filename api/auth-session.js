@@ -8,7 +8,7 @@ import {
   setSessionCookie,
 } from './_security.js';
 
-const SESSION_TTL_SECONDS = 10 * 60 * 60;
+const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60;
 
 const buildSupabaseClient = () => {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;

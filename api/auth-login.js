@@ -9,7 +9,7 @@ import {
   setSessionCookie,
 } from './_security.js';
 
-const SESSION_TTL_SECONDS = 10 * 60 * 60;
+const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60;
 const PASSWORD_HASH_VERSION = 'pbkdf2_sha256';
 const PASSWORD_HASH_ITERATIONS = 210000;
 const PASSWORD_HASH_BYTES = 32;

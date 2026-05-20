@@ -2,7 +2,7 @@
 import crypto from 'node:crypto';
 
 const SESSION_COOKIE_NAME = 'spaced_session';
-const SESSION_TTL_SECONDS = 10 * 60 * 60;
+const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60;
 const DEFAULT_ALLOWED_HEADERS = 'Content-Type, Authorization';
 
 const RATE_BUCKETS = globalThis.__spacedRateBuckets || new Map();
