@@ -1072,6 +1072,17 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                                                 <p className="post-text">
                                                     {renderTextWithLinks(post.content, `post-${post.id}`)}
                                                 </p>
+                                                {post.imageUrl && (
+                                                    <img
+                                                        className="post-image"
+                                                        src={post.imageUrl}
+                                                        alt=""
+                                                        width={post.imageWidth || undefined}
+                                                        height={post.imageHeight || undefined}
+                                                        loading="lazy"
+                                                        decoding="async"
+                                                    />
+                                                )}
                                                 {previewUrl && previewState?.status !== 'error' && (
                                                     <a
                                                         href={previewData?.url || previewUrl}

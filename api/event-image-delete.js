@@ -7,6 +7,10 @@ import {
   requireSession,
 } from './_security.js';
 
+const getBlobReadWriteToken = () => (
+  process.env.BLOB_READ_WRITE_TOKEN || process.env.SPACED_BLOB_READ_WRITE_TOKEN
+);
+
 const isAllowedEventBlobPath = (value) => {
   if (!value) return false;
 
@@ -42,8 +46,9 @@ export default async function handler(request, response) {
     return;
   }
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    response.status(500).json({ success: false, error: 'BLOB_READ_WRITE_TOKEN이 설정되지 않았습니다.' });
+  const blobReadWriteToken = getBlobReadWriteToken();
+  if (!blobReadWriteToken) {
+    response.status(500).json({ success: false, error: 'BLOB_READ_WRITE_TOKEN 또는 SPACED_BLOB_READ_WRITE_TOKEN이 설정되지 않았습니다.' });
     return;
   }
 
@@ -61,7 +66,7 @@ export default async function handler(request, response) {
     }
 
     await del(pathString, {
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      token: blobReadWriteToken,
     });
 
     response.status(200).json({ success: true });

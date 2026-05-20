@@ -833,7 +833,6 @@
     }
 }
 
-/* Image Button in Modal Actions */
 .modal-actions {
     display: flex;
     align-items: center;
@@ -844,38 +843,47 @@
     border-top: 1px solid var(--color-border);
 }
 
-.modal-ai-button {
+.modal-image-button {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-    border: none;
-    color: white;
-    font-weight: 600;
-    font-size: 13px;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(41, 82, 204, 0.1);
+    border: 1px solid rgba(41, 82, 204, 0.18);
+    color: var(--color-primary);
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    transition: all 0.2s ease;
 }
 
-.modal-ai-button:hover {
+.modal-image-button:hover {
+    background: rgba(41, 82, 204, 0.16);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
 }
 
-.modal-ai-button:disabled {
+.modal-image-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
 }
 
-.modal-ai-button .material-symbols-outlined {
-    font-size: 18px;
+.modal-image-button .material-symbols-outlined {
+    font-size: 22px;
 }
 
-.ai-button-label {
+.post-upload-status,
+.post-modal-error {
+    margin: 0 0 12px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.5px;
+}
+
+.post-upload-status {
+    color: var(--color-primary);
+}
+
+.post-modal-error {
+    color: #dc2626;
 }

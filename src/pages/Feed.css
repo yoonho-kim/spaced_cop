@@ -791,6 +791,15 @@
     gap: 10px;
 }
 
+.post-image {
+    display: block;
+    width: 100%;
+    max-height: 520px;
+    object-fit: cover;
+    border-radius: 12px;
+    background: #e2e8f0;
+}
+
 .feed-inline-link {
     color: #1d4ed8;
     text-decoration: underline;

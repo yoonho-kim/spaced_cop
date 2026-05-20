@@ -1,6 +1,9 @@
 import React, { Suspense, useState, useEffect, useRef } from 'react';
+import { upload } from '@vercel/blob/client';
 import { logout, isAdmin } from '../utils/auth';
 import { addPost, getEventSettings } from '../utils/storage';
+import { supabase } from '../utils/supabase';
+import { resizeToWebP } from '../lib/image/resizeToWebP';
 import Modal from '../components/Modal';
 import TeamPopcorn from '../components/TeamPopcorn';
 import AttendanceCheckModal from '../components/AttendanceCheckModal';
@@ -24,6 +27,13 @@ const MEETING_ROOM_PC_PASSWORDS = [
     { label: '운영PC CMOS', password: '*신한1808' },
     { label: '개발PC CMOS', password: 'Sh@i0612' },
 ];
+const FEED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_FEED_IMAGE_BYTES = 10 * 1024 * 1024;
+
+const buildFeedImagePathname = (userId) => {
+    const random = Math.random().toString(36).slice(2, 10);
+    return `feed/${userId}/${Date.now()}-${random}.webp`;
+};
 
 const MainLayout = ({ user, onLogout }) => {
     const [activeTab, setActiveTab] = useState('feed');
@@ -41,10 +51,11 @@ const MainLayout = ({ user, onLogout }) => {
     const [postType, setPostType] = useState('normal'); // 'normal', 'notice', 'volunteer'
     const userIsAdmin = isAdmin();
 
-    // Image upload and AI generation states
-    const [isGenerating, setIsGenerating] = useState(false);
+    const [isCreatingPost, setIsCreatingPost] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
+    const [postModalError, setPostModalError] = useState('');
+    const [uploadProgress, setUploadProgress] = useState(null);
     const fileInputRef = useRef(null);
 
     const [showTeamPopcorn, setShowTeamPopcorn] = useState(false);
@@ -180,7 +191,7 @@ const MainLayout = ({ user, onLogout }) => {
             if (shouldShow) {
                 sessionStorage.removeItem('spaced_show_event_popup');
             }
-        } catch (error) {
+        } catch {
             // ignore sessionStorage errors
         }
 
@@ -261,67 +272,116 @@ const MainLayout = ({ user, onLogout }) => {
         setShowMeetingRoomPasswords(true);
     };
 
-    // Handle image selection and AI post generation
-    const handleImageSelect = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            alert('이미지 파일만 업로드할 수 있습니다.');
-            return;
-        }
-
-        // Generate post using AI (이미지 미리보기는 표시하지 않음)
-        setIsGenerating(true);
-        try {
-            const { generatePostFromImage } = await import('../utils/openaiService');
-            const generatedText = await generatePostFromImage(file);
-            setNewPost(generatedText);
-        } catch (error) {
-            console.error('Error generating post:', error);
-            alert(error.message || 'AI 글 생성에 실패했습니다. 다시 시도해주세요.');
-        } finally {
-            setIsGenerating(false);
-        }
-
-        // Reset file input
+    const resetFileInput = () => {
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
     };
 
-    // Clear image preview
+    const handleImageSelect = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setPostModalError('');
+
+        if (!FEED_IMAGE_TYPES.includes(file.type)) {
+            setPostModalError('JPG, PNG, WebP 이미지만 업로드할 수 있습니다.');
+            resetFileInput();
+            return;
+        }
+
+        if (file.size > MAX_FEED_IMAGE_BYTES) {
+            setPostModalError('이미지는 최적화 전 기준 10MB 이하만 업로드할 수 있습니다.');
+            resetFileInput();
+            return;
+        }
+
+        if (imagePreview) {
+            URL.revokeObjectURL(imagePreview);
+        }
+        setSelectedImage(file);
+        setImagePreview(URL.createObjectURL(file));
+        resetFileInput();
+    };
+
     const clearImage = () => {
         if (imagePreview) {
             URL.revokeObjectURL(imagePreview);
         }
         setSelectedImage(null);
         setImagePreview(null);
+        resetFileInput();
     };
 
     const handleCreatePost = async () => {
-        if (!newPost.trim()) return;
+        const content = newPost.trim();
+        if (!content && !selectedImage) return;
 
-        const createdPost = await addPost({
-            content: newPost,
-            author: user.nickname,
-            isAdmin: userIsAdmin,
-            postType: postType,
-        });
+        setIsCreatingPost(true);
+        setPostModalError('');
+        setUploadProgress(null);
 
-        if (!createdPost) {
-            alert('게시물 작성에 실패했습니다. 잠시 후 다시 시도해주세요.');
-            return;
+        try {
+            let imagePayload = {};
+            const { data: authData } = await supabase.auth.getSession();
+            const authUserId = authData.session?.user?.id || user.id;
+
+            if (selectedImage) {
+                const pathname = buildFeedImagePathname(authUserId);
+                const optimized = await resizeToWebP(selectedImage, {
+                    maxWidth: 1280,
+                    quality: 0.8,
+                    fileName: pathname.split('/').pop(),
+                });
+
+                const blob = await upload(pathname, optimized.file, {
+                    access: 'public',
+                    contentType: 'image/webp',
+                    handleUploadUrl: '/api/blob/upload',
+                    clientPayload: JSON.stringify({ userId: authUserId }),
+                    headers: authData.session?.access_token
+                        ? { Authorization: `Bearer ${authData.session.access_token}` }
+                        : undefined,
+                    onUploadProgress: ({ percentage }) => {
+                        setUploadProgress(Math.round(percentage));
+                    },
+                });
+
+                imagePayload = {
+                    userId: authUserId,
+                    imageUrl: blob.url,
+                    imagePath: blob.pathname || pathname,
+                    imageWidth: optimized.width,
+                    imageHeight: optimized.height,
+                };
+            }
+
+            const createdPost = await addPost({
+                content,
+                author: user.nickname,
+                isAdmin: userIsAdmin,
+                postType: postType,
+                ...imagePayload,
+            });
+
+            if (!createdPost) {
+                throw new Error('게시물 작성에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            }
+
+            setNewPost('');
+            setPostType('normal');
+            clearImage();
+            setShowPostModal(false);
+            setActiveTab('feed'); // Navigate to feed to show the new post
+            // Refresh feed without full page reload (keeps admin verification state intact)
+            setFeedViewVersion((prev) => prev + 1);
+        } catch (error) {
+            console.error('Error creating post:', error);
+            setPostModalError(error instanceof Error ? error.message : '게시물 작성에 실패했습니다.');
+        } finally {
+            setIsCreatingPost(false);
+            setUploadProgress(null);
         }
-
-        setNewPost('');
-        setPostType('normal');
-        clearImage();
-        setShowPostModal(false);
-        setActiveTab('feed'); // Navigate to feed to show the new post
-        // Refresh feed without full page reload (keeps admin verification state intact)
-        setFeedViewVersion((prev) => prev + 1);
     };
 
     const tabs = [
@@ -540,6 +600,8 @@ const MainLayout = ({ user, onLogout }) => {
                     setShowPostModal(false);
                     setNewPost('');
                     setPostType('normal');
+                    setPostModalError('');
+                    setUploadProgress(null);
                     clearImage();
                 }}
                 title="새 게시물 작성"
@@ -549,7 +611,7 @@ const MainLayout = ({ user, onLogout }) => {
                     <input
                         type="file"
                         ref={fileInputRef}
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp"
                         onChange={handleImageSelect}
                         style={{ display: 'none' }}
                     />
@@ -604,37 +666,54 @@ const MainLayout = ({ user, onLogout }) => {
                                 className="modal-textarea"
                                 rows="5"
                                 autoFocus
-                                disabled={isGenerating}
+                                disabled={isCreatingPost}
                             />
                         </div>
                     </div>
 
-                    {/* Loading overlay */}
-                    {isGenerating && (
-                        <div className="ai-generating-overlay">
-                            <div className="ai-generating-content">
-                                <div className="ai-spinner"></div>
-                                <span>AI가 글을 작성하고 있습니다...</span>
-                            </div>
+                    {imagePreview && (
+                        <div className="image-preview-container">
+                            <img src={imagePreview} alt="선택한 이미지 미리보기" className="image-preview" />
+                            <button
+                                type="button"
+                                className="image-remove-btn"
+                                onClick={clearImage}
+                                disabled={isCreatingPost}
+                                aria-label="선택한 이미지 제거"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
                         </div>
+                    )}
+
+                    {isCreatingPost && (
+                        <div className="post-upload-status" role="status" aria-live="polite">
+                            {selectedImage ? `이미지 업로드 중${uploadProgress == null ? '...' : `... ${uploadProgress}%`}` : '게시물 등록 중...'}
+                        </div>
+                    )}
+
+                    {postModalError && (
+                        <p className="post-modal-error" role="alert">
+                            {postModalError}
+                        </p>
                     )}
 
                     <div className="modal-actions">
                         <button
-                            className="modal-ai-button"
+                            className="modal-image-button"
                             onClick={() => fileInputRef.current?.click()}
-                            disabled={isGenerating}
-                            title="AI로 사진 분석하여 글 작성하기"
+                            disabled={isCreatingPost}
+                            title="이미지 추가"
+                            aria-label="이미지 추가"
                         >
-                            <span className="material-symbols-outlined">auto_awesome</span>
-                            <span className="ai-button-label">AI 사진</span>
+                            <span className="material-symbols-outlined">image</span>
                         </button>
                         <button
                             className="modal-publish-button"
                             onClick={handleCreatePost}
-                            disabled={!newPost.trim() || isGenerating}
+                            disabled={(!newPost.trim() && !selectedImage) || isCreatingPost}
                         >
-                            게시하기
+                            {isCreatingPost ? '게시 중...' : '게시하기'}
                         </button>
                     </div>
                 </div>

@@ -338,6 +338,7 @@ const buildPosts = async (data) => {
     const authorMeta = userMetaMap[post.author_nickname] || { iconUrl: null, honorifics: [], employeeId: null };
     return {
       id: post.id,
+      userId: post.user_id || null,
       content: post.content,
       author: post.author_nickname,
       authorIconUrl: authorMeta.iconUrl,
@@ -345,6 +346,10 @@ const buildPosts = async (data) => {
       authorEmployeeId: authorMeta.employeeId,
       isAdmin: post.is_admin,
       postType: post.post_type || 'normal',
+      imageUrl: post.image_url || null,
+      imagePath: post.image_path || null,
+      imageWidth: post.image_width || null,
+      imageHeight: post.image_height || null,
       timestamp: post.created_at,
       likes: post.post_likes?.map(like => like.user_nickname) || [],
       comments: post.post_comments?.map(comment => {
@@ -450,8 +455,13 @@ export const addPost = async (post) => {
     .from('posts')
     .insert([
       {
+        user_id: post.userId || null,
         author_nickname: post.author,
         content: post.content,
+        image_url: post.imageUrl || null,
+        image_path: post.imagePath || null,
+        image_width: post.imageWidth || null,
+        image_height: post.imageHeight || null,
         is_admin: userIsAdmin && post.isAdmin === true,
         post_type: safePostType,
       }
@@ -466,8 +476,13 @@ export const addPost = async (post) => {
 
   return {
     id: data.id,
+    userId: data.user_id,
     content: data.content,
     author: data.author_nickname,
+    imageUrl: data.image_url || null,
+    imagePath: data.image_path || null,
+    imageWidth: data.image_width || null,
+    imageHeight: data.image_height || null,
     isAdmin: data.is_admin,
     postType: data.post_type,
     timestamp: data.created_at,
