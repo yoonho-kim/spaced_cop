@@ -549,6 +549,32 @@ export const updatePost = async (postId, content) => {
 };
 
 export const deletePost = async (postId) => {
+  try {
+    const response = await fetch('/api/posts-delete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ postId }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (response.ok && result.success) {
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: result.error || '게시물 삭제에 실패했습니다.',
+    };
+  } catch (requestError) {
+    if (!import.meta.env.DEV) {
+      console.error('Error deleting post through API:', requestError);
+      return { success: false, error: '게시물 삭제 요청에 실패했습니다.' };
+    }
+  }
+
   const { error } = await supabase
     .from('posts')
     .delete()
