@@ -1102,6 +1102,114 @@
   gap: 8px;
 }
 
+.ct-result-view-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ct-view-toggle-button {
+  min-height: 38px;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+}
+
+.ct-view-toggle-button:hover,
+.ct-view-toggle-button.is-active {
+  background: #eff6ff;
+  border-color: rgba(37, 99, 235, 0.36);
+}
+
+.ct-view-toggle-button .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.ct-schedule-table-view {
+  display: grid;
+  gap: 10px;
+}
+
+.ct-shadcn-table-wrap {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 14px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ct-shadcn-table {
+  min-width: 640px;
+  color: #0f172a;
+}
+
+.ct-shadcn-table thead {
+  background: #f8fafc;
+}
+
+.ct-shadcn-table th {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ct-shadcn-table td {
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.ct-schedule-date-cell {
+  min-width: 120px;
+  color: #0f172a;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ct-schedule-group-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ct-schedule-member-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ct-schedule-empty {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ct-table-count-head,
+.ct-schedule-count-cell {
+  width: 72px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ct-schedule-count-cell {
+  color: #334155;
+  font-weight: 900;
+}
+
 .ct-group-row {
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);
@@ -1474,6 +1582,16 @@
     scroll-snap-type: x proximity;
   }
 
+  .ct-member-reveal-grid.is-final {
+    display: grid;
+    grid-template-columns: repeat(var(--ct-final-card-columns, 2), minmax(0, 1fr));
+    gap: 6px;
+    justify-content: stretch;
+    overflow: visible;
+    padding: 8px 0 6px;
+    scroll-snap-type: none;
+  }
+
   .ct-member-reveal-card {
     width: 156px;
     flex: 0 0 156px;
@@ -1482,14 +1600,39 @@
     scroll-snap-align: center;
   }
 
+  .ct-member-reveal-grid.is-final .ct-member-reveal-card {
+    width: 100%;
+    min-width: 0;
+    flex-basis: auto;
+    min-height: clamp(178px, calc((100vw - 48px) / var(--ct-final-card-columns, 2) * 1.58), 250px);
+    border-radius: 18px;
+    scroll-snap-align: none;
+  }
+
   .ct-credit-card-face {
     min-height: 250px;
     border-radius: 22px;
     padding: 14px;
   }
 
+  .ct-member-reveal-grid.is-final .ct-card-flip-inner,
+  .ct-member-reveal-grid.is-final .ct-credit-card-face {
+    min-height: clamp(178px, calc((100vw - 48px) / var(--ct-final-card-columns, 2) * 1.58), 250px);
+  }
+
+  .ct-member-reveal-grid.is-final .ct-credit-card-face {
+    border-radius: 18px;
+    padding: clamp(7px, calc(18px / var(--ct-final-card-columns, 2)), 12px);
+  }
+
   .ct-credit-card-face::after {
     border-radius: 19px;
+  }
+
+  .ct-member-reveal-grid.is-final .ct-credit-card-face::after {
+    inset: 4px;
+    border-width: 2px;
+    border-radius: 15px;
   }
 
   .ct-credit-card-top,
@@ -1497,9 +1640,21 @@
     font-size: 9px;
   }
 
+  .ct-member-reveal-grid.is-final .ct-credit-card-top,
+  .ct-member-reveal-grid.is-final .ct-credit-card-bottom {
+    font-size: clamp(6px, calc(18px / var(--ct-final-card-columns, 2)), 9px);
+    gap: 4px;
+  }
+
   .ct-credit-card-chip {
     width: 23px;
     height: 23px;
+  }
+
+  .ct-member-reveal-grid.is-final .ct-credit-card-chip {
+    width: clamp(12px, calc(44px / var(--ct-final-card-columns, 2)), 20px);
+    height: clamp(12px, calc(44px / var(--ct-final-card-columns, 2)), 20px);
+    border-width: 2px;
   }
 
   .ct-member-reveal-photo {
@@ -1507,17 +1662,54 @@
     height: 86px;
   }
 
+  .ct-member-reveal-grid.is-final .ct-member-reveal-photo {
+    width: clamp(42px, calc((100vw - 48px) / var(--ct-final-card-columns, 2) * 0.42), 86px);
+    height: clamp(42px, calc((100vw - 48px) / var(--ct-final-card-columns, 2) * 0.42), 86px);
+  }
+
   .ct-member-reveal-photo .ct-avatar {
     width: 82px;
     height: 82px;
+  }
+
+  .ct-member-reveal-grid.is-final .ct-member-reveal-photo .ct-avatar {
+    width: clamp(38px, calc((100vw - 48px) / var(--ct-final-card-columns, 2) * 0.39), 82px);
+    height: clamp(38px, calc((100vw - 48px) / var(--ct-final-card-columns, 2) * 0.39), 82px);
   }
 
   .ct-member-reveal-card strong {
     font-size: 21px;
   }
 
+  .ct-member-reveal-grid.is-final .ct-member-reveal-card strong {
+    font-size: clamp(12px, calc(52px / var(--ct-final-card-columns, 2)), 21px);
+  }
+
+  .ct-member-reveal-grid.is-final .ct-member-reveal-role {
+    padding: 3px 6px;
+    font-size: clamp(6px, calc(20px / var(--ct-final-card-columns, 2)), 10px);
+  }
+
+  .ct-member-reveal-grid.is-final .ct-engrave-label {
+    font-size: clamp(6px, calc(18px / var(--ct-final-card-columns, 2)), 9px);
+  }
+
   .ct-employee-id {
     font-size: 10px;
+  }
+
+  .ct-member-reveal-grid.is-final .ct-employee-id {
+    font-size: clamp(6px, calc(20px / var(--ct-final-card-columns, 2)), 10px);
+  }
+
+  .ct-member-reveal-grid.is-final .ct-honorifics-back-list {
+    gap: 5px;
+  }
+
+  .ct-member-reveal-grid.is-final .ct-honorifics-back-list span {
+    min-width: 0;
+    padding: 6px 8px;
+    font-size: clamp(11px, calc(40px / var(--ct-final-card-columns, 2)), 17px);
   }
 
   .ct-member-reveal-card--spotlight {

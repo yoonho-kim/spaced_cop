@@ -2,6 +2,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Modal from './Modal';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from './ui/table';
+import {
   createCoffeeTimeEvent,
   getLatestCoffeeTimeEvent,
   getTeamMembers,
@@ -274,6 +282,71 @@ const FixedMemberList = ({ members }) => (
   </div>
 );
 
+const MemberNameList = ({ members }) => (
+  <div className="ct-schedule-member-list">
+    {members.length > 0 ? members.map((member) => (
+      <span
+        key={member.employeeId}
+        className={`ct-table-member ${member.role === 'fixed' ? 'is-fixed' : ''} ${isDirectorMember(member) ? 'is-director' : ''}`}
+      >
+        {member.nickname}
+      </span>
+    )) : (
+      <span className="ct-schedule-empty">-</span>
+    )}
+  </div>
+);
+
+const CoffeeScheduleTableView = ({ groups, title, badge }) => {
+  const rows = [...groups].sort((left, right) => {
+    const leftDate = left.assignedDate || '';
+    const rightDate = right.assignedDate || '';
+    if (leftDate === rightDate) return Number(left.groupNo || 0) - Number(right.groupNo || 0);
+    if (!leftDate) return 1;
+    if (!rightDate) return -1;
+    return leftDate.localeCompare(rightDate);
+  });
+
+  return (
+    <div className="ct-schedule-table-view">
+      <div className="ct-section-title">
+        <h4>{title}</h4>
+        <span>{badge}</span>
+      </div>
+      <div className="ct-shadcn-table-wrap">
+        <Table className="ct-shadcn-table">
+          <TableHeader>
+            <TableRow>
+              <TableHead>일자</TableHead>
+              <TableHead>조</TableHead>
+              <TableHead>멤버</TableHead>
+              <TableHead className="ct-table-count-head">인원</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((group) => (
+              <TableRow key={group.id}>
+                <TableCell className="ct-schedule-date-cell">
+                  {formatAssignedDate(group.assignedDate)}
+                </TableCell>
+                <TableCell>
+                  <span className="ct-schedule-group-badge">{group.groupNo}조 · {group.name}</span>
+                </TableCell>
+                <TableCell>
+                  <MemberNameList members={group.members} />
+                </TableCell>
+                <TableCell className="ct-schedule-count-cell">
+                  {group.members.length}명
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+};
+
 const GroupListView = ({ groups, title, badge, canEditDates = false, savingGroupId = null, onChangeDate }) => (
   <div className="ct-all-groups ct-list-view">
     <div className="ct-section-title">
@@ -460,6 +533,7 @@ const GroupRevealStage = ({ group, revealCount }) => {
   const completedCount = Math.min(revealCount, randomMembers.length);
   const activeMember = completedCount < randomMembers.length ? randomMembers[completedCount] : null;
   const isComplete = completedCount >= randomMembers.length;
+  const finalCardColumns = Math.max(1, Math.min(randomMembers.length, 4));
   const flippedMemberIds = flipState.groupId === group.id ? flipState.memberIds : [];
 
   const toggleCardBack = (employeeId) => {
@@ -510,7 +584,10 @@ const GroupRevealStage = ({ group, revealCount }) => {
           />
         </div>
       ) : (
-        <div className="ct-member-reveal-grid is-final">
+        <div
+          className="ct-member-reveal-grid is-final"
+          style={{ '--ct-final-card-columns': finalCardColumns }}
+        >
           {randomMembers.map((member, index) => (
             <RevealMemberCard
               key={member.employeeId}
@@ -556,6 +633,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
   const [revealCount, setRevealCount] = useState(0);
   const [startDate, setStartDate] = useState(getTodayKey());
   const [savingGroupId, setSavingGroupId] = useState(null);
+  const [resultListMode, setResultListMode] = useState('groups');
 
   const userIsAdmin = isAdmin();
   const currentEmployeeId = String(user?.employeeId || '').trim();
@@ -648,6 +726,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
   const canReveal = myGroups.length > 0;
   const shouldShowListView = userIsAdmin || isFixedViewer;
   const canAccessResult = userIsAdmin || canReveal;
+  const visibleResultGroups = userIsAdmin ? event?.groups || [] : myGroups;
 
   const toggleFixed = (employeeId) => {
     setFixedIds((prev) => {
@@ -808,6 +887,18 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
                 {canAccessResult ? (
                   shouldShowListView ? (
                     <>
+                      <div className="ct-result-view-toolbar">
+                        <button
+                          type="button"
+                          className={`ct-view-toggle-button ${resultListMode === 'schedule' ? 'is-active' : ''}`}
+                          onClick={() => setResultListMode((prev) => (prev === 'schedule' ? 'groups' : 'schedule'))}
+                        >
+                          <span className="material-symbols-outlined">
+                            {resultListMode === 'schedule' ? 'view_agenda' : 'table_rows'}
+                          </span>
+                          {resultListMode === 'schedule' ? '조별 보기' : '리스트로 보기'}
+                        </button>
+                      </div>
                       {latestFixedMembers.length > 0 && (
                         <div className="ct-fixed-panel ct-fixed-panel--compact">
                           <div className="ct-section-title">
@@ -817,14 +908,22 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
                           <FixedMemberList members={latestFixedMembers} />
                         </div>
                       )}
-                      <GroupListView
-                        groups={userIsAdmin ? event.groups : myGroups}
-                        title={userIsAdmin ? '커피타임 전체 조 리스트' : '내가 함께하는 조 리스트'}
-                        badge={userIsAdmin ? `${event.groupCount}개 조` : '고정 멤버 보기'}
-                        canEditDates={userIsAdmin}
-                        savingGroupId={savingGroupId}
-                        onChangeDate={handleChangeGroupDate}
-                      />
+                      {resultListMode === 'schedule' ? (
+                        <CoffeeScheduleTableView
+                          groups={visibleResultGroups}
+                          title={userIsAdmin ? '커피타임 일자별 멤버 리스트' : '내가 함께하는 일자별 멤버 리스트'}
+                          badge={`${visibleResultGroups.length}개 일정`}
+                        />
+                      ) : (
+                        <GroupListView
+                          groups={visibleResultGroups}
+                          title={userIsAdmin ? '커피타임 전체 조 리스트' : '내가 함께하는 조 리스트'}
+                          badge={userIsAdmin ? `${event.groupCount}개 조` : '고정 멤버 보기'}
+                          canEditDates={userIsAdmin}
+                          savingGroupId={savingGroupId}
+                          onChangeDate={handleChangeGroupDate}
+                        />
+                      )}
                     </>
                   ) : (
                     <div className="ct-reveal-zone">
