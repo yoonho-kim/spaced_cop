@@ -29,6 +29,14 @@ const ensureAdminAccess = () => {
   return false;
 };
 
+const normalizeHonorifics = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => (typeof item === 'string' ? item.trim() : ''))
+    .filter(Boolean)
+    .slice(0, 2);
+};
+
 // ============================================
 // EVENT SETTINGS
 // ============================================
@@ -2022,10 +2030,16 @@ export const removeQuickVote = async (voteType, employeeId) => {
 // 팀원 목록 조회 (칭찬하기용)
 export const getTeamMembers = async (options = {}) => {
   const praiseOnly = options?.praiseOnly === true;
-  const { data, error } = await supabase
+  const dsEmployeeOnly = options?.dsEmployeeOnly === true;
+  let query = supabase
     .from('users')
-    .select('employee_id, nickname, profile_icon_url')
-    .order('nickname', { ascending: true });
+    .select('employee_id, nickname, profile_icon_url');
+
+  if (dsEmployeeOnly) {
+    query = query.eq('ds_employee_yn', 'Y');
+  }
+
+  const { data, error } = await query.order('nickname', { ascending: true });
 
   if (error) {
     console.error('Error fetching team members:', error);
@@ -2054,6 +2068,31 @@ export const getTeamMembers = async (options = {}) => {
     });
 };
 
+export const getCoffeeTimeEligibility = async (user) => {
+  const userId = user?.id == null ? '' : String(user.id).trim();
+  const employeeId = user?.employeeId == null ? '' : String(user.employeeId).trim();
+
+  if (!userId && !employeeId) {
+    return { eligible: false };
+  }
+
+  let query = supabase
+    .from('users')
+    .select('ds_employee_yn')
+    .limit(1);
+
+  query = userId ? query.eq('id', userId) : query.eq('employee_id', employeeId);
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error) {
+    console.error('Error checking coffee time eligibility:', error);
+    return { eligible: false, error };
+  }
+
+  return { eligible: data?.ds_employee_yn === 'Y' };
+};
+
 // ============================================
 // COFFEE TIME GROUPS
 // ============================================
@@ -2068,6 +2107,7 @@ const mapCoffeeMember = (member) => ({
   employeeId: String(member?.employee_id || '').trim(),
   nickname: member?.nickname || '',
   profileIconUrl: member?.profile_icon_url || '',
+  honorifics: normalizeHonorifics(member?.honorifics),
   role: member?.role || 'participant',
 });
 
@@ -2175,9 +2215,37 @@ export const getLatestCoffeeTimeEvent = async () => {
     return { success: false, error: '커피타임 조 정보를 불러올 수 없습니다.', event: null };
   }
 
+  const memberEmployeeIds = [
+    ...new Set((membersResult.data || [])
+      .map((member) => String(member?.employee_id || '').trim())
+      .filter((employeeId) => employeeId && !employeeId.startsWith('__')))
+  ];
+
+  let honorificByEmployeeId = new Map();
+  if (memberEmployeeIds.length > 0) {
+    const { data: userHonorifics, error: honorificsError } = await supabase
+      .from('users')
+      .select('employee_id, honorifics')
+      .in('employee_id', memberEmployeeIds);
+
+    if (honorificsError) {
+      console.error('Error fetching coffee time honorifics:', honorificsError);
+    } else {
+      honorificByEmployeeId = new Map((userHonorifics || []).map((row) => [
+        String(row?.employee_id || '').trim(),
+        normalizeHonorifics(row?.honorifics),
+      ]));
+    }
+  }
+
+  const membersWithHonorifics = (membersResult.data || []).map((member) => ({
+    ...member,
+    honorifics: honorificByEmployeeId.get(String(member?.employee_id || '').trim()) || [],
+  }));
+
   return {
     success: true,
-    event: mapCoffeeEvent(event, membersResult.data, groupsResult.data, groupMembersResult.data),
+    event: mapCoffeeEvent(event, membersWithHonorifics, groupsResult.data, groupMembersResult.data),
   };
 };
 
@@ -2228,7 +2296,7 @@ export const createCoffeeTimeEvent = async ({ title, startDate, fixedMembers, ra
     employee_id: member.employeeId,
     nickname: member.nickname || null,
     profile_icon_url: member.profileIconUrl || member.profile_icon_url || null,
-    role: fixed.some((fixedMember) => fixedMember.employeeId === member.employeeId) ? 'fixed' : 'participant',
+    role: fixed.some((fixedMember) => fixedMember.employeeId === member.employeeId) ? 'fixed' : member.role || 'participant',
   }));
 
   const { error: membersError } = await supabase
@@ -2282,6 +2350,37 @@ export const createCoffeeTimeEvent = async ({ title, startDate, fixedMembers, ra
   }
 
   return await getLatestCoffeeTimeEvent();
+};
+
+export const updateCoffeeTimeGroupDate = async (groupId, assignedDate) => {
+  if (!ensureAdminAccess()) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
+  const normalizedGroupId = String(groupId || '').trim();
+  if (!normalizedGroupId) {
+    return { success: false, error: '변경할 조 정보가 없습니다.' };
+  }
+
+  const { data, error } = await supabase
+    .from('app_coffee_time_groups')
+    .update({ assigned_date: assignedDate || null })
+    .eq('id', normalizedGroupId)
+    .select('id, assigned_date')
+    .single();
+
+  if (error) {
+    console.error('Error updating coffee time group date:', error);
+    return { success: false, error: error.message || '커피타임 일정을 변경할 수 없습니다.' };
+  }
+
+  return {
+    success: true,
+    group: {
+      id: data.id,
+      assignedDate: data.assigned_date || null,
+    },
+  };
 };
 
 export const resetCoffeeTimeEvents = async () => {

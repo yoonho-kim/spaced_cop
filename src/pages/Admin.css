@@ -426,6 +426,7 @@
 
 .user-meta {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     font-size: 13px;
     color: var(--color-text-secondary);
@@ -435,6 +436,36 @@
     display: flex;
     gap: 8px;
     flex-shrink: 0;
+}
+
+.checkbox-field-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: fit-content;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    cursor: pointer;
+}
+
+.checkbox-field input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+}
+
+.checkbox-field__status {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
 }
 
 .honorific-list {

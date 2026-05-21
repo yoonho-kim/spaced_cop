@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getPostsPage, addLike, removeLike, addComment, deleteComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers } from '../utils/storage';
+import { getPostsPage, addLike, removeLike, addComment, deleteComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers, getCoffeeTimeEligibility } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import { supabase } from '../utils/supabase';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
@@ -106,6 +106,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
     const [voteModal, setVoteModal] = useState(null); // 'praise' | null
     const [showLunchPicker, setShowLunchPicker] = useState(false);
     const [showCoffeeTime, setShowCoffeeTime] = useState(false);
+    const [isCoffeeTimeChecking, setIsCoffeeTimeChecking] = useState(false);
     const [showAiServiceView, setShowAiServiceView] = useState(false);
     const [isAiServiceLoading, setIsAiServiceLoading] = useState(false);
     const [highlightedPostIds, setHighlightedPostIds] = useState(new Set());
@@ -900,6 +901,27 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         setIsAiServiceLoading(false);
     };
 
+    const handleOpenCoffeeTime = async () => {
+        if (isCoffeeTimeChecking) return;
+
+        if (isAdmin()) {
+            setShowCoffeeTime(true);
+            return;
+        }
+
+        setIsCoffeeTimeChecking(true);
+        try {
+            const result = await getCoffeeTimeEligibility(user);
+            if (!result.eligible) {
+                alert('대상자가 아닙니다.');
+                return;
+            }
+            setShowCoffeeTime(true);
+        } finally {
+            setIsCoffeeTimeChecking(false);
+        }
+    };
+
     return (
         <div className="feed-container" style={{ position: 'relative' }}>
             {/* Pull-to-refresh indicator */}
@@ -908,7 +930,7 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
             {/* Quick Action Cards */}
             <section className="quick-actions-section">
                 <div className="quick-actions-grid">
-                    <button className="quick-card quick-card--praise quick-card--coffee" onClick={() => setShowCoffeeTime(true)}>
+                    <button className="quick-card quick-card--praise quick-card--coffee" onClick={handleOpenCoffeeTime}>
                         <div className="quick-card__illust">
                             <svg width="84" height="76" viewBox="0 0 84 76" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <rect x="15" y="26" width="44" height="37" rx="11" fill="#2952CC"/>

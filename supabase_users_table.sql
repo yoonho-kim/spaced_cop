@@ -43,7 +43,24 @@ BEGIN
   END IF;
 END $$;
 
--- 7. 사번 중복 방지 인덱스
+-- 7. DS직원 여부 컬럼 추가 (Y, N, NULL 허용)
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS ds_employee_yn VARCHAR(1);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'users_ds_employee_yn_check'
+  ) THEN
+    ALTER TABLE users
+    ADD CONSTRAINT users_ds_employee_yn_check
+    CHECK (ds_employee_yn IN ('Y', 'N') OR ds_employee_yn IS NULL);
+  END IF;
+END $$;
+
+-- 8. 사번 중복 방지 인덱스
 -- 기존 중복 데이터가 있으면 실패할 수 있으니, 필요 시
 -- supabase_dedupe_users_by_employee_id.sql을 먼저 실행하세요.
 CREATE UNIQUE INDEX IF NOT EXISTS users_employee_id_unique_idx

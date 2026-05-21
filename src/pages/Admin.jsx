@@ -72,7 +72,7 @@ const Admin = () => {
     const [visibleUserCount, setVisibleUserCount] = useState(20);
     const [showUserModal, setShowUserModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
-    const [userForm, setUserForm] = useState({ employeeId: '', gender: '', honorifics: [] });
+    const [userForm, setUserForm] = useState({ employeeId: '', gender: '', honorifics: [], dsEmployeeYn: null });
     const [honorificInput, setHonorificInput] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [showRecurringModal, setShowRecurringModal] = useState(false);
@@ -352,6 +352,7 @@ const Admin = () => {
             employeeId: user.employeeId || '',
             gender: user.gender || '',
             honorifics: Array.isArray(user.honorifics) ? user.honorifics.slice(0, 2) : [],
+            dsEmployeeYn: user.dsEmployeeYn || null,
         });
         setHonorificInput('');
         setShowUserModal(true);
@@ -509,6 +510,7 @@ const Admin = () => {
             employeeId: userForm.employeeId,
             gender: userForm.gender,
             honorifics: userForm.honorifics,
+            dsEmployeeYn: userForm.dsEmployeeYn,
         });
 
         if (result.success) {
@@ -859,6 +861,7 @@ const Admin = () => {
                                             <div className="user-meta">
                                                 <span>사번: {user.employeeId || '-'}</span>
                                                 <span>성별: {user.gender || '-'}</span>
+                                                <span>DS직원 여부: {user.dsEmployeeYn || '-'}</span>
                                             </div>
                                         </div>
                                         <div className="user-actions">
@@ -1323,6 +1326,30 @@ const Admin = () => {
                             <option value="female">여성</option>
                             <option value="other">기타</option>
                         </select>
+                    </div>
+                    <div className="form-group">
+                        <label>DS직원 여부</label>
+                        <div className="checkbox-field-row">
+                            <label className="checkbox-field">
+                                <input
+                                    type="checkbox"
+                                    checked={userForm.dsEmployeeYn === 'Y'}
+                                    onChange={(e) => setUserForm({ ...userForm, dsEmployeeYn: e.target.checked ? 'Y' : 'N' })}
+                                />
+                                <span>DS직원</span>
+                                <span className="checkbox-field__status">
+                                    저장값: {userForm.dsEmployeeYn || 'NULL'}
+                                </span>
+                            </label>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setUserForm({ ...userForm, dsEmployeeYn: null })}
+                            >
+                                NULL로 초기화
+                            </Button>
+                        </div>
                     </div>
                     <div className="form-group">
                         <label>호칭 (최대 2개, 한글 4글자)</label>

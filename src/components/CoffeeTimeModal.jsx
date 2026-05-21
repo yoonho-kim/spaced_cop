@@ -6,11 +6,19 @@ import {
   getLatestCoffeeTimeEvent,
   getTeamMembers,
   resetCoffeeTimeEvents,
+  updateCoffeeTimeGroupDate,
 } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import './CoffeeTimeModal.css';
 
 const TEAM_NAMES = ['라떼팀', '콜드브루팀', '에스프레소팀', '아포가토팀', '플랫화이트팀', '모카팀'];
+const DIRECTOR_EMPLOYEE_ID = '__coffee_time_director__';
+const DIRECTOR_MEMBER = {
+  employeeId: DIRECTOR_EMPLOYEE_ID,
+  nickname: '본부장',
+  profileIconUrl: '',
+  role: 'director',
+};
 const MotionDiv = motion.div;
 const KOREAN_HOLIDAYS = new Set([
   '2026-01-01',
@@ -41,7 +49,24 @@ const normalizeMember = (member) => ({
   employeeId: String(member?.employee_id || member?.employeeId || '').trim(),
   nickname: member?.nickname || '익명',
   profileIconUrl: member?.profile_icon_url || member?.profileIconUrl || '',
+  role: member?.role || 'participant',
 });
+
+const isDirectorMember = (member) => (
+  member?.employeeId === DIRECTOR_EMPLOYEE_ID || member?.role === 'director' || member?.nickname === '본부장'
+);
+
+const getMemberHonorifics = (member) => (
+  Array.isArray(member?.honorifics)
+    ? member.honorifics.map((item) => String(item || '').trim()).filter(Boolean)
+    : []
+);
+
+const withDirectorMember = (members) => {
+  const normalized = Array.isArray(members) ? members : [];
+  if (normalized.some(isDirectorMember)) return normalized;
+  return [...normalized, DIRECTOR_MEMBER];
+};
 
 const getRandomRatio = () => {
   if (typeof window === 'undefined' || !window.crypto?.getRandomValues) {
@@ -65,7 +90,23 @@ const shuffleMembers = (members) => {
 const getBestGroupCount = (fixedCount, randomCount) => {
   if (randomCount <= 0) return 0;
 
-  const targetRandomPerGroup = Math.max(1, 5 - fixedCount);
+  const targetTotalPerGroup = 6;
+  const maxTotalPerGroup = 7;
+  const minTotalPerGroup = 4;
+  const targetRandomPerGroup = Math.max(1, targetTotalPerGroup - fixedCount);
+  const maxRandomPerGroup = Math.max(1, maxTotalPerGroup - fixedCount);
+  const baseGroupCount = Math.floor(randomCount / targetRandomPerGroup);
+  const remainder = randomCount % targetRandomPerGroup;
+
+  if (
+    baseGroupCount >= 1 &&
+    remainder > 0 &&
+    remainder <= 2 &&
+    randomCount <= baseGroupCount * maxRandomPerGroup
+  ) {
+    return baseGroupCount;
+  }
+
   const preferredGroupCount = Math.max(1, Math.round(randomCount / targetRandomPerGroup));
   let best = { count: preferredGroupCount, score: Number.POSITIVE_INFINITY };
 
@@ -75,11 +116,11 @@ const getBestGroupCount = (fixedCount, randomCount) => {
     const minTotal = fixedCount + minRandom;
     const maxTotal = fixedCount + maxRandom;
     const averageTotal = fixedCount + randomCount / count;
-    const invalidLow = Math.max(0, 4 - minTotal);
-    const invalidHigh = Math.max(0, maxTotal - 6);
+    const invalidLow = Math.max(0, minTotalPerGroup - minTotal);
+    const invalidHigh = Math.max(0, maxTotal - maxTotalPerGroup);
     const score =
       (invalidLow + invalidHigh) * 100 +
-      Math.abs(averageTotal - 5) * 10 +
+      Math.abs(averageTotal - targetTotalPerGroup) * 10 +
       Math.abs(count - preferredGroupCount) * 0.2;
 
     if (score < best.score) {
@@ -168,7 +209,7 @@ const buildCoffeeGroups = (fixedMembers, randomMembers, startDate) => {
 
   shuffled.forEach((member, index) => {
     const groupIndex = index % groupCount;
-    groups[groupIndex].members.push({ ...member, role: 'random' });
+    groups[groupIndex].members.push({ ...member, role: member.role || 'random' });
   });
 
   return groups;
@@ -233,7 +274,7 @@ const FixedMemberList = ({ members }) => (
   </div>
 );
 
-const GroupListView = ({ groups, title, badge }) => (
+const GroupListView = ({ groups, title, badge, canEditDates = false, savingGroupId = null, onChangeDate }) => (
   <div className="ct-all-groups ct-list-view">
     <div className="ct-section-title">
       <h4>{title}</h4>
@@ -250,6 +291,17 @@ const GroupListView = ({ groups, title, badge }) => (
               <span>{group.groupNo}조</span>
               <strong>{group.name}</strong>
               <em>{group.members.length}명 · {formatAssignedDate(group.assignedDate)}</em>
+              {canEditDates && (
+                <label className="ct-group-date-editor">
+                  <span>일정</span>
+                  <input
+                    type="date"
+                    value={group.assignedDate || ''}
+                    onChange={(event) => onChangeDate(group, event.target.value)}
+                    disabled={savingGroupId === group.id}
+                  />
+                </label>
+              )}
             </div>
             <div className="ct-group-row__members">
               {fixedMembers.length > 0 && (
@@ -268,7 +320,10 @@ const GroupListView = ({ groups, title, badge }) => (
                 <span>랜덤</span>
                 <div>
                   {randomMembers.map((member) => (
-                    <span className="ct-table-member" key={member.employeeId}>
+                    <span
+                      className={`ct-table-member ${isDirectorMember(member) ? 'is-director' : ''}`}
+                      key={member.employeeId}
+                    >
                       {member.nickname}
                     </span>
                   ))}
@@ -313,9 +368,22 @@ const GroupCard = ({ group }) => {
   );
 };
 
-const RevealMemberCard = ({ member, index, visible, active, total, mode = 'lineup' }) => (
+const RevealMemberCard = ({ member, index, visible, active, total, mode = 'lineup', flipped = false, canFlip = false, onFlip }) => {
+  const director = isDirectorMember(member);
+  const honorifics = getMemberHonorifics(member);
+
+  return (
   <MotionDiv
-    className={`ct-member-reveal-card ${visible ? 'is-visible' : ''} ${active ? 'is-active' : ''} ct-member-reveal-card--${mode}`}
+    className={`ct-member-reveal-card ${visible ? 'is-visible' : ''} ${active ? 'is-active' : ''} ${director ? 'is-director' : ''} ${flipped ? 'is-flipped' : ''} ${canFlip ? 'is-flippable' : ''} ct-member-reveal-card--${mode}`}
+    role={canFlip ? 'button' : undefined}
+    tabIndex={canFlip ? 0 : undefined}
+    onClick={canFlip ? onFlip : undefined}
+    onKeyDown={canFlip ? (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onFlip();
+      }
+    } : undefined}
     initial={{
       opacity: 0,
       x: `${-1 * (index - ((total - 1) / 2)) * 232}px`,
@@ -331,28 +399,49 @@ const RevealMemberCard = ({ member, index, visible, active, total, mode = 'lineu
     }
     transition={{ duration: 0.72, ease: [0.16, 1, 0.3, 1], delay: visible ? index * 0.03 : 0 }}
   >
-    <div className="ct-credit-card-face">
+    <div className="ct-card-flip-inner">
+    <div className="ct-credit-card-face ct-credit-card-face--front">
       <div className="ct-credit-card-top">
         <span>SPACE D COFFEE PASS</span>
         <span className="ct-credit-card-chip" aria-hidden="true" />
       </div>
-      <div className="ct-credit-card-main">
-        <div className="ct-member-reveal-photo">
-          <MemberAvatar member={member} size="lg" />
-          <span className="ct-member-reveal-ring" aria-hidden="true" />
-          <span className="ct-photo-draw-line" aria-hidden="true" />
+      {director ? (
+        <div className="ct-credit-card-main ct-director-card-main">
+          <div className="ct-director-engrave">
+            <strong>본부장</strong>
+          </div>
         </div>
-        <div className="ct-engrave-block">
-          <span className="ct-member-reveal-role">{member.role === 'fixed' ? '고정 멤버' : 'RANDOM MEMBER'}</span>
-          <span className="ct-engrave-label">NICKNAME</span>
-          <strong>{member.nickname}</strong>
-          <span className="ct-employee-id">EMPLOYEE ID · {member.employeeId || '-'}</span>
+      ) : (
+        <div className="ct-credit-card-main">
+          <div className="ct-member-reveal-photo">
+            <MemberAvatar member={member} size="lg" />
+            <span className="ct-member-reveal-ring" aria-hidden="true" />
+            <span className="ct-photo-draw-line" aria-hidden="true" />
+          </div>
+          <div className="ct-engrave-block">
+            <span className="ct-member-reveal-role">{member.role === 'fixed' ? '고정 멤버' : 'RANDOM MEMBER'}</span>
+            <span className="ct-engrave-label">NICKNAME</span>
+            <strong>{member.nickname}</strong>
+            <span className="ct-employee-id">EMPLOYEE ID · {member.employeeId || '-'}</span>
+          </div>
         </div>
-      </div>
+      )}
       <div className="ct-credit-card-bottom">
         <span>{String(index + 1).padStart(2, '0')}</span>
         <span>COFFEE TIME GROUP</span>
       </div>
+    </div>
+    <div className="ct-credit-card-face ct-credit-card-face--back">
+      <div className="ct-card-back-content">
+        {honorifics.length > 0 && (
+          <div className="ct-honorifics-back-list">
+            {honorifics.map((title) => (
+              <span key={`${member.employeeId}-${title}`}>{title}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
     </div>
     {!visible && (
       <div className="ct-card-sealed">
@@ -361,14 +450,29 @@ const RevealMemberCard = ({ member, index, visible, active, total, mode = 'lineu
       </div>
     )}
   </MotionDiv>
-);
+  );
+};
 
 const GroupRevealStage = ({ group, revealCount }) => {
+  const [flipState, setFlipState] = useState({ groupId: group.id, memberIds: [] });
   const fixedMembers = group.members.filter((member) => member.role === 'fixed');
   const randomMembers = group.members.filter((member) => member.role !== 'fixed');
   const completedCount = Math.min(revealCount, randomMembers.length);
   const activeMember = completedCount < randomMembers.length ? randomMembers[completedCount] : null;
   const isComplete = completedCount >= randomMembers.length;
+  const flippedMemberIds = flipState.groupId === group.id ? flipState.memberIds : [];
+
+  const toggleCardBack = (employeeId) => {
+    setFlipState((prev) => {
+      const currentMemberIds = prev.groupId === group.id ? prev.memberIds : [];
+      return {
+        groupId: group.id,
+        memberIds: currentMemberIds.includes(employeeId)
+          ? currentMemberIds.filter((item) => item !== employeeId)
+          : [...currentMemberIds, employeeId],
+      };
+    });
+  };
 
   return (
     <div className="ct-card-reveal-stage">
@@ -416,6 +520,9 @@ const GroupRevealStage = ({ group, revealCount }) => {
               active={false}
               total={randomMembers.length}
               mode="lineup"
+              flipped={flippedMemberIds.includes(member.employeeId)}
+              canFlip
+              onFlip={() => toggleCardBack(member.employeeId)}
             />
           ))}
         </div>
@@ -448,6 +555,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
   const [revealed, setRevealed] = useState(false);
   const [revealCount, setRevealCount] = useState(0);
   const [startDate, setStartDate] = useState(getTodayKey());
+  const [savingGroupId, setSavingGroupId] = useState(null);
 
   const userIsAdmin = isAdmin();
   const currentEmployeeId = String(user?.employeeId || '').trim();
@@ -469,7 +577,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
     setEvent(eventResult.event || null);
 
     if (userIsAdmin && !eventResult.event) {
-      const teamMembers = await getTeamMembers();
+      const teamMembers = await getTeamMembers({ dsEmployeeOnly: true });
       const normalizedMembers = (teamMembers || [])
         .map(normalizeMember)
         .filter((member) => member.employeeId)
@@ -510,6 +618,10 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
       .map((employeeId) => memberById.get(employeeId))
       .filter(Boolean)
   ), [fixedIds, memberById, participantIds]);
+
+  const drawRandomMembers = useMemo(() => (
+    withDirectorMember(randomMembers)
+  ), [randomMembers]);
 
   const filteredMembers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -562,13 +674,13 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
       window.alert('고정 신규직원은 최대 3명까지 선택할 수 있습니다.');
       return;
     }
-    if (randomMembers.length < 1) {
+    if (drawRandomMembers.length < 1) {
       window.alert('랜덤 배정 대상자를 1명 이상 선택해주세요.');
       return;
     }
 
     setIsDrawing(true);
-    const groups = buildCoffeeGroups(fixedMembers, randomMembers, startDate);
+    const groups = buildCoffeeGroups(fixedMembers, drawRandomMembers, startDate);
     const drawHash = await createDrawHash({
       fixed: fixedMembers.map((member) => member.employeeId),
       random: groups.map((group) => group.members.map((member) => `${group.groupNo}:${group.assignedDate}:${member.employeeId}:${member.role}`)),
@@ -579,7 +691,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
       title: '커피타임 랜덤 매칭',
       startDate,
       fixedMembers,
-      randomMembers,
+      randomMembers: drawRandomMembers,
       groups,
       drawHash,
       createdBy: user?.nickname || user?.employeeId || '',
@@ -647,6 +759,30 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
     window.alert('커피타임 이벤트가 초기화되었습니다.');
   };
 
+  const handleChangeGroupDate = async (group, nextDate) => {
+    if (!userIsAdmin || !group?.id || savingGroupId) return;
+
+    setSavingGroupId(group.id);
+    const result = await updateCoffeeTimeGroupDate(group.id, nextDate || null);
+
+    if (!result.success) {
+      window.alert(result.error || '커피타임 일정을 변경할 수 없습니다.');
+      setSavingGroupId(null);
+      return;
+    }
+
+    setEvent((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        groups: prev.groups.map((item) => (
+          item.id === group.id ? { ...item, assignedDate: result.group?.assignedDate || nextDate || null } : item
+        )),
+      };
+    });
+    setSavingGroupId(null);
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -685,6 +821,9 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
                         groups={userIsAdmin ? event.groups : myGroups}
                         title={userIsAdmin ? '커피타임 전체 조 리스트' : '내가 함께하는 조 리스트'}
                         badge={userIsAdmin ? `${event.groupCount}개 조` : '고정 멤버 보기'}
+                        canEditDates={userIsAdmin}
+                        savingGroupId={savingGroupId}
+                        onChangeDate={handleChangeGroupDate}
                       />
                     </>
                   ) : (
@@ -760,7 +899,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
               <section className="ct-admin-panel">
                 <div className="ct-section-title">
                   <h4>관리자 추첨 만들기</h4>
-                  <span>{fixedIds.length}/3 이하 고정 · {randomMembers.length}명 랜덤 풀</span>
+                  <span>{fixedIds.length}/3 이하 고정 · {randomMembers.length}명 랜덤 풀 + 본부장 1명 · 조당 6명 기준</span>
                 </div>
                 <input
                   className="ct-search"
@@ -818,7 +957,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
                   type="button"
                   className="ct-draw-button"
                   onClick={handleCreateDraw}
-                  disabled={isDrawing || isResetting || fixedMembers.length > 3 || randomMembers.length < 1}
+                  disabled={isDrawing || isResetting || fixedMembers.length > 3 || drawRandomMembers.length < 1}
                 >
                   <span className="material-symbols-outlined">shuffle</span>
                   {isDrawing ? '랜덤 조 생성 중...' : '커피콩 섞고 공개하기'}

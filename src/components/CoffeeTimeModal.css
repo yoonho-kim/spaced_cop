@@ -554,6 +554,30 @@
     0 0 34px rgba(96, 165, 250, 0.32);
 }
 
+.ct-member-reveal-card.is-director {
+  border-color: rgba(217, 119, 6, 0.72);
+  background:
+    radial-gradient(circle at 24% 20%, rgba(254, 243, 199, 0.96), transparent 38%),
+    linear-gradient(145deg, rgba(251, 191, 36, 0.9), rgba(180, 83, 9, 0.88));
+}
+
+.ct-member-reveal-card.is-director.is-visible {
+  box-shadow:
+    0 24px 52px rgba(120, 53, 15, 0.42),
+    0 0 0 1px rgba(253, 224, 71, 0.92),
+    0 0 42px rgba(251, 191, 36, 0.62),
+    0 0 86px rgba(245, 158, 11, 0.36);
+}
+
+.ct-member-reveal-card.is-flippable {
+  cursor: pointer;
+}
+
+.ct-member-reveal-card.is-flippable:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.5);
+  outline-offset: 3px;
+}
+
 .ct-member-reveal-card.is-visible::after {
   content: '';
   position: absolute;
@@ -577,6 +601,37 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0 72%, rgba(37, 99, 235, 0.95) 72% 100%),
     radial-gradient(circle at 48% 35%, rgba(125, 211, 252, 0.24), transparent 35%);
+}
+
+.ct-card-flip-inner {
+  position: relative;
+  min-height: 304px;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.64s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ct-member-reveal-card--spotlight .ct-card-flip-inner {
+  min-height: 342px;
+}
+
+.ct-member-reveal-card.is-flipped .ct-card-flip-inner {
+  transform: rotateY(180deg);
+}
+
+.ct-credit-card-face--front,
+.ct-credit-card-face--back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.ct-credit-card-face--front {
+  transform: rotateY(0deg);
+}
+
+.ct-credit-card-face--back {
+  transform: rotateY(180deg);
 }
 
 .ct-member-reveal-card--spotlight .ct-credit-card-face {
@@ -607,6 +662,27 @@
   border-bottom-color: rgba(15, 23, 42, 0.24);
   border-radius: 23px;
   pointer-events: none;
+}
+
+.ct-member-reveal-card.is-director .ct-credit-card-face {
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.7), transparent 24%),
+    radial-gradient(circle at 74% 28%, rgba(253, 224, 71, 0.5), transparent 32%),
+    linear-gradient(145deg, #fff7ad 0%, #fbbf24 42%, #b45309 100%);
+}
+
+.ct-member-reveal-card.is-director .ct-credit-card-face::before {
+  background:
+    linear-gradient(106deg, transparent 16%, rgba(255, 255, 255, 0.5) 34%, transparent 48%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0 2px, transparent 2px 12px);
+  opacity: 1;
+}
+
+.ct-member-reveal-card.is-director .ct-credit-card-face::after {
+  border-color: rgba(120, 53, 15, 0.45);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.38),
+    inset 0 0 28px rgba(255, 255, 255, 0.24);
 }
 
 .ct-credit-card-top,
@@ -646,6 +722,11 @@
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
+.ct-member-reveal-card.is-director .ct-credit-card-top,
+.ct-member-reveal-card.is-director .ct-credit-card-bottom {
+  display: none;
+}
+
 .ct-credit-card-main {
   display: flex;
   flex-direction: column;
@@ -654,6 +735,58 @@
   min-width: 0;
   flex: 1;
   justify-content: center;
+}
+
+.ct-director-card-main {
+  align-items: center;
+  justify-content: center;
+}
+
+.ct-director-engrave {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 170px;
+}
+
+.ct-director-engrave strong {
+  color: #451a03;
+  font-size: 42px;
+  letter-spacing: 0;
+  text-align: center;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.62),
+    0 0 18px rgba(254, 240, 138, 0.72),
+    0 2px 8px rgba(120, 53, 15, 0.22);
+}
+
+.ct-card-back-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.ct-honorifics-back-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.ct-honorifics-back-list span {
+  min-width: 72px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  color: #1d4ed8;
+  padding: 9px 14px;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
 }
 
 .ct-member-reveal-photo {
@@ -1005,6 +1138,35 @@
   font-weight: 800;
 }
 
+.ct-group-date-editor {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.ct-group-date-editor span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.ct-group-date-editor input {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 8px;
+}
+
+.ct-group-date-editor input:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 .ct-group-row__members {
   display: grid;
   gap: 7px;
@@ -1045,6 +1207,13 @@
   background: #fffbeb;
   border-color: rgba(245, 158, 11, 0.28);
   color: #92400e;
+}
+
+.ct-table-member.is-director {
+  background: linear-gradient(135deg, #fff7ad, #fbbf24);
+  border-color: rgba(180, 83, 9, 0.42);
+  color: #78350f;
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.36);
 }
 
 .ct-group-card {

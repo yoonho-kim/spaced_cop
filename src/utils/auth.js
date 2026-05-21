@@ -1,6 +1,9 @@
 import { STORAGE_KEYS, getItem, setItem, removeItem } from './clientStorage';
 import { supabase } from './supabase';
 
+// Capacitor 네이티브 앱 환경 감지 (서버리스 /api 라우트가 없으므로 직접 DB 인증 사용)
+const isNativeApp = () => typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.() === true;
+
 // Session expires after 90 days (in milliseconds)
 const SESSION_DURATION = 90 * 24 * 60 * 60 * 1000;
 const HONORIFIC_REGEX = /^[가-힣]{1,4}$/;
@@ -17,6 +20,11 @@ const normalizeHonorifics = (value) => {
         .map((item) => (typeof item === 'string' ? item.trim() : ''))
         .filter(Boolean)
         .slice(0, 2);
+};
+
+const normalizeDsEmployeeYn = (value) => {
+    if (value === 'Y' || value === 'N') return value;
+    return null;
 };
 
 const validateHonorifics = (value) => {
@@ -411,7 +419,7 @@ const authenticateUserByLoginIdentifier = async (identifier, password, selectCla
 export const loginWithPassword = async (loginIdentifier, password) => {
     const fallbackToDirectLogin = async () => {
         // 개발 환경(Vite dev)에서는 /api 서버리스 라우트가 없을 수 있어 직접 DB 인증으로 폴백
-        if (!import.meta.env.DEV) {
+        if (!import.meta.env.DEV && !isNativeApp()) {
             return { success: false, error: '로그인에 실패했습니다.' };
         }
 
@@ -455,6 +463,11 @@ export const loginWithPassword = async (loginIdentifier, password) => {
 
         return { success: true, user };
     };
+
+    // Capacitor 네이티브 앱에서는 /api 라우트가 없으므로 직접 DB 인증
+    if (isNativeApp()) {
+        return await fallbackToDirectLogin();
+    }
 
     try {
         const response = await fetch('/api/auth-login', {
@@ -605,12 +618,14 @@ export const login = async (nickname, password = null) => {
 export const logout = () => {
     clearAdminSessionVerification();
     removeItem(STORAGE_KEYS.USER);
-    fetch('/api/auth-logout', {
-        method: 'POST',
-        credentials: 'include',
-    }).catch(() => {
-        // ignore logout network errors
-    });
+    if (!isNativeApp()) {
+        fetch('/api/auth-logout', {
+            method: 'POST',
+            credentials: 'include',
+        }).catch(() => {
+            // ignore logout network errors
+        });
+    }
 };
 
 const revalidateStoredSessionInDev = async (storedUser) => {
@@ -672,6 +687,11 @@ export const revalidateStoredSession = async () => {
     if (storedUser.isRegistered !== true) {
         clearAdminSessionVerification();
         return storedUser;
+    }
+
+    // Capacitor 네이티브 앱에서는 /api 라우트가 없으므로 직접 DB로 세션 확인
+    if (isNativeApp()) {
+        return await revalidateStoredSessionInDev(storedUser);
     }
 
     try {
@@ -798,10 +818,10 @@ export const adminGetUsers = async () => {
     try {
         let { data, error } = await supabase
             .from('users')
-            .select('id, nickname, employee_id, gender, honorifics, is_admin, created_at')
+            .select('id, nickname, employee_id, gender, honorifics, ds_employee_yn, is_admin, created_at')
             .order('created_at', { ascending: false });
 
-        if (error && String(error.message || '').includes('honorifics')) {
+        if (error && (String(error.message || '').includes('honorifics') || String(error.message || '').includes('ds_employee_yn'))) {
             const fallbackResult = await supabase
                 .from('users')
                 .select('id, nickname, employee_id, gender, is_admin, created_at')
@@ -821,6 +841,7 @@ export const adminGetUsers = async () => {
             employeeId: u.employee_id,
             gender: u.gender,
             honorifics: normalizeHonorifics(u.honorifics),
+            dsEmployeeYn: normalizeDsEmployeeYn(u.ds_employee_yn),
             isAdmin: u.is_admin,
             createdAt: u.created_at,
         }));
@@ -841,6 +862,7 @@ export const adminUpdateUserBasicInfo = async (userId, updates) => {
         const dbUpdates = {};
         if ('employeeId' in updates) dbUpdates.employee_id = updates.employeeId || null;
         if ('gender' in updates) dbUpdates.gender = updates.gender || null;
+        if ('dsEmployeeYn' in updates) dbUpdates.ds_employee_yn = normalizeDsEmployeeYn(updates.dsEmployeeYn);
         if ('honorifics' in updates) {
             const validated = validateHonorifics(updates.honorifics);
             if (!validated.valid) {
@@ -863,6 +885,9 @@ export const adminUpdateUserBasicInfo = async (userId, updates) => {
             console.error('Admin update user error:', error);
             if (String(error.message || '').includes('honorifics')) {
                 return { success: false, error: 'DB에 honorifics 컬럼이 없습니다. SQL 마이그레이션을 먼저 실행해주세요.' };
+            }
+            if (String(error.message || '').includes('ds_employee_yn')) {
+                return { success: false, error: 'DB에 ds_employee_yn 컬럼이 없습니다. SQL 마이그레이션을 먼저 실행해주세요.' };
             }
             return { success: false, error: '사용자 정보를 업데이트할 수 없습니다.' };
         }
