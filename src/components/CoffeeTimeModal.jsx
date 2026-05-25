@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Modal from './Modal';
 import {
@@ -10,13 +10,16 @@ import {
   TableRow,
 } from './ui/table';
 import {
+  addCoffeeTimeChatMessage,
   createCoffeeTimeEvent,
+  getCoffeeTimeChatMessages,
   getLatestCoffeeTimeEvent,
   getTeamMembers,
   resetCoffeeTimeEvents,
   updateCoffeeTimeGroupDate,
 } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
+import { supabase } from '../utils/supabase';
 import './CoffeeTimeModal.css';
 
 const TEAM_NAMES = ['라떼팀', '콜드브루팀', '에스프레소팀', '아포가토팀', '플랫화이트팀', '모카팀'];
@@ -297,7 +300,7 @@ const MemberNameList = ({ members }) => (
   </div>
 );
 
-const CoffeeScheduleTableView = ({ groups, title, badge }) => {
+const CoffeeScheduleTableView = ({ groups, title, badge, onOpenChat }) => {
   const rows = [...groups].sort((left, right) => {
     const leftDate = left.assignedDate || '';
     const rightDate = right.assignedDate || '';
@@ -321,6 +324,7 @@ const CoffeeScheduleTableView = ({ groups, title, badge }) => {
               <TableHead>조</TableHead>
               <TableHead>멤버</TableHead>
               <TableHead className="ct-table-count-head">인원</TableHead>
+              <TableHead className="ct-table-chat-head">채팅</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -338,6 +342,12 @@ const CoffeeScheduleTableView = ({ groups, title, badge }) => {
                 <TableCell className="ct-schedule-count-cell">
                   {group.members.length}명
                 </TableCell>
+                <TableCell className="ct-schedule-chat-cell">
+                  <button type="button" className="ct-chat-entry-button" onClick={() => onOpenChat(group)}>
+                    <span className="material-symbols-outlined">chat_bubble</span>
+                    입장
+                  </button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -347,7 +357,7 @@ const CoffeeScheduleTableView = ({ groups, title, badge }) => {
   );
 };
 
-const GroupListView = ({ groups, title, badge, canEditDates = false, savingGroupId = null, onChangeDate }) => (
+const GroupListView = ({ groups, title, badge, canEditDates = false, savingGroupId = null, onChangeDate, onOpenChat }) => (
   <div className="ct-all-groups ct-list-view">
     <div className="ct-section-title">
       <h4>{title}</h4>
@@ -375,6 +385,10 @@ const GroupListView = ({ groups, title, badge, canEditDates = false, savingGroup
                   />
                 </label>
               )}
+              <button type="button" className="ct-chat-entry-button ct-chat-entry-button--row" onClick={() => onOpenChat(group)}>
+                <span className="material-symbols-outlined">chat_bubble</span>
+                채팅방
+              </button>
             </div>
             <div className="ct-group-row__members">
               {fixedMembers.length > 0 && (
@@ -619,6 +633,181 @@ const GroupRevealStage = ({ group, revealCount }) => {
   );
 };
 
+const mapRealtimeCoffeeChatMessage = (row) => ({
+  id: row.id,
+  eventId: row.event_id,
+  groupId: row.group_id,
+  employeeId: row.employee_id,
+  nickname: row.nickname,
+  message: row.message,
+  createdAt: row.created_at,
+});
+
+const formatChatTime = (value) => {
+  if (!value) return '';
+  return new Date(value).toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+};
+
+const appendUniqueChatMessage = (messages, message) => {
+  if (!message?.id) return messages;
+  if (messages.some((item) => String(item.id) === String(message.id))) return messages;
+  return [...messages, message].slice(-120);
+};
+
+const CoffeeChatRoomModal = ({ isOpen, onClose, event, group, user, userIsAdmin }) => {
+  const [messages, setMessages] = useState([]);
+  const [messageText, setMessageText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState('');
+  const messagesEndRef = useRef(null);
+
+  const currentEmployeeId = String(user?.employeeId || '').trim();
+  const groupMemberIds = useMemo(() => (
+    new Set((group?.members || []).map((member) => String(member.employeeId || '').trim()).filter(Boolean))
+  ), [group]);
+  const canChat = !!group?.id && !!event?.id && !!currentEmployeeId && (userIsAdmin || groupMemberIds.has(currentEmployeeId));
+
+  const loadMessages = useCallback(async () => {
+    if (!isOpen || !group?.id) return;
+    setIsLoading(true);
+    const result = await getCoffeeTimeChatMessages(group.id);
+    setMessages(result.messages || []);
+    setError(result.success ? '' : result.error || '채팅 메시지를 불러올 수 없습니다.');
+    setIsLoading(false);
+  }, [group, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const timerId = window.setTimeout(() => {
+      setMessageText('');
+      loadMessages();
+    }, 0);
+    return () => window.clearTimeout(timerId);
+  }, [isOpen, loadMessages]);
+
+  useEffect(() => {
+    if (!isOpen || !group?.id) return undefined;
+
+    const channel = supabase
+      .channel(`coffee-time-chat-${group.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'app_coffee_time_chat_messages',
+        filter: `group_id=eq.${group.id}`,
+      }, (payload) => {
+        const nextMessage = mapRealtimeCoffeeChatMessage(payload?.new || {});
+        setMessages((prev) => appendUniqueChatMessage(prev, nextMessage));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [group?.id, isOpen]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [messages.length]);
+
+  const handleSendMessage = async (submitEvent) => {
+    submitEvent.preventDefault();
+    if (isSending || !canChat || !messageText.trim()) return;
+
+    setIsSending(true);
+    const result = await addCoffeeTimeChatMessage({
+      eventId: event.id,
+      groupId: group.id,
+      user,
+      message: messageText,
+    });
+    setIsSending(false);
+
+    if (!result.success) {
+      setError(result.error || '채팅 메시지 전송에 실패했습니다.');
+      return;
+    }
+
+    setError('');
+    setMessageText('');
+    setMessages((prev) => appendUniqueChatMessage(prev, result.message));
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={group ? `${group.groupNo}조 ${group.name} 채팅방` : '커피타임 채팅방'}
+      maxWidth="540px"
+      contentClassName="ct-chat-modal-content"
+      bodyClassName="ct-chat-modal-body"
+    >
+      <div className="ct-chat-room">
+        {group && (
+          <div className="ct-chat-room__summary">
+            <div>
+              <strong>{formatAssignedDate(group.assignedDate)}</strong>
+              <span>{group.members.length}명 참여</span>
+            </div>
+            <div className="ct-chat-room__members">
+              {group.members.map((member) => (
+                <span
+                  key={member.employeeId}
+                  className={`${member.role === 'fixed' ? 'is-fixed' : ''} ${isDirectorMember(member) ? 'is-director' : ''}`}
+                >
+                  {member.nickname}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {error && <div className="ct-chat-error">{error}</div>}
+
+        <div className="ct-chat-list">
+          {isLoading ? (
+            <div className="ct-chat-empty">메시지를 불러오는 중...</div>
+          ) : messages.length === 0 ? (
+            <div className="ct-chat-empty">아직 대화가 없습니다. 첫 인사를 남겨보세요.</div>
+          ) : (
+            messages.map((message) => {
+              const mine = String(message.employeeId || '').trim() === currentEmployeeId;
+              return (
+                <div className={`ct-chat-message ${mine ? 'is-mine' : ''}`} key={message.id}>
+                  <div className="ct-chat-message__meta">
+                    <strong>{message.nickname}</strong>
+                    <span>{formatChatTime(message.createdAt)}</span>
+                  </div>
+                  <p>{message.message}</p>
+                </div>
+              );
+            })
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <form className="ct-chat-form" onSubmit={handleSendMessage}>
+          <input
+            value={messageText}
+            onChange={(event) => setMessageText(event.target.value)}
+            maxLength={500}
+            disabled={!canChat || isSending}
+            placeholder={canChat ? '메시지를 입력하세요' : '이 조 채팅방에 입장할 수 없습니다'}
+          />
+          <button type="submit" disabled={!canChat || isSending || !messageText.trim()}>
+            <span className="material-symbols-outlined">send</span>
+          </button>
+        </form>
+      </div>
+    </Modal>
+  );
+};
+
 const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
   const [members, setMembers] = useState([]);
   const [event, setEvent] = useState(null);
@@ -634,6 +823,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
   const [startDate, setStartDate] = useState(getTodayKey());
   const [savingGroupId, setSavingGroupId] = useState(null);
   const [resultListMode, setResultListMode] = useState('groups');
+  const [selectedChatGroup, setSelectedChatGroup] = useState(null);
 
   const userIsAdmin = isAdmin();
   const currentEmployeeId = String(user?.employeeId || '').trim();
@@ -831,6 +1021,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
     }
 
     setEvent(null);
+    setSelectedChatGroup(null);
     setRevealed(false);
     setRevealCount(0);
     await load();
@@ -860,6 +1051,11 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
       };
     });
     setSavingGroupId(null);
+  };
+
+  const handleOpenChat = (group) => {
+    if (!group?.id) return;
+    setSelectedChatGroup(group);
   };
 
   return (
@@ -913,6 +1109,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
                           groups={visibleResultGroups}
                           title={userIsAdmin ? '커피타임 일자별 멤버 리스트' : '내가 함께하는 일자별 멤버 리스트'}
                           badge={`${visibleResultGroups.length}개 일정`}
+                          onOpenChat={handleOpenChat}
                         />
                       ) : (
                         <GroupListView
@@ -922,6 +1119,7 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
                           canEditDates={userIsAdmin}
                           savingGroupId={savingGroupId}
                           onChangeDate={handleChangeGroupDate}
+                          onOpenChat={handleOpenChat}
                         />
                       )}
                     </>
@@ -956,6 +1154,14 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
                             </MotionDiv>
                           )}
                         </AnimatePresence>
+                      </button>
+                      <button
+                        type="button"
+                        className="ct-chat-entry-button ct-chat-entry-button--primary"
+                        onClick={() => handleOpenChat(myGroups[0])}
+                      >
+                        <span className="material-symbols-outlined">chat_bubble</span>
+                        채팅하기
                       </button>
                     </div>
                   )
@@ -1072,6 +1278,15 @@ const CoffeeTimeModal = ({ isOpen, onClose, user }) => {
                 </button>
               </section>
             )}
+
+            <CoffeeChatRoomModal
+              isOpen={!!selectedChatGroup}
+              onClose={() => setSelectedChatGroup(null)}
+              event={event}
+              group={selectedChatGroup}
+              user={user}
+              userIsAdmin={userIsAdmin}
+            />
           </>
         )}
       </div>

@@ -2172,6 +2172,16 @@ const mapCoffeeEvent = (event, members = [], groups = [], groupMembers = []) => 
   };
 };
 
+const mapCoffeeTimeChatMessage = (row) => ({
+  id: row.id,
+  eventId: row.event_id,
+  groupId: row.group_id,
+  employeeId: row.employee_id,
+  nickname: row.nickname,
+  message: row.message,
+  createdAt: row.created_at,
+});
+
 export const getLatestCoffeeTimeEvent = async () => {
   const { data: event, error: eventError } = await supabase
     .from('app_coffee_time_events')
@@ -2399,6 +2409,58 @@ export const resetCoffeeTimeEvents = async () => {
   }
 
   return { success: true };
+};
+
+export const getCoffeeTimeChatMessages = async (groupId) => {
+  const normalizedGroupId = String(groupId || '').trim();
+  if (!normalizedGroupId) {
+    return { success: false, error: '채팅방 정보를 찾을 수 없습니다.', messages: [] };
+  }
+
+  const { data, error } = await supabase
+    .from('app_coffee_time_chat_messages')
+    .select('*')
+    .eq('group_id', normalizedGroupId)
+    .order('created_at', { ascending: true })
+    .limit(120);
+
+  if (error) {
+    console.error('Error fetching coffee time chat messages:', error);
+    return { success: false, error: error.message || '채팅 메시지를 불러올 수 없습니다.', messages: [] };
+  }
+
+  return { success: true, messages: (data || []).map(mapCoffeeTimeChatMessage) };
+};
+
+export const addCoffeeTimeChatMessage = async ({ eventId, groupId, user, message }) => {
+  const normalizedEventId = String(eventId || '').trim();
+  const normalizedGroupId = String(groupId || '').trim();
+  const employeeId = String(user?.employeeId || '').trim();
+  const nickname = String(user?.nickname || '').trim();
+  const trimmedMessage = String(message || '').trim().slice(0, 500);
+
+  if (!normalizedEventId || !normalizedGroupId || !employeeId || !nickname || !trimmedMessage) {
+    return { success: false, error: '채팅 메시지를 보낼 수 없습니다.' };
+  }
+
+  const { data, error } = await supabase
+    .from('app_coffee_time_chat_messages')
+    .insert([{
+      event_id: normalizedEventId,
+      group_id: normalizedGroupId,
+      employee_id: employeeId,
+      nickname,
+      message: trimmedMessage,
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding coffee time chat message:', error);
+    return { success: false, error: error.message || '채팅 메시지 전송에 실패했습니다.' };
+  }
+
+  return { success: true, message: mapCoffeeTimeChatMessage(data) };
 };
 
 // ============================================
