@@ -6,6 +6,7 @@ import Modal from '../components/Modal';
 import VectorIcon from '../components/VectorIcon';
 import { Badge } from '@/components/ui/badge';
 import { getUiIconSpec } from '../utils/uiIconSpecs';
+import { showSuccessAlert, showCancelConfirmAlert } from '../utils/alert';
 import './MeetingRooms.css';
 
 const MeetingRooms = ({ user }) => {
@@ -253,6 +254,16 @@ const MeetingRooms = ({ user }) => {
         setShowModal(false);
         setFormData({ department: '', purpose: '' });
         loadData();
+
+        showSuccessAlert({
+            title: '저장 완료!',
+            text: '성공적으로 처리되었습니다.',
+            confirmButtonText: '확인',
+            confirmButtonColor: '#3085d6',
+            onConfirm: () => {
+                console.log('회의실 예약 완료 확인 버튼이 클릭되었습니다.');
+            },
+        });
     };
 
     const handleCancelReservation = async (reservation) => {
@@ -268,10 +279,22 @@ const MeetingRooms = ({ user }) => {
             return;
         }
 
-        if (confirm('이 예약을 취소하시겠습니까?')) {
-            await deleteReservation(reservation.id);
-            loadData();
-        }
+        showCancelConfirmAlert({
+            title: '정말 취소 하시겠습니까?',
+            text: '혹시 잘못누른거 아니지!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes!',
+            cancelButtonText: '아니오',
+            successTitle: '취소 완료',
+            successText: '취소가 정상적으로 완료되었습니다.',
+            onConfirm: async () => {
+                await deleteReservation(reservation.id);
+                await loadData();
+            },
+        });
     };
 
     const myReservations = reservations.filter((reservation) =>
@@ -447,7 +470,7 @@ const MeetingRooms = ({ user }) => {
                             취소
                         </Button>
                         <Button type="submit" variant="primary">
-                            예약 확인
+                            완료
                         </Button>
                     </div>
                 </form>

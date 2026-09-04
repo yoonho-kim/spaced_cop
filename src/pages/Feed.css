@@ -115,8 +115,9 @@
 }
 
 .quick-card--race,
-.quick-card--coffee {
-    background: linear-gradient(135deg, #dbeafe 0%, #dcfce7 100%);
+.quick-card--coffee,
+.quick-card--duty {
+    background: linear-gradient(135deg, #e0e7ff 0%, #dbeafe 100%);
 }
 
 /* 점심 투표 - 연초록 */

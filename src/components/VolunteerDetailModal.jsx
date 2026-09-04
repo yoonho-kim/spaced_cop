@@ -78,7 +78,7 @@ const VolunteerDetailModal = ({ activity, user, onClose, onRegister, currentAppl
                             onClick={onRegister}
                             disabled={user.isRegistered}
                         >
-                            {user.isRegistered ? '이미 신청됨' : '신청하기'}
+                            {user.isRegistered ? '이미 신청됨' : '완료'}
                         </Button>
                     </div>
                 </div>

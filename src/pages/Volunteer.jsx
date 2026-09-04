@@ -10,6 +10,7 @@ import VectorIcon from '../components/VectorIcon';
 import ParticipantListModal from '../components/ParticipantListModal';
 import VolunteerDetailModal from '../components/VolunteerDetailModal';
 import { getRankIconSpec, getUiIconSpec } from '../utils/uiIconSpecs';
+import { showSuccessAlert } from '../utils/alert';
 import './Volunteer.css';
 
 const Volunteer = ({ user }) => {
@@ -66,7 +67,16 @@ const Volunteer = ({ user }) => {
         });
 
         loadData();
-        alert('봉사활동 신청이 완료되었습니다');
+
+        showSuccessAlert({
+            title: '저장 완료!',
+            text: '성공적으로 처리되었습니다.',
+            confirmButtonText: '확인',
+            confirmButtonColor: '#3085d6',
+            onConfirm: () => {
+                console.log('봉사활동 신청 완료 확인 버튼이 클릭되었습니다.');
+            },
+        });
     };
 
     const myRegistrations = user?.isAdmin

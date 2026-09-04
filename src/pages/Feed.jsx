@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getPostsPage, addLike, removeLike, addComment, deleteComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers, getCoffeeTimeEligibility } from '../utils/storage';
+import { getPostsPage, addLike, removeLike, addComment, deleteComment, updatePost, deletePost, getVolunteerActivities, getVolunteerRegistrations, getTop3Volunteers } from '../utils/storage';
 import { isAdmin } from '../utils/auth';
 import { supabase } from '../utils/supabase';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.jsx';
@@ -9,7 +9,6 @@ import VectorIcon from '../components/VectorIcon';
 import WinnersModal from '../components/WinnersModal';
 import QuickVoteModal from '../components/QuickVoteModal';
 import LunchPickerModal from '../components/LunchPickerModal';
-import CoffeeTimeModal from '../components/CoffeeTimeModal';
 import { getRankIconSpec, getUiIconSpec } from '../utils/uiIconSpecs';
 import { fetchLinkPreview, getFirstUrl, getHostnameFromUrl, splitTextWithUrls } from '../utils/linkPreview';
 import './Feed.css';
@@ -105,8 +104,6 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
     const [top3Volunteers, setTop3Volunteers] = useState([]);
     const [voteModal, setVoteModal] = useState(null); // 'praise' | null
     const [showLunchPicker, setShowLunchPicker] = useState(false);
-    const [showCoffeeTime, setShowCoffeeTime] = useState(false);
-    const [isCoffeeTimeChecking, setIsCoffeeTimeChecking] = useState(false);
     const [showAiServiceView, setShowAiServiceView] = useState(false);
     const [isAiServiceLoading, setIsAiServiceLoading] = useState(false);
     const [highlightedPostIds, setHighlightedPostIds] = useState(new Set());
@@ -207,9 +204,9 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
 
     useEffect(() => {
         if (typeof onPraiseModalVisibilityChange === 'function') {
-            onPraiseModalVisibilityChange(voteModal === 'praise' || showCoffeeTime);
+            onPraiseModalVisibilityChange(voteModal === 'praise');
         }
-    }, [showCoffeeTime, voteModal, onPraiseModalVisibilityChange]);
+    }, [voteModal, onPraiseModalVisibilityChange]);
 
     useEffect(() => {
         return () => {
@@ -901,24 +898,16 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
         setIsAiServiceLoading(false);
     };
 
-    const handleOpenCoffeeTime = async () => {
-        if (isCoffeeTimeChecking) return;
-
-        if (isAdmin()) {
-            setShowCoffeeTime(true);
-            return;
-        }
-
-        setIsCoffeeTimeChecking(true);
-        try {
-            const result = await getCoffeeTimeEligibility(user);
-            if (!result.eligible) {
-                alert('대상자가 아닙니다.');
-                return;
-            }
-            setShowCoffeeTime(true);
-        } finally {
-            setIsCoffeeTimeChecking(false);
+    const handleDutySchedule = () => {
+        if (typeof window !== 'undefined' && window.Swal) {
+            window.Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: '아직 서비스 준비중 입니다.!',
+                footer: '<a href="#">누가 개발중 일까요?</a>'
+            });
+        } else {
+            alert('아직 서비스 준비중 입니다.!');
         }
     };
 
@@ -930,26 +919,25 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
             {/* Quick Action Cards */}
             <section className="quick-actions-section">
                 <div className="quick-actions-grid">
-                    <button className="quick-card quick-card--praise quick-card--coffee" onClick={handleOpenCoffeeTime}>
+                    <button className="quick-card quick-card--praise quick-card--duty" onClick={handleDutySchedule}>
                         <div className="quick-card__illust">
                             <svg width="84" height="76" viewBox="0 0 84 76" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="15" y="26" width="44" height="37" rx="11" fill="#2952CC"/>
-                                <path d="M59 36H64C69.523 36 74 40.477 74 46C74 51.523 69.523 56 64 56H59V49H64C65.657 49 67 47.657 67 46C67 44.343 65.657 43 64 43H59V36Z" fill="#7DD3FC"/>
-                                <path d="M20 31H54V47C54 55.837 46.837 63 38 63H36C27.163 63 20 55.837 20 47V31Z" fill="#60A5FA"/>
-                                <rect x="12" y="60" width="56" height="5" rx="2.5" fill="#BBF7D0"/>
-                                <path d="M29 21C24 15 29 10 25 6" stroke="#92400E" strokeWidth="4" strokeLinecap="round"/>
-                                <path d="M41 21C36 15 42 10 38 6" stroke="#92400E" strokeWidth="4" strokeLinecap="round"/>
-                                <path d="M50 22C47 17 53 13 50 9" stroke="#92400E" strokeWidth="4" strokeLinecap="round"/>
-                                <circle cx="32" cy="43" r="2.4" fill="#0F172A"/>
-                                <circle cx="44" cy="43" r="2.4" fill="#0F172A"/>
-                                <path d="M32 51C35.2 53.2 39.8 53.2 43 51" stroke="#0F172A" strokeWidth="2.4" strokeLinecap="round"/>
-                                <path d="M67 18L68.8 13.8L70.6 18L75 19.8L70.6 21.6L68.8 26L67 21.6L62.8 19.8L67 18Z" fill="#F59E0B"/>
-                                <path d="M13 17L14.3 13.7L15.8 17L19 18.3L15.8 19.8L14.3 23L13 19.8L9.7 18.3L13 17Z" fill="#22C55E"/>
+                                <ellipse cx="42" cy="68" rx="28" ry="5" fill="#C7D2FE" opacity="0.6"/>
+                                <rect x="18" y="16" width="48" height="48" rx="12" fill="#4F46E5"/>
+                                <rect x="18" y="16" width="48" height="18" rx="12" fill="#6366F1"/>
+                                <rect x="28" y="10" width="6" height="12" rx="3" fill="#A5B4FC"/>
+                                <rect x="50" y="10" width="6" height="12" rx="3" fill="#A5B4FC"/>
+                                <rect x="23" y="38" width="38" height="21" rx="6" fill="#EEF2FF"/>
+                                <circle cx="34" cy="48" r="4" fill="#6366F1"/>
+                                <rect x="42" y="45" width="14" height="3" rx="1.5" fill="#4F46E5"/>
+                                <rect x="42" y="50" width="10" height="2.5" rx="1.25" fill="#9CA3AF"/>
+                                <path d="M68 18L69.5 14L71 18L75 19.5L71 21L69.5 25L68 21L64 19.5L68 18Z" fill="#F59E0B"/>
+                                <path d="M14 26L15.2 23L16.5 26L19.5 27.2L16.5 28.5L15.2 31.5L14 28.5L11 27.2L14 26Z" fill="#38BDF8"/>
                             </svg>
                         </div>
                         <div className="quick-card__text">
-                            <span className="quick-card__title">커피타임 매칭</span>
-                            <span className="quick-card__subtitle">카드 열고 우리 조 확인</span>
+                            <span className="quick-card__title">당직일정</span>
+                            <span className="quick-card__subtitle">당직 스케줄 확인</span>
                         </div>
                     </button>
                     <button className="quick-card quick-card--lunch" onClick={() => setShowLunchPicker(true)}>
@@ -1400,11 +1388,6 @@ const Feed = ({ user, onAiServiceViewChange, aiServiceCloseSignal, onPraiseModal
                 onClose={() => setShowLunchPicker(false)}
             />
 
-            <CoffeeTimeModal
-                isOpen={showCoffeeTime}
-                user={user}
-                onClose={() => setShowCoffeeTime(false)}
-            />
 
             <ImagePreviewModal
                 image={previewImage}
